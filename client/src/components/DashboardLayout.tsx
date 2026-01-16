@@ -25,7 +25,7 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Package, 
   Heart, Settings, MessageSquare, Clock, Ticket, ShoppingCart,
   BarChart3, Bell, AlertTriangle, CreditCard, Menu, FileText, Webhook,
-  Building2, Globe, Key, Brain, Cog
+  Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -36,6 +36,7 @@ import { Button } from "./ui/button";
 const clinicMenuItems = [
   { icon: LayoutDashboard, label: "儀表板", path: "/clinic" },
   { icon: Users, label: "客戶管理", path: "/clinic/customers" },
+  { icon: UserCircle, label: "會員護照", path: "/clinic/member-passport" },
   { icon: Calendar, label: "預約管理", path: "/clinic/appointments" },
   { icon: Package, label: "產品管理", path: "/clinic/products" },
   { icon: Users, label: "員工管理", path: "/clinic/staff" },
@@ -49,6 +50,12 @@ const clinicMenuItems = [
   { icon: Brain, label: "AI 數據分析", path: "/clinic/analytics" },
   { icon: Bell, label: "通知管理", path: "/clinic/notifications" },
   { icon: CreditCard, label: "金流管理", path: "/clinic/payment" },
+  // Phase 26-30 超越 SUPER8 與夾客的進階功能
+  { icon: Bot, label: "AI 智能客服", path: "/clinic/ai-chatbot" },
+  { icon: Inbox, label: "訊息中心", path: "/clinic/message-center" },
+  { icon: Zap, label: "行銷自動化", path: "/clinic/marketing-automation" },
+  { icon: Gamepad2, label: "遊戲 & OMO", path: "/clinic/gamification" },
+  // LINE 生態整合
   { icon: MessageSquare, label: "LINE 設定", path: "/clinic/line-settings" },
   { icon: MessageSquare, label: "LINE 整合", path: "/clinic/line-integration" },
   { icon: Menu, label: "Rich Menu", path: "/clinic/rich-menu" },

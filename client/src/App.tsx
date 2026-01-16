@@ -46,6 +46,12 @@ import LiffStaffLeavePage from "@/pages/LiffStaffLeavePage";
 // 進階功能
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SettingsPage from "@/pages/SettingsPage";
+// Phase 26-30 超越 SUPER8 與夾客的進階功能
+import AIChatbotPage from "@/pages/AIChatbotPage";
+import MarketingAutomationPage from "@/pages/MarketingAutomationPage";
+import GamificationPage from "@/pages/GamificationPage";
+import MemberPassportPage from "@/pages/MemberPassportPage";
+import MessageCenterPage from "@/pages/MessageCenterPage";
 
 function Router() {
   return (
@@ -106,6 +112,13 @@ function Router() {
       {/* 進階功能 */}
       <Route path="/clinic/analytics" component={AnalyticsPage} />
       <Route path="/clinic/settings" component={SettingsPage} />
+      
+      {/* Phase 26-30 超越 SUPER8 與夾客的進階功能 */}
+      <Route path="/clinic/ai-chatbot" component={AIChatbotPage} />
+      <Route path="/clinic/marketing-automation" component={MarketingAutomationPage} />
+      <Route path="/clinic/gamification" component={GamificationPage} />
+      <Route path="/clinic/member-passport" component={MemberPassportPage} />
+      <Route path="/clinic/message-center" component={MessageCenterPage} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />
