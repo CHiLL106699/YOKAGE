@@ -28,6 +28,10 @@ import BillingPage from "@/pages/BillingPage";
 import ApiDocsPage from "@/pages/ApiDocsPage";
 import WhiteLabelPage from "@/pages/WhiteLabelPage";
 import LineIntegrationPage from "@/pages/LineIntegrationPage";
+import PaymentPage from "@/pages/PaymentPage";
+import RichMenuPage from "@/pages/RichMenuPage";
+import FlexMessagePage from "@/pages/FlexMessagePage";
+import WebhookPage from "@/pages/WebhookPage";
 
 function Router() {
   return (
@@ -57,6 +61,14 @@ function Router() {
       <Route path="/clinic/notifications" component={NotificationsPage} />
       <Route path="/clinic/inventory" component={InventoryPage} />
       <Route path="/clinic/line-integration" component={LineIntegrationPage} />
+      
+      {/* 金流管理 */}
+      <Route path="/clinic/payment" component={PaymentPage} />
+      
+      {/* LINE 生態整合 */}
+      <Route path="/clinic/rich-menu" component={RichMenuPage} />
+      <Route path="/clinic/flex-message" component={FlexMessagePage} />
+      <Route path="/clinic/webhook" component={WebhookPage} />
       
       {/* Super Admin 進階設定 */}
       <Route path="/super-admin/billing" component={BillingPage} />

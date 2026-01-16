@@ -21,15 +21,47 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { 
+  LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Package, 
+  Heart, Settings, MessageSquare, Clock, Ticket, ShoppingCart,
+  BarChart3, Bell, AlertTriangle, CreditCard, Menu, FileText, Webhook,
+  Building2, Globe, Key
+} from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+// 診所 Admin 選單
+const clinicMenuItems = [
+  { icon: LayoutDashboard, label: "儀表板", path: "/clinic" },
+  { icon: Users, label: "客戶管理", path: "/clinic/customers" },
+  { icon: Calendar, label: "預約管理", path: "/clinic/appointments" },
+  { icon: Package, label: "產品管理", path: "/clinic/products" },
+  { icon: Users, label: "員工管理", path: "/clinic/staff" },
+  { icon: Clock, label: "排班管理", path: "/clinic/schedule" },
+  { icon: Clock, label: "打卡紀錄", path: "/clinic/attendance" },
+  { icon: Heart, label: "術後關懷", path: "/clinic/aftercare" },
+  { icon: Ticket, label: "優惠券", path: "/clinic/coupons" },
+  { icon: ShoppingCart, label: "訂單管理", path: "/clinic/orders" },
+  { icon: AlertTriangle, label: "庫存警示", path: "/clinic/inventory" },
+  { icon: BarChart3, label: "報表分析", path: "/clinic/reports" },
+  { icon: Bell, label: "通知管理", path: "/clinic/notifications" },
+  { icon: CreditCard, label: "金流管理", path: "/clinic/payment" },
+  { icon: MessageSquare, label: "LINE 設定", path: "/clinic/line-settings" },
+  { icon: MessageSquare, label: "LINE 整合", path: "/clinic/line-integration" },
+  { icon: Menu, label: "Rich Menu", path: "/clinic/rich-menu" },
+  { icon: FileText, label: "Flex Message", path: "/clinic/flex-message" },
+  { icon: Webhook, label: "Webhook", path: "/clinic/webhook" },
+];
+
+// Super Admin 選單
+const superAdminMenuItems = [
+  { icon: LayoutDashboard, label: "系統儀表板", path: "/super-admin" },
+  { icon: Building2, label: "診所管理", path: "/super-admin/organizations" },
+  { icon: CreditCard, label: "計費管理", path: "/super-admin/billing" },
+  { icon: Key, label: "API 文檔", path: "/super-admin/api-docs" },
+  { icon: Globe, label: "白標方案", path: "/super-admin/white-label" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -112,8 +144,13 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+
+  // 根據當前路徑決定使用哪個選單
+  const isSuperAdmin = location.startsWith("/super-admin");
+  const menuItems = isSuperAdmin ? superAdminMenuItems : clinicMenuItems;
+  const activeMenuItem = menuItems.find(item => item.path === location);
+  const sidebarTitle = isSuperAdmin ? "Super Admin" : "YOChiLL 診所";
 
   useEffect(() => {
     if (isCollapsed) {
@@ -171,14 +208,14 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                    {sidebarTitle}
                   </span>
                 </div>
               ) : null}
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
+          <SidebarContent className="gap-0 overflow-y-auto">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
                 const isActive = location === item.path;

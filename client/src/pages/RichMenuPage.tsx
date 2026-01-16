@@ -1,0 +1,517 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { 
+  Menu, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Copy,
+  Eye,
+  Users,
+  Star,
+  Clock,
+  Smartphone,
+  Grid3X3,
+  Link,
+  MessageSquare,
+  Calendar,
+  ShoppingBag,
+  Gift,
+  User,
+  Settings
+} from "lucide-react";
+
+// 模擬 Rich Menu 資料
+const mockRichMenus = [
+  {
+    id: "rm-001",
+    name: "新客戶選單",
+    targetGroup: "new_customer",
+    isActive: true,
+    areas: [
+      { id: 1, label: "立即預約", action: "uri", data: "/liff/booking", icon: "Calendar" },
+      { id: 2, label: "療程介紹", action: "uri", data: "/treatments", icon: "Star" },
+      { id: 3, label: "優惠活動", action: "uri", data: "/promotions", icon: "Gift" },
+      { id: 4, label: "聯絡我們", action: "message", data: "我想了解更多", icon: "MessageSquare" },
+      { id: 5, label: "會員中心", action: "uri", data: "/liff/member", icon: "User" },
+      { id: 6, label: "線上商城", action: "uri", data: "/shop", icon: "ShoppingBag" }
+    ],
+    createdAt: "2024-01-10",
+    usageCount: 1250
+  },
+  {
+    id: "rm-002",
+    name: "VIP 會員選單",
+    targetGroup: "vip",
+    isActive: true,
+    areas: [
+      { id: 1, label: "專屬預約", action: "uri", data: "/liff/vip-booking", icon: "Calendar" },
+      { id: 2, label: "VIP 專區", action: "uri", data: "/vip-zone", icon: "Star" },
+      { id: 3, label: "點數查詢", action: "uri", data: "/liff/points", icon: "Gift" },
+      { id: 4, label: "專屬客服", action: "message", data: "VIP 專線服務", icon: "MessageSquare" },
+      { id: 5, label: "會員中心", action: "uri", data: "/liff/member", icon: "User" },
+      { id: 6, label: "獨家優惠", action: "uri", data: "/vip-offers", icon: "ShoppingBag" }
+    ],
+    createdAt: "2024-01-10",
+    usageCount: 380
+  },
+  {
+    id: "rm-003",
+    name: "待回訪客戶選單",
+    targetGroup: "followup",
+    isActive: true,
+    areas: [
+      { id: 1, label: "立即預約", action: "uri", data: "/liff/booking", icon: "Calendar" },
+      { id: 2, label: "回訪優惠", action: "uri", data: "/comeback-offers", icon: "Gift" },
+      { id: 3, label: "療程紀錄", action: "uri", data: "/liff/history", icon: "Clock" },
+      { id: 4, label: "聯絡客服", action: "message", data: "我想預約回診", icon: "MessageSquare" },
+      { id: 5, label: "會員中心", action: "uri", data: "/liff/member", icon: "User" },
+      { id: 6, label: "最新消息", action: "uri", data: "/news", icon: "Star" }
+    ],
+    createdAt: "2024-01-12",
+    usageCount: 520
+  }
+];
+
+const targetGroupLabels: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  new_customer: { label: "新客戶", color: "bg-blue-100 text-blue-800", icon: <Users className="w-3 h-3" /> },
+  vip: { label: "VIP 會員", color: "bg-purple-100 text-purple-800", icon: <Star className="w-3 h-3" /> },
+  followup: { label: "待回訪", color: "bg-orange-100 text-orange-800", icon: <Clock className="w-3 h-3" /> },
+  all: { label: "所有用戶", color: "bg-gray-100 text-gray-800", icon: <Users className="w-3 h-3" /> }
+};
+
+const iconComponents: Record<string, React.ReactNode> = {
+  Calendar: <Calendar className="w-6 h-6" />,
+  Star: <Star className="w-6 h-6" />,
+  Gift: <Gift className="w-6 h-6" />,
+  MessageSquare: <MessageSquare className="w-6 h-6" />,
+  User: <User className="w-6 h-6" />,
+  ShoppingBag: <ShoppingBag className="w-6 h-6" />,
+  Clock: <Clock className="w-6 h-6" />,
+  Settings: <Settings className="w-6 h-6" />,
+  Link: <Link className="w-6 h-6" />
+};
+
+export default function RichMenuPage() {
+  const [menus, setMenus] = useState(mockRichMenus);
+  const [selectedMenu, setSelectedMenu] = useState<typeof mockRichMenus[0] | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [editingArea, setEditingArea] = useState<number | null>(null);
+
+  // 編輯表單狀態
+  const [editForm, setEditForm] = useState({
+    name: "",
+    targetGroup: "new_customer",
+    areas: [] as typeof mockRichMenus[0]["areas"]
+  });
+
+  const handleCreateMenu = () => {
+    setEditForm({
+      name: "",
+      targetGroup: "new_customer",
+      areas: [
+        { id: 1, label: "按鈕 1", action: "uri", data: "", icon: "Link" },
+        { id: 2, label: "按鈕 2", action: "uri", data: "", icon: "Link" },
+        { id: 3, label: "按鈕 3", action: "uri", data: "", icon: "Link" },
+        { id: 4, label: "按鈕 4", action: "uri", data: "", icon: "Link" },
+        { id: 5, label: "按鈕 5", action: "uri", data: "", icon: "Link" },
+        { id: 6, label: "按鈕 6", action: "uri", data: "", icon: "Link" }
+      ]
+    });
+    setSelectedMenu(null);
+    setShowEditDialog(true);
+  };
+
+  const handleEditMenu = (menu: typeof mockRichMenus[0]) => {
+    setEditForm({
+      name: menu.name,
+      targetGroup: menu.targetGroup,
+      areas: [...menu.areas]
+    });
+    setSelectedMenu(menu);
+    setShowEditDialog(true);
+  };
+
+  const handleSaveMenu = () => {
+    if (!editForm.name) {
+      toast.error("請輸入選單名稱");
+      return;
+    }
+
+    if (selectedMenu) {
+      // 更新現有選單
+      setMenus(menus.map(m => 
+        m.id === selectedMenu.id 
+          ? { ...m, name: editForm.name, targetGroup: editForm.targetGroup, areas: editForm.areas }
+          : m
+      ));
+      toast.success("選單已更新");
+    } else {
+      // 新增選單
+      const newMenu = {
+        id: `rm-${Date.now()}`,
+        name: editForm.name,
+        targetGroup: editForm.targetGroup,
+        isActive: false,
+        areas: editForm.areas,
+        createdAt: new Date().toISOString().split("T")[0],
+        usageCount: 0
+      };
+      setMenus([...menus, newMenu]);
+      toast.success("選單已建立");
+    }
+
+    setShowEditDialog(false);
+  };
+
+  const handleToggleActive = (menuId: string) => {
+    setMenus(menus.map(m => 
+      m.id === menuId ? { ...m, isActive: !m.isActive } : m
+    ));
+    toast.success("選單狀態已更新");
+  };
+
+  const handleDeleteMenu = (menuId: string) => {
+    setMenus(menus.filter(m => m.id !== menuId));
+    toast.success("選單已刪除");
+  };
+
+  const handleDuplicateMenu = (menu: typeof mockRichMenus[0]) => {
+    const newMenu = {
+      ...menu,
+      id: `rm-${Date.now()}`,
+      name: `${menu.name} (複製)`,
+      isActive: false,
+      createdAt: new Date().toISOString().split("T")[0],
+      usageCount: 0
+    };
+    setMenus([...menus, newMenu]);
+    toast.success("選單已複製");
+  };
+
+  const updateAreaField = (areaId: number, field: string, value: string) => {
+    setEditForm({
+      ...editForm,
+      areas: editForm.areas.map(area => 
+        area.id === areaId ? { ...area, [field]: value } : area
+      )
+    });
+  };
+
+  return (
+    <div className="container py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Rich Menu 管理</h1>
+          <p className="text-muted-foreground mt-2">管理 LINE 圖文選單，依客戶狀態顯示不同選單</p>
+        </div>
+        <Button onClick={handleCreateMenu}>
+          <Plus className="w-4 h-4 mr-2" />
+          新增選單
+        </Button>
+      </div>
+
+      {/* 選單列表 */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {menus.map(menu => (
+          <Card key={menu.id} className={menu.isActive ? "border-primary" : ""}>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">{menu.name}</CardTitle>
+                  <CardDescription className="mt-1">
+                    建立於 {menu.createdAt}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={targetGroupLabels[menu.targetGroup]?.color}>
+                    {targetGroupLabels[menu.targetGroup]?.icon}
+                    <span className="ml-1">{targetGroupLabels[menu.targetGroup]?.label}</span>
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* 選單預覽 */}
+              <div className="bg-muted rounded-lg p-3 mb-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {menu.areas.map(area => (
+                    <div 
+                      key={area.id}
+                      className="bg-background rounded p-2 text-center text-xs"
+                    >
+                      <div className="flex justify-center mb-1 text-muted-foreground">
+                        {iconComponents[area.icon]}
+                      </div>
+                      <span className="line-clamp-1">{area.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 統計資訊 */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                <span>使用次數：{menu.usageCount.toLocaleString()}</span>
+                <div className="flex items-center gap-2">
+                  <span>啟用狀態</span>
+                  <Switch 
+                    checked={menu.isActive}
+                    onCheckedChange={() => handleToggleActive(menu.id)}
+                  />
+                </div>
+              </div>
+
+              {/* 操作按鈕 */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedMenu(menu);
+                    setShowPreviewDialog(true);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  預覽
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditMenu(menu)}
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  編輯
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleDuplicateMenu(menu)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleDeleteMenu(menu.id)}
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* 編輯 Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedMenu ? "編輯選單" : "新增選單"}</DialogTitle>
+            <DialogDescription>
+              設定 Rich Menu 的顯示內容與觸發動作
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* 左側：基本設定 */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>選單名稱</Label>
+                <Input 
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="例如：新客戶選單"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>目標客群</Label>
+                <Select 
+                  value={editForm.targetGroup}
+                  onValueChange={(value) => setEditForm({ ...editForm, targetGroup: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new_customer">新客戶</SelectItem>
+                    <SelectItem value="vip">VIP 會員</SelectItem>
+                    <SelectItem value="followup">待回訪客戶</SelectItem>
+                    <SelectItem value="all">所有用戶</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 按鈕設定 */}
+              <div className="space-y-3">
+                <Label>按鈕設定</Label>
+                {editForm.areas.map((area, index) => (
+                  <Card key={area.id} className={editingArea === area.id ? "border-primary" : ""}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">按鈕 {index + 1}</Badge>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setEditingArea(editingArea === area.id ? null : area.id)}
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      
+                      {editingArea === area.id ? (
+                        <div className="space-y-2">
+                          <Input 
+                            placeholder="按鈕文字"
+                            value={area.label}
+                            onChange={(e) => updateAreaField(area.id, "label", e.target.value)}
+                          />
+                          <Select 
+                            value={area.action}
+                            onValueChange={(value) => updateAreaField(area.id, "action", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="動作類型" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="uri">開啟連結</SelectItem>
+                              <SelectItem value="message">發送訊息</SelectItem>
+                              <SelectItem value="postback">Postback</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input 
+                            placeholder={area.action === "uri" ? "連結網址" : "訊息內容"}
+                            value={area.data}
+                            onChange={(e) => updateAreaField(area.id, "data", e.target.value)}
+                          />
+                          <Select 
+                            value={area.icon}
+                            onValueChange={(value) => updateAreaField(area.id, "icon", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="圖示" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Calendar">日曆</SelectItem>
+                              <SelectItem value="Star">星星</SelectItem>
+                              <SelectItem value="Gift">禮物</SelectItem>
+                              <SelectItem value="MessageSquare">訊息</SelectItem>
+                              <SelectItem value="User">用戶</SelectItem>
+                              <SelectItem value="ShoppingBag">購物袋</SelectItem>
+                              <SelectItem value="Clock">時鐘</SelectItem>
+                              <SelectItem value="Settings">設定</SelectItem>
+                              <SelectItem value="Link">連結</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm">
+                          {iconComponents[area.icon]}
+                          <span>{area.label}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-muted-foreground truncate">{area.data || "(未設定)"}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* 右側：預覽 */}
+            <div>
+              <Label className="mb-3 block">手機預覽</Label>
+              <div className="bg-gray-900 rounded-[2rem] p-3 max-w-[280px] mx-auto">
+                <div className="bg-white rounded-[1.5rem] overflow-hidden">
+                  {/* 模擬 LINE 聊天視窗 */}
+                  <div className="bg-[#00B900] text-white p-3 text-center text-sm font-medium">
+                    YOChiLL 醫美診所
+                  </div>
+                  <div className="h-[200px] bg-gray-50 flex items-center justify-center text-muted-foreground text-sm">
+                    聊天訊息區域
+                  </div>
+                  {/* Rich Menu 預覽 */}
+                  <div className="bg-white border-t p-2">
+                    <div className="grid grid-cols-3 gap-1">
+                      {editForm.areas.map(area => (
+                        <div 
+                          key={area.id}
+                          className="bg-gray-100 rounded p-2 text-center"
+                        >
+                          <div className="flex justify-center mb-1 text-gray-600">
+                            {iconComponents[area.icon]}
+                          </div>
+                          <span className="text-xs line-clamp-1">{area.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSaveMenu}>
+              {selectedMenu ? "儲存變更" : "建立選單"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 預覽 Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>選單預覽</DialogTitle>
+            <DialogDescription>{selectedMenu?.name}</DialogDescription>
+          </DialogHeader>
+          
+          {selectedMenu && (
+            <div className="bg-gray-900 rounded-[2rem] p-3">
+              <div className="bg-white rounded-[1.5rem] overflow-hidden">
+                <div className="bg-[#00B900] text-white p-3 text-center text-sm font-medium">
+                  YOChiLL 醫美診所
+                </div>
+                <div className="h-[180px] bg-gray-50 flex items-center justify-center text-muted-foreground text-sm">
+                  <Smartphone className="w-8 h-8 opacity-30" />
+                </div>
+                <div className="bg-white border-t p-2">
+                  <div className="grid grid-cols-3 gap-1">
+                    {selectedMenu.areas.map(area => (
+                      <div 
+                        key={area.id}
+                        className="bg-gray-100 hover:bg-gray-200 rounded p-3 text-center cursor-pointer transition-colors"
+                      >
+                        <div className="flex justify-center mb-1 text-gray-600">
+                          {iconComponents[area.icon]}
+                        </div>
+                        <span className="text-xs">{area.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
