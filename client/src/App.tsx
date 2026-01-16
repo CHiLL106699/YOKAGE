@@ -5,31 +5,46 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import OrganizationsPage from "./pages/OrganizationsPage";
+import ClinicDashboard from "./pages/ClinicDashboard";
+import CustomersPage from "./pages/CustomersPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
+import ProductsPage from "./pages/ProductsPage";
+import StaffPage from "./pages/StaffPage";
+import AftercarePage from "./pages/AftercarePage";
+import LineSettingsPage from "./pages/LineSettingsPage";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
+      {/* Public */}
       <Route path={"/"} component={Home} />
+      
+      {/* Super Admin Routes */}
+      <Route path={"/super-admin"} component={SuperAdminDashboard} />
+      <Route path={"/super-admin/organizations"} component={OrganizationsPage} />
+      
+      {/* Clinic Admin Routes */}
+      <Route path={"/clinic"} component={ClinicDashboard} />
+      <Route path={"/clinic/customers"} component={CustomersPage} />
+      <Route path={"/clinic/appointments"} component={AppointmentsPage} />
+      <Route path={"/clinic/products"} component={ProductsPage} />
+      <Route path={"/clinic/staff"} component={StaffPage} />
+      <Route path={"/clinic/aftercare"} component={AftercarePage} />
+      <Route path={"/clinic/line-settings"} component={LineSettingsPage} />
+      
+      {/* 404 */}
       <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
           <Router />
