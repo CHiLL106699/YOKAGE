@@ -52,6 +52,17 @@ import MarketingAutomationPage from "@/pages/MarketingAutomationPage";
 import GamificationPage from "@/pages/GamificationPage";
 import MemberPassportPage from "@/pages/MemberPassportPage";
 import MessageCenterPage from "@/pages/MessageCenterPage";
+// Phase 31-35 新增功能
+import SocialMarketingPage from "@/pages/SocialMarketingPage";
+import HRManagementPage from "@/pages/HRManagementPage";
+import SupplierManagementPage from "@/pages/SupplierManagementPage";
+import ReviewManagementPage from "@/pages/ReviewManagementPage";
+import MultiBranchPage from "@/pages/MultiBranchPage";
+import ContractManagementPage from "@/pages/ContractManagementPage";
+import TreatmentTrackingPage from "@/pages/TreatmentTrackingPage";
+import RecommendationEnginePage from "@/pages/RecommendationEnginePage";
+import SmartSchedulingPage from "@/pages/SmartSchedulingPage";
+import Customer360Page from "@/pages/Customer360Page";
 
 function Router() {
   return (
@@ -119,6 +130,18 @@ function Router() {
       <Route path="/clinic/gamification" component={GamificationPage} />
       <Route path="/clinic/member-passport" component={MemberPassportPage} />
       <Route path="/clinic/message-center" component={MessageCenterPage} />
+      
+      {/* Phase 31-35 新增功能 */}
+      <Route path="/clinic/social-marketing" component={SocialMarketingPage} />
+      <Route path="/clinic/hr-management" component={HRManagementPage} />
+      <Route path="/clinic/supplier-management" component={SupplierManagementPage} />
+      <Route path="/clinic/review-management" component={ReviewManagementPage} />
+      <Route path="/clinic/multi-branch" component={MultiBranchPage} />
+      <Route path="/clinic/contract-management" component={ContractManagementPage} />
+      <Route path="/clinic/treatment-tracking" component={TreatmentTrackingPage} />
+      <Route path="/clinic/recommendation-engine" component={RecommendationEnginePage} />
+      <Route path="/clinic/smart-scheduling" component={SmartSchedulingPage} />
+      <Route path="/clinic/customer-360" component={Customer360Page} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />

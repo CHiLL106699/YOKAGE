@@ -25,7 +25,8 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Package, 
   Heart, Settings, MessageSquare, Clock, Ticket, ShoppingCart,
   BarChart3, Bell, AlertTriangle, CreditCard, Menu, FileText, Webhook,
-  Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox
+  Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox,
+  Share2, Briefcase, Truck, Star, GitBranch, FileSignature, Camera, Sparkles, Target, Eye
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -61,6 +62,17 @@ const clinicMenuItems = [
   { icon: Menu, label: "Rich Menu", path: "/clinic/rich-menu" },
   { icon: FileText, label: "Flex Message", path: "/clinic/flex-message" },
   { icon: Webhook, label: "Webhook", path: "/clinic/webhook" },
+  // Phase 31-35 新增功能
+  { icon: Share2, label: "社群行銷", path: "/clinic/social-marketing" },
+  { icon: Briefcase, label: "人資管理", path: "/clinic/hr-management" },
+  { icon: Truck, label: "供應商管理", path: "/clinic/supplier-management" },
+  { icon: Star, label: "評價管理", path: "/clinic/review-management" },
+  { icon: GitBranch, label: "多分店管理", path: "/clinic/multi-branch" },
+  { icon: FileSignature, label: "合約管理", path: "/clinic/contract-management" },
+  { icon: Camera, label: "療程追蹤", path: "/clinic/treatment-tracking" },
+  { icon: Sparkles, label: "智能推薦", path: "/clinic/recommendation-engine" },
+  { icon: Target, label: "智能排程", path: "/clinic/smart-scheduling" },
+  { icon: Eye, label: "客戶 360°", path: "/clinic/customer-360" },
   { icon: Cog, label: "系統設定", path: "/clinic/settings" },
 ];
 
