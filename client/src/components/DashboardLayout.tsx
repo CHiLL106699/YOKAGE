@@ -25,7 +25,7 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Users, Calendar, Package, 
   Heart, Settings, MessageSquare, Clock, Ticket, ShoppingCart,
   BarChart3, Bell, AlertTriangle, CreditCard, Menu, FileText, Webhook,
-  Building2, Globe, Key
+  Building2, Globe, Key, Brain, Cog
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -46,6 +46,7 @@ const clinicMenuItems = [
   { icon: ShoppingCart, label: "訂單管理", path: "/clinic/orders" },
   { icon: AlertTriangle, label: "庫存警示", path: "/clinic/inventory" },
   { icon: BarChart3, label: "報表分析", path: "/clinic/reports" },
+  { icon: Brain, label: "AI 數據分析", path: "/clinic/analytics" },
   { icon: Bell, label: "通知管理", path: "/clinic/notifications" },
   { icon: CreditCard, label: "金流管理", path: "/clinic/payment" },
   { icon: MessageSquare, label: "LINE 設定", path: "/clinic/line-settings" },
@@ -53,6 +54,7 @@ const clinicMenuItems = [
   { icon: Menu, label: "Rich Menu", path: "/clinic/rich-menu" },
   { icon: FileText, label: "Flex Message", path: "/clinic/flex-message" },
   { icon: Webhook, label: "Webhook", path: "/clinic/webhook" },
+  { icon: Cog, label: "系統設定", path: "/clinic/settings" },
 ];
 
 // Super Admin 選單

@@ -32,6 +32,20 @@ import PaymentPage from "@/pages/PaymentPage";
 import RichMenuPage from "@/pages/RichMenuPage";
 import FlexMessagePage from "@/pages/FlexMessagePage";
 import WebhookPage from "@/pages/WebhookPage";
+// LIFF 顧客端商城
+import LiffShopPage from "@/pages/LiffShopPage";
+import LiffCartPage from "@/pages/LiffCartPage";
+import LiffCheckoutPage from "@/pages/LiffCheckoutPage";
+import LiffOrdersPage from "@/pages/LiffOrdersPage";
+import LiffOrderDetailPage from "@/pages/LiffOrderDetailPage";
+// LIFF 員工端
+import LiffStaffClockPage from "@/pages/LiffStaffClockPage";
+import LiffStaffTasksPage from "@/pages/LiffStaffTasksPage";
+import LiffStaffSchedulePage from "@/pages/LiffStaffSchedulePage";
+import LiffStaffLeavePage from "@/pages/LiffStaffLeavePage";
+// 進階功能
+import AnalyticsPage from "@/pages/AnalyticsPage";
+import SettingsPage from "@/pages/SettingsPage";
 
 function Router() {
   return (
@@ -52,7 +66,6 @@ function Router() {
       <Route path={"/clinic/staff"} component={StaffPage} />
       <Route path={"/clinic/aftercare"} component={AftercarePage} />
       <Route path="/clinic/line-settings" component={LineSettingsPage} />
-      <Route path="/clinic/customers/:id" component={CustomerDetailPage} />
       <Route path="/clinic/schedule" component={SchedulePage} />
       <Route path="/clinic/attendance" component={AttendancePage} />
       <Route path="/clinic/coupons" component={CouponsPage} />
@@ -75,9 +88,24 @@ function Router() {
       <Route path="/super-admin/api-docs" component={ApiDocsPage} />
       <Route path="/super-admin/white-label" component={WhiteLabelPage} />
       
-      {/* LIFF 頁面 */}
+      {/* LIFF 顧客端頁面 */}
       <Route path="/liff/booking" component={LiffBookingPage} />
       <Route path="/liff/member" component={LiffMemberPage} />
+      <Route path="/liff/shop" component={LiffShopPage} />
+      <Route path="/liff/cart" component={LiffCartPage} />
+      <Route path="/liff/checkout" component={LiffCheckoutPage} />
+      <Route path="/liff/orders" component={LiffOrdersPage} />
+      <Route path="/liff/orders/:id" component={LiffOrderDetailPage} />
+      
+      {/* LIFF 員工端頁面 */}
+      <Route path="/liff/staff/clock" component={LiffStaffClockPage} />
+      <Route path="/liff/staff/tasks" component={LiffStaffTasksPage} />
+      <Route path="/liff/staff/schedule" component={LiffStaffSchedulePage} />
+      <Route path="/liff/staff/leave" component={LiffStaffLeavePage} />
+      
+      {/* 進階功能 */}
+      <Route path="/clinic/analytics" component={AnalyticsPage} />
+      <Route path="/clinic/settings" component={SettingsPage} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />
