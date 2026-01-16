@@ -21,6 +21,13 @@ import CouponsPage from "@/pages/CouponsPage";
 import OrdersPage from "@/pages/OrdersPage";
 import LiffBookingPage from "@/pages/LiffBookingPage";
 import LiffMemberPage from "@/pages/LiffMemberPage";
+import ReportsPage from "@/pages/ReportsPage";
+import NotificationsPage from "@/pages/NotificationsPage";
+import InventoryPage from "@/pages/InventoryPage";
+import BillingPage from "@/pages/BillingPage";
+import ApiDocsPage from "@/pages/ApiDocsPage";
+import WhiteLabelPage from "@/pages/WhiteLabelPage";
+import LineIntegrationPage from "@/pages/LineIntegrationPage";
 
 function Router() {
   return (
@@ -46,6 +53,15 @@ function Router() {
       <Route path="/clinic/attendance" component={AttendancePage} />
       <Route path="/clinic/coupons" component={CouponsPage} />
       <Route path="/clinic/orders" component={OrdersPage} />
+      <Route path="/clinic/reports" component={ReportsPage} />
+      <Route path="/clinic/notifications" component={NotificationsPage} />
+      <Route path="/clinic/inventory" component={InventoryPage} />
+      <Route path="/clinic/line-integration" component={LineIntegrationPage} />
+      
+      {/* Super Admin 進階設定 */}
+      <Route path="/super-admin/billing" component={BillingPage} />
+      <Route path="/super-admin/api-docs" component={ApiDocsPage} />
+      <Route path="/super-admin/white-label" component={WhiteLabelPage} />
       
       {/* LIFF 頁面 */}
       <Route path="/liff/booking" component={LiffBookingPage} />

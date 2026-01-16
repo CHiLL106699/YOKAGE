@@ -633,6 +633,209 @@ const lineRouter = router({
 });
 
 // ============================================
+// Report Router
+// ============================================
+const reportRouter = router({
+  revenue: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, startDate, endDate } = input;
+      // Get orders within date range
+      const orders = await db.listOrders(organizationId, {
+        status: 'completed',
+      });
+      
+      const totalRevenue = orders.data.reduce((sum, order) => sum + Number(order.subtotal), 0);
+      
+      // Generate daily revenue data
+      const dailyMap = new Map<string, number>();
+      orders.data.forEach(order => {
+        const date = new Date(order.createdAt).toISOString().split('T')[0];
+        dailyMap.set(date, (dailyMap.get(date) || 0) + Number(order.subtotal));
+      });
+      
+      const dailyRevenue = Array.from(dailyMap.entries()).map(([date, amount]) => ({
+        date,
+        amount,
+      })).sort((a, b) => a.date.localeCompare(b.date));
+      
+      // Revenue by category (simplified)
+      const byCategory = [
+        { category: '療程', amount: Math.round(totalRevenue * 0.6) },
+        { category: '產品', amount: Math.round(totalRevenue * 0.3) },
+        { category: '其他', amount: Math.round(totalRevenue * 0.1) },
+      ];
+      
+      return {
+        totalRevenue,
+        growthRate: 12.5, // TODO: Calculate actual growth
+        dailyRevenue,
+        byCategory,
+      };
+    }),
+
+  appointmentStats: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, startDate, endDate } = input;
+      const appointments = await db.listAppointments(organizationId, {
+        date: startDate,
+      });
+      
+      const total = appointments.data.length;
+      const completed = appointments.data.filter(a => a.status === 'completed').length;
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+      
+      // By time slot
+      const timeSlotMap = new Map<string, number>();
+      appointments.data.forEach(apt => {
+        const hour = new Date(apt.appointmentDate).getHours();
+        const slot = `${hour}:00`;
+        timeSlotMap.set(slot, (timeSlotMap.get(slot) || 0) + 1);
+      });
+      
+      const byTimeSlot = Array.from(timeSlotMap.entries()).map(([timeSlot, count]) => ({
+        timeSlot,
+        count,
+      })).sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+      
+      // By status
+      const statusMap = new Map<string, number>();
+      appointments.data.forEach(apt => {
+        const status = apt.status || 'pending';
+        statusMap.set(status, (statusMap.get(status) || 0) + 1);
+      });
+      
+      const statusLabels: Record<string, string> = {
+        pending: '待確認',
+        confirmed: '已確認',
+        completed: '已完成',
+        cancelled: '已取消',
+        no_show: '未到',
+      };
+      
+      const byStatus = Array.from(statusMap.entries()).map(([status, count]) => ({
+        status: statusLabels[status] || status,
+        count,
+      }));
+      
+      return {
+        totalAppointments: total,
+        completionRate,
+        byTimeSlot,
+        byStatus,
+      };
+    }),
+
+  customerStats: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, startDate, endDate } = input;
+      const customers = await db.listCustomers(organizationId, { limit: 1000 });
+      
+      const start = new Date(startDate);
+      const newCustomers = customers.data.filter(c => new Date(c.createdAt) >= start).length;
+      const returningCustomers = customers.total - newCustomers;
+      const returnRate = customers.total > 0 ? Math.round((returningCustomers / customers.total) * 100) : 0;
+      
+      // By member level
+      const levelMap = new Map<string, number>();
+      customers.data.forEach(c => {
+        const level = c.memberLevel || 'regular';
+        levelMap.set(level, (levelMap.get(level) || 0) + 1);
+      });
+      
+      const levelLabels: Record<string, string> = {
+        regular: '一般',
+        silver: '銀卡',
+        gold: '金卡',
+        platinum: '白金',
+        diamond: '鑽石',
+      };
+      
+      const byMemberLevel = Array.from(levelMap.entries()).map(([level, count]) => ({
+        level: levelLabels[level] || level,
+        count,
+      }));
+      
+      // By frequency (simplified)
+      const byFrequency = [
+        { frequency: '1次', count: Math.round(customers.total * 0.4) },
+        { frequency: '2-3次', count: Math.round(customers.total * 0.3) },
+        { frequency: '4-6次', count: Math.round(customers.total * 0.2) },
+        { frequency: '7次以上', count: Math.round(customers.total * 0.1) },
+      ];
+      
+      return {
+        newCustomers,
+        returningCustomers,
+        returnRate,
+        byMemberLevel,
+        byFrequency,
+      };
+    }),
+
+  productStats: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId } = input;
+      const products = await db.listProducts(organizationId, { limit: 100 });
+      
+      // Sort by some metric (simplified - using price as proxy)
+      const sortedProducts = [...products.data].sort((a, b) => Number(b.price) - Number(a.price));
+      
+      const topProducts = sortedProducts.slice(0, 10).map((p, i) => ({
+        name: p.name,
+        count: 50 - i * 5, // Placeholder counts
+      }));
+      
+      return {
+        topProduct: topProducts[0] || null,
+        topProducts,
+      };
+    }),
+
+  staffPerformance: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId } = input;
+      const staffResult = await db.listStaff(organizationId);
+      
+      // Generate mock performance data
+      const rankings = staffResult.data.map((s: { id: number; name: string }, i: number) => ({
+        staffId: s.id,
+        name: s.name,
+        revenue: 100000 - i * 15000,
+        serviceCount: 30 - i * 3,
+      })).sort((a: { revenue: number }, b: { revenue: number }) => b.revenue - a.revenue);
+      
+      return {
+        rankings,
+      };
+    }),
+});
+
+// ============================================
 // Clinic Dashboard Router (for clinic admins)
 // ============================================
 const clinicRouter = router({
@@ -690,6 +893,7 @@ export const appRouter = router({
   aftercare: aftercareRouter,
   line: lineRouter,
   clinic: clinicRouter,
+  report: reportRouter,
 });
 
 export type AppRouter = typeof appRouter;
