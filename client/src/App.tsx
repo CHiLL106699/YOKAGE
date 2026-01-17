@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import OrganizationsPage from "./pages/OrganizationsPage";
+import OrganizationDetailPage from "./pages/OrganizationDetailPage";
 import ClinicDashboard from "./pages/ClinicDashboard";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDetailPage from "./pages/CustomerDetailPage";
@@ -93,6 +94,7 @@ function Router() {
       {/* Super Admin Routes */}
       <Route path={"/super-admin"} component={SuperAdminDashboard} />
       <Route path={"/super-admin/organizations"} component={OrganizationsPage} />
+      <Route path={"/super-admin/organizations/:id"} component={OrganizationDetailPage} />
       
       {/* Clinic Admin Routes */}
       <Route path={"/clinic"} component={ClinicDashboard} />
