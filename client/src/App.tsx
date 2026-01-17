@@ -84,6 +84,10 @@ import SubscriptionPage from "@/pages/SubscriptionPage";
 import TeleconsultPage from "@/pages/TeleconsultPage";
 import ReferralPage from "@/pages/ReferralPage";
 import SocialIntegrationPage from "@/pages/SocialIntegrationPage";
+// Phase 56: 電子票券系統
+import VouchersPage from "@/pages/VouchersPage";
+import MyVouchersPage from "@/pages/liff/MyVouchersPage";
+import VoucherRedemptionPage from "@/pages/VoucherRedemptionPage";
 
 function Router() {
   return (
@@ -186,6 +190,13 @@ function Router() {
       <Route path="/clinic/teleconsult" component={TeleconsultPage} />
       <Route path="/clinic/referral" component={ReferralPage} />
       <Route path="/clinic/social-integration" component={SocialIntegrationPage} />
+      
+      {/* Phase 56: 電子票券系統 */}
+      <Route path="/clinic/vouchers" component={VouchersPage} />
+      <Route path="/clinic/voucher-redemption" component={VoucherRedemptionPage} />
+      
+      {/* LIFF 票券頁面 */}
+      <Route path="/liff/my-vouchers" component={MyVouchersPage} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />

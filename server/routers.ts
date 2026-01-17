@@ -2474,6 +2474,360 @@ const socialRouter = router({
 });
 
 // ============================================
+// Phase 56: 電子票券系統 Router
+// ============================================
+const voucherRouter = router({
+  // 票券模板 CRUD
+  createTemplate: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string(),
+      description: z.string().optional(),
+      type: z.enum(["treatment", "discount", "gift_card", "stored_value", "free_item"]).optional(),
+      value: z.string().optional(),
+      valueType: z.enum(["fixed_amount", "percentage", "treatment_count"]).optional(),
+      applicableProducts: z.array(z.number()).optional(),
+      applicableCategories: z.array(z.string()).optional(),
+      applicableServices: z.array(z.number()).optional(),
+      minPurchase: z.string().optional(),
+      maxDiscount: z.string().optional(),
+      usageLimit: z.number().optional(),
+      validityType: z.enum(["fixed_date", "days_from_issue", "no_expiry"]).optional(),
+      validDays: z.number().optional(),
+      fixedStartDate: z.string().optional(),
+      fixedEndDate: z.string().optional(),
+      imageUrl: z.string().optional(),
+      backgroundColor: z.string().optional(),
+      textColor: z.string().optional(),
+      isTransferable: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createVoucherTemplate({
+        ...input,
+        fixedStartDate: input.fixedStartDate ? new Date(input.fixedStartDate) : undefined,
+        fixedEndDate: input.fixedEndDate ? new Date(input.fixedEndDate) : undefined,
+      });
+      return { id };
+    }),
+
+  updateTemplate: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      value: z.string().optional(),
+      usageLimit: z.number().optional(),
+      validDays: z.number().optional(),
+      imageUrl: z.string().optional(),
+      backgroundColor: z.string().optional(),
+      textColor: z.string().optional(),
+      isActive: z.boolean().optional(),
+      isTransferable: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateVoucherTemplate(id, data);
+      return { success: true };
+    }),
+
+  getTemplate: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getVoucherTemplateById(input.id);
+    }),
+
+  listTemplates: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      type: z.string().optional(),
+      isActive: z.boolean().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listVoucherTemplates(input.organizationId, input);
+    }),
+
+  deleteTemplate: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.deleteVoucherTemplate(input.id);
+      return { success: true };
+    }),
+
+  // 票券發送
+  issueVoucher: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      templateId: z.number(),
+      customerId: z.number(),
+      issueReason: z.string().optional(),
+      issueChannel: z.enum(["manual", "campaign", "birthday", "referral", "purchase", "line"]).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const results = await db.issueVouchersToCustomers(
+        input.organizationId,
+        input.templateId,
+        [input.customerId],
+        {
+          issuedBy: ctx.user?.id,
+          issueReason: input.issueReason,
+          issueChannel: input.issueChannel,
+        }
+      );
+      return results[0];
+    }),
+
+  // 批量發送票券
+  batchIssue: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      templateId: z.number(),
+      customerIds: z.array(z.number()),
+      batchName: z.string(),
+      issueReason: z.string().optional(),
+      issueChannel: z.enum(["manual", "campaign", "birthday", "referral", "purchase", "line"]).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // 建立批次記錄
+      const batchId = await db.createVoucherBatch({
+        organizationId: input.organizationId,
+        templateId: input.templateId,
+        batchName: input.batchName,
+        batchType: input.issueChannel === 'campaign' ? 'campaign' : 'manual',
+        totalRecipients: input.customerIds.length,
+        status: 'processing',
+        createdBy: ctx.user?.id,
+        startedAt: new Date(),
+      });
+
+      // 發送票券
+      const results = await db.issueVouchersToCustomers(
+        input.organizationId,
+        input.templateId,
+        input.customerIds,
+        {
+          issuedBy: ctx.user?.id,
+          issueReason: input.issueReason,
+          issueChannel: input.issueChannel,
+          batchId,
+        }
+      );
+
+      return { batchId, issued: results.length };
+    }),
+
+  // 票券實例查詢
+  getInstance: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getVoucherInstanceById(input.id);
+    }),
+
+  getInstanceByCode: protectedProcedure
+    .input(z.object({ code: z.string() }))
+    .query(async ({ input }) => {
+      return await db.getVoucherInstanceByCode(input.code);
+    }),
+
+  listInstances: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number().optional(),
+      templateId: z.number().optional(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listVoucherInstances(input.organizationId, input);
+    }),
+
+  // 客戶票券列表（LIFF 用）
+  myVouchers: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      status: z.string().optional(),
+      includeExpired: z.boolean().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listCustomerVouchers(input.customerId, input);
+    }),
+
+  // 票券核銷
+  redeem: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      voucherCode: z.string(),
+      customerId: z.number(),
+      redemptionMethod: z.enum(["qr_scan", "manual_code", "auto_apply"]).optional(),
+      orderId: z.number().optional(),
+      appointmentId: z.number().optional(),
+      treatmentRecordId: z.number().optional(),
+      discountApplied: z.string().optional(),
+      originalAmount: z.string().optional(),
+      finalAmount: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // 取得票券實例
+      const voucher = await db.getVoucherInstanceByCode(input.voucherCode);
+      if (!voucher) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "票券不存在" });
+      }
+      if (voucher.organizationId !== input.organizationId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "票券不屬於此診所" });
+      }
+
+      const redemptionId = await db.redeemVoucher({
+        organizationId: input.organizationId,
+        voucherInstanceId: voucher.id,
+        customerId: input.customerId,
+        redemptionMethod: input.redemptionMethod || 'qr_scan',
+        redeemedBy: ctx.user?.id,
+        orderId: input.orderId,
+        appointmentId: input.appointmentId,
+        treatmentRecordId: input.treatmentRecordId,
+        discountApplied: input.discountApplied,
+        originalAmount: input.originalAmount,
+        finalAmount: input.finalAmount,
+        notes: input.notes,
+      });
+
+      return { redemptionId, success: true };
+    }),
+
+  // 核銷記錄查詢
+  listRedemptions: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      voucherInstanceId: z.number().optional(),
+      customerId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listVoucherRedemptions(input.organizationId, input);
+    }),
+
+  // 批次發送記錄
+  listBatches: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listVoucherBatches(input.organizationId, input);
+    }),
+
+  getBatch: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getVoucherBatchById(input.id);
+    }),
+
+  // 票券統計
+  getStats: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getVoucherStats(input.organizationId);
+    }),
+
+  // 轉贈票券
+  transfer: protectedProcedure
+    .input(z.object({
+      voucherId: z.number(),
+      newCustomerId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const newVoucherId = await db.transferVoucher(input.voucherId, input.newCustomerId);
+      return { newVoucherId, success: true };
+    }),
+
+  // 更新過期票券
+  updateExpired: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.updateExpiredVouchers(input.organizationId);
+      return { success: true };
+    }),
+
+  // 取消票券
+  cancel: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.updateVoucherInstance(input.id, {
+        status: 'cancelled',
+        notes: input.reason,
+      });
+      return { success: true };
+    }),
+
+  // 發送 LINE Flex Message 票券
+  sendLineVoucher: protectedProcedure
+    .input(z.object({
+      voucherInstanceId: z.number(),
+      customerId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      // 取得票券實例與模板資訊
+      const voucher = await db.getVoucherInstanceById(input.voucherInstanceId);
+      if (!voucher) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "票券不存在" });
+      }
+
+      // 取得客戶 LINE ID
+      const customer = await db.getCustomerById(input.customerId);
+      if (!customer || !customer.lineUserId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "客戶未綁定 LINE" });
+      }
+
+      // 更新票券狀態為待推送
+      await db.updateVoucherInstance(input.voucherInstanceId, {
+        linePushStatus: 'pending',
+      });
+
+      // 返回 Flex Message 模板資料（實際推送需要 LINE Channel 懑證）
+      return {
+        success: true,
+        message: '票券已標記為待推送，請設定 LINE Channel 後即可自動發送',
+        voucherCode: voucher.voucherCode,
+        customerId: input.customerId,
+        lineUserId: customer.lineUserId,
+      };
+    }),
+
+  // 批次發送 LINE Flex Message
+  sendLineBatchVouchers: protectedProcedure
+    .input(z.object({
+      batchId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const batch = await db.getVoucherBatchById(input.batchId);
+      if (!batch) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "批次發送記錄不存在" });
+      }
+
+      // 更新批次狀態
+      await db.updateVoucherBatch(input.batchId, {
+        status: 'processing',
+      });
+
+      return {
+        success: true,
+        message: '批次票券已標記為處理中，請設定 LINE Channel 後即可自動發送',
+        batchId: input.batchId,
+      };
+    }),
+});
+
+// ============================================
 // Main App Router
 // ============================================
 export const appRouter = router({
@@ -2521,6 +2875,8 @@ export const appRouter = router({
   teleConsult: teleConsultRouter,
   referral: referralRouter,
   social: socialRouter,
+  // Phase 56: 電子票券系統
+  voucher: voucherRouter,
 });
 
 export type AppRouter = typeof appRouter;

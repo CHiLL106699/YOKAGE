@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, like, or, gte, lte } from "drizzle-orm";
+import { eq, and, desc, asc, sql, like, or, gte, lte, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -2374,4 +2374,418 @@ export async function processRfmCalculationJob(jobId: number, organizationId: nu
     });
     throw error;
   }
+}
+
+
+// ============================================
+// Phase 56: 電子票券系統 Queries
+// ============================================
+import { 
+  voucherTemplates, InsertVoucherTemplate,
+  voucherInstances, InsertVoucherInstance,
+  voucherRedemptions, InsertVoucherRedemption,
+  voucherBatches, InsertVoucherBatch,
+} from "../drizzle/schema";
+import { nanoid } from 'nanoid';
+
+// 票券模板 CRUD
+export async function createVoucherTemplate(template: InsertVoucherTemplate) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(voucherTemplates).values(template);
+  return result[0].insertId;
+}
+
+export async function updateVoucherTemplate(id: number, template: Partial<InsertVoucherTemplate>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(voucherTemplates).set(template).where(eq(voucherTemplates.id, id));
+}
+
+export async function getVoucherTemplateById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(voucherTemplates).where(eq(voucherTemplates.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listVoucherTemplates(organizationId: number, options?: { type?: string; isActive?: boolean; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(voucherTemplates.organizationId, organizationId);
+  if (options?.type) {
+    whereClause = and(whereClause, eq(voucherTemplates.type, options.type as any)) as typeof whereClause;
+  }
+  if (options?.isActive !== undefined) {
+    whereClause = and(whereClause, eq(voucherTemplates.isActive, options.isActive)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(voucherTemplates).where(whereClause).orderBy(desc(voucherTemplates.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherTemplates).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function deleteVoucherTemplate(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(voucherTemplates).where(eq(voucherTemplates.id, id));
+}
+
+// 票券實例 CRUD
+export async function generateVoucherCode(): Promise<string> {
+  return `VC-${nanoid(10).toUpperCase()}`;
+}
+
+export async function createVoucherInstance(instance: InsertVoucherInstance) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 自動生成票券代碼
+  if (!instance.voucherCode) {
+    instance.voucherCode = await generateVoucherCode();
+  }
+  
+  const result = await db.insert(voucherInstances).values(instance);
+  
+  // 更新模板的發送統計
+  await db.update(voucherTemplates)
+    .set({ totalIssued: sql`totalIssued + 1` })
+    .where(eq(voucherTemplates.id, instance.templateId));
+  
+  return result[0].insertId;
+}
+
+export async function updateVoucherInstance(id: number, instance: Partial<InsertVoucherInstance>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(voucherInstances).set(instance).where(eq(voucherInstances.id, id));
+}
+
+export async function getVoucherInstanceById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(voucherInstances).where(eq(voucherInstances.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getVoucherInstanceByCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(voucherInstances).where(eq(voucherInstances.voucherCode, code)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listVoucherInstances(organizationId: number, options?: { 
+  customerId?: number; 
+  templateId?: number; 
+  status?: string; 
+  page?: number; 
+  limit?: number 
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(voucherInstances.organizationId, organizationId);
+  if (options?.customerId) {
+    whereClause = and(whereClause, eq(voucherInstances.customerId, options.customerId)) as typeof whereClause;
+  }
+  if (options?.templateId) {
+    whereClause = and(whereClause, eq(voucherInstances.templateId, options.templateId)) as typeof whereClause;
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(voucherInstances.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(voucherInstances).where(whereClause).orderBy(desc(voucherInstances.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherInstances).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function listCustomerVouchers(customerId: number, options?: { status?: string; includeExpired?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(voucherInstances.customerId, customerId);
+  
+  if (options?.status) {
+    whereClause = and(whereClause, eq(voucherInstances.status, options.status as any)) as typeof whereClause;
+  }
+  
+  if (!options?.includeExpired) {
+    // 只顯示未過期的票券
+    whereClause = and(whereClause, or(
+      isNull(voucherInstances.validUntil),
+      gte(voucherInstances.validUntil, new Date())
+    )) as typeof whereClause;
+  }
+
+  return await db.select().from(voucherInstances).where(whereClause).orderBy(desc(voucherInstances.createdAt));
+}
+
+// 票券核銷
+export async function redeemVoucher(redemption: InsertVoucherRedemption) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 取得票券實例
+  const voucher = await getVoucherInstanceById(redemption.voucherInstanceId);
+  if (!voucher) throw new Error("Voucher not found");
+  if (voucher.status !== 'active') throw new Error("Voucher is not active");
+  if ((voucher.remainingUses ?? 0) <= 0) throw new Error("Voucher has no remaining uses");
+  if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) throw new Error("Voucher has expired");
+  
+  // 建立核銷記錄
+  const result = await db.insert(voucherRedemptions).values(redemption);
+  
+  // 更新票券實例
+  const newUsedCount = (voucher.usedCount ?? 0) + 1;
+  const newRemainingUses = (voucher.remainingUses ?? 0) - 1;
+  const newStatus = newRemainingUses <= 0 ? 'used' : 'active';
+  
+  await updateVoucherInstance(voucher.id, {
+    usedCount: newUsedCount,
+    remainingUses: newRemainingUses,
+    status: newStatus,
+  });
+  
+  // 更新模板的核銷統計
+  await db.update(voucherTemplates)
+    .set({ totalRedeemed: sql`totalRedeemed + 1` })
+    .where(eq(voucherTemplates.id, voucher.templateId));
+  
+  return result[0].insertId;
+}
+
+export async function listVoucherRedemptions(organizationId: number, options?: { 
+  voucherInstanceId?: number; 
+  customerId?: number;
+  page?: number; 
+  limit?: number 
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(voucherRedemptions.organizationId, organizationId);
+  if (options?.voucherInstanceId) {
+    whereClause = and(whereClause, eq(voucherRedemptions.voucherInstanceId, options.voucherInstanceId)) as typeof whereClause;
+  }
+  if (options?.customerId) {
+    whereClause = and(whereClause, eq(voucherRedemptions.customerId, options.customerId)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(voucherRedemptions).where(whereClause).orderBy(desc(voucherRedemptions.redeemedAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherRedemptions).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+// 批次發送
+export async function createVoucherBatch(batch: InsertVoucherBatch) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(voucherBatches).values(batch);
+  return result[0].insertId;
+}
+
+export async function updateVoucherBatch(id: number, batch: Partial<InsertVoucherBatch>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(voucherBatches).set(batch).where(eq(voucherBatches.id, id));
+}
+
+export async function getVoucherBatchById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(voucherBatches).where(eq(voucherBatches.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listVoucherBatches(organizationId: number, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(voucherBatches.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(voucherBatches.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(voucherBatches).where(whereClause).orderBy(desc(voucherBatches.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherBatches).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+// 批次發送票券給多個客戶
+export async function issueVouchersToCustomers(
+  organizationId: number,
+  templateId: number,
+  customerIds: number[],
+  options?: {
+    issuedBy?: number;
+    issueReason?: string;
+    issueChannel?: 'manual' | 'campaign' | 'birthday' | 'referral' | 'purchase' | 'line';
+    batchId?: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const template = await getVoucherTemplateById(templateId);
+  if (!template) throw new Error("Voucher template not found");
+  
+  const results: { customerId: number; voucherId: number; voucherCode: string }[] = [];
+  
+  for (const customerId of customerIds) {
+    // 計算有效期
+    let validUntil: Date | undefined;
+    if (template.validityType === 'days_from_issue' && template.validDays) {
+      validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + template.validDays);
+    } else if (template.validityType === 'fixed_date' && template.fixedEndDate) {
+      validUntil = new Date(template.fixedEndDate);
+    }
+    
+    const voucherCode = await generateVoucherCode();
+    
+    const voucherId = await createVoucherInstance({
+      organizationId,
+      templateId,
+      customerId,
+      voucherCode,
+      status: 'active',
+      remainingUses: template.usageLimit || 1,
+      validFrom: new Date(),
+      validUntil,
+      issuedBy: options?.issuedBy,
+      issueReason: options?.issueReason,
+      issueChannel: options?.issueChannel || 'manual',
+      linePushStatus: 'pending',
+    });
+    
+    results.push({ customerId, voucherId, voucherCode });
+  }
+  
+  // 更新批次統計
+  if (options?.batchId) {
+    await updateVoucherBatch(options.batchId, {
+      successCount: results.length,
+      status: 'completed',
+      completedAt: new Date(),
+    });
+  }
+  
+  return results;
+}
+
+// 票券統計
+export async function getVoucherStats(organizationId: number) {
+  const db = await getDb();
+  if (!db) return { 
+    totalTemplates: 0, 
+    activeTemplates: 0, 
+    totalIssued: 0, 
+    totalRedeemed: 0, 
+    redemptionRate: 0,
+    pendingPush: 0,
+  };
+  
+  const templates = await listVoucherTemplates(organizationId, { limit: 1000 });
+  const activeTemplates = templates.data.filter(t => t.isActive).length;
+  const totalIssued = templates.data.reduce((sum, t) => sum + (t.totalIssued || 0), 0);
+  const totalRedeemed = templates.data.reduce((sum, t) => sum + (t.totalRedeemed || 0), 0);
+  const redemptionRate = totalIssued > 0 ? Math.round((totalRedeemed / totalIssued) * 100) : 0;
+  
+  // 待推送的票券數量
+  const pendingResult = await db.select({ count: sql<number>`count(*)` })
+    .from(voucherInstances)
+    .where(and(
+      eq(voucherInstances.organizationId, organizationId),
+      eq(voucherInstances.linePushStatus, 'pending')
+    ));
+  
+  return {
+    totalTemplates: templates.total,
+    activeTemplates,
+    totalIssued,
+    totalRedeemed,
+    redemptionRate,
+    pendingPush: pendingResult[0]?.count || 0,
+  };
+}
+
+// 檢查並更新過期票券
+export async function updateExpiredVouchers(organizationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.update(voucherInstances)
+    .set({ status: 'expired' })
+    .where(and(
+      eq(voucherInstances.organizationId, organizationId),
+      eq(voucherInstances.status, 'active'),
+      lte(voucherInstances.validUntil, new Date())
+    ));
+  
+  return result;
+}
+
+// 轉贈票券
+export async function transferVoucher(voucherId: number, newCustomerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const voucher = await getVoucherInstanceById(voucherId);
+  if (!voucher) throw new Error("Voucher not found");
+  if (voucher.status !== 'active') throw new Error("Voucher is not active");
+  
+  // 取得模板檢查是否可轉贈
+  const template = await getVoucherTemplateById(voucher.templateId);
+  if (!template?.isTransferable) throw new Error("This voucher is not transferable");
+  
+  // 更新票券
+  await updateVoucherInstance(voucherId, {
+    originalOwnerId: voucher.customerId,
+    customerId: newCustomerId,
+    status: 'transferred',
+    transferredAt: new Date(),
+  });
+  
+  // 建立新票券給新擁有者
+  const newVoucherId = await createVoucherInstance({
+    organizationId: voucher.organizationId,
+    templateId: voucher.templateId,
+    customerId: newCustomerId,
+    voucherCode: await generateVoucherCode(),
+    status: 'active',
+    remainingUses: voucher.remainingUses,
+    validFrom: new Date(),
+    validUntil: voucher.validUntil,
+    issueChannel: 'manual',
+    notes: `Transferred from voucher ${voucher.voucherCode}`,
+  });
+  
+  return newVoucherId;
 }

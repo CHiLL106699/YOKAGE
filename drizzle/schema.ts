@@ -1181,3 +1181,143 @@ export const backgroundJobs = mysqlTable("backgroundJobs", {
 
 export type BackgroundJob = typeof backgroundJobs.$inferSelect;
 export type InsertBackgroundJob = typeof backgroundJobs.$inferInsert;
+
+
+// ============================================
+// Phase 56: 電子票券系統（LINE 整合）
+// ============================================
+
+// 票券模板表 - 定義票券類型
+export const voucherTemplates = mysqlTable("voucherTemplates", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["treatment", "discount", "gift_card", "stored_value", "free_item"]).default("treatment"),
+  // 票券價值設定
+  value: decimal("value", { precision: 10, scale: 2 }),
+  valueType: mysqlEnum("valueType", ["fixed_amount", "percentage", "treatment_count"]).default("fixed_amount"),
+  // 適用範圍
+  applicableProducts: json("applicableProducts"), // 適用產品 ID 列表
+  applicableCategories: json("applicableCategories"), // 適用分類
+  applicableServices: json("applicableServices"), // 適用服務/療程
+  // 使用限制
+  minPurchase: decimal("minPurchase", { precision: 10, scale: 2 }),
+  maxDiscount: decimal("maxDiscount", { precision: 10, scale: 2 }),
+  usageLimit: int("usageLimit"), // 每張票券可使用次數
+  // 有效期設定
+  validityType: mysqlEnum("validityType", ["fixed_date", "days_from_issue", "no_expiry"]).default("days_from_issue"),
+  validDays: int("validDays").default(30), // 發送後有效天數
+  fixedStartDate: date("fixedStartDate"),
+  fixedEndDate: date("fixedEndDate"),
+  // 外觀設定
+  imageUrl: text("imageUrl"),
+  backgroundColor: varchar("backgroundColor", { length: 20 }).default("#D4AF37"),
+  textColor: varchar("textColor", { length: 20 }).default("#0A1628"),
+  // 狀態
+  isActive: boolean("isActive").default(true),
+  isTransferable: boolean("isTransferable").default(false), // 是否可轉贈
+  // 統計
+  totalIssued: int("totalIssued").default(0),
+  totalRedeemed: int("totalRedeemed").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VoucherTemplate = typeof voucherTemplates.$inferSelect;
+export type InsertVoucherTemplate = typeof voucherTemplates.$inferInsert;
+
+// 票券實例表 - 已發送的票券
+export const voucherInstances = mysqlTable("voucherInstances", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  templateId: int("templateId").notNull(),
+  customerId: int("customerId").notNull(),
+  // 票券識別碼
+  voucherCode: varchar("voucherCode", { length: 50 }).notNull().unique(),
+  qrCodeUrl: text("qrCodeUrl"),
+  // 票券狀態
+  status: mysqlEnum("status", ["active", "used", "expired", "cancelled", "transferred"]).default("active"),
+  // 使用情況
+  remainingUses: int("remainingUses").default(1),
+  usedCount: int("usedCount").default(0),
+  // 有效期
+  validFrom: timestamp("validFrom").defaultNow().notNull(),
+  validUntil: timestamp("validUntil"),
+  // 發送資訊
+  issuedBy: int("issuedBy"), // 發送者 ID
+  issueReason: varchar("issueReason", { length: 255 }), // 發送原因
+  issueChannel: mysqlEnum("issueChannel", ["manual", "campaign", "birthday", "referral", "purchase", "line"]).default("manual"),
+  // LINE 推送狀態
+  linePushStatus: mysqlEnum("linePushStatus", ["pending", "sent", "failed", "not_applicable"]).default("pending"),
+  linePushAt: timestamp("linePushAt"),
+  linePushError: text("linePushError"),
+  // 轉贈資訊
+  originalOwnerId: int("originalOwnerId"),
+  transferredAt: timestamp("transferredAt"),
+  // 備註
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VoucherInstance = typeof voucherInstances.$inferSelect;
+export type InsertVoucherInstance = typeof voucherInstances.$inferInsert;
+
+// 票券核銷記錄表
+export const voucherRedemptions = mysqlTable("voucherRedemptions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  voucherInstanceId: int("voucherInstanceId").notNull(),
+  customerId: int("customerId").notNull(),
+  // 核銷資訊
+  redemptionMethod: mysqlEnum("redemptionMethod", ["qr_scan", "manual_code", "auto_apply"]).default("qr_scan"),
+  redeemedBy: int("redeemedBy"), // 核銷員工 ID
+  // 關聯訂單/療程
+  orderId: int("orderId"),
+  appointmentId: int("appointmentId"),
+  treatmentRecordId: int("treatmentRecordId"),
+  // 核銷金額
+  discountApplied: decimal("discountApplied", { precision: 10, scale: 2 }),
+  originalAmount: decimal("originalAmount", { precision: 10, scale: 2 }),
+  finalAmount: decimal("finalAmount", { precision: 10, scale: 2 }),
+  // 核銷地點
+  redemptionLocation: varchar("redemptionLocation", { length: 255 }),
+  // 備註
+  notes: text("notes"),
+  redeemedAt: timestamp("redeemedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VoucherRedemption = typeof voucherRedemptions.$inferSelect;
+export type InsertVoucherRedemption = typeof voucherRedemptions.$inferInsert;
+
+// 票券批次發送記錄表
+export const voucherBatches = mysqlTable("voucherBatches", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  templateId: int("templateId").notNull(),
+  // 批次資訊
+  batchName: varchar("batchName", { length: 255 }).notNull(),
+  batchType: mysqlEnum("batchType", ["manual", "campaign", "birthday", "rfm_segment", "all_customers"]).default("manual"),
+  // 發送統計
+  totalRecipients: int("totalRecipients").default(0),
+  successCount: int("successCount").default(0),
+  failedCount: int("failedCount").default(0),
+  // 狀態
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "cancelled"]).default("pending"),
+  // 目標客戶篩選條件
+  targetCriteria: json("targetCriteria"),
+  // 執行資訊
+  scheduledAt: timestamp("scheduledAt"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  errorMessage: text("errorMessage"),
+  // 建立者
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VoucherBatch = typeof voucherBatches.$inferSelect;
+export type InsertVoucherBatch = typeof voucherBatches.$inferInsert;
