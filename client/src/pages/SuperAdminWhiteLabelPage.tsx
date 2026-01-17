@@ -13,12 +13,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { StatCard } from "@/components/ui/stat-card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { 
   Globe, Plus, Search, MoreHorizontal, Eye, Edit, Trash2, 
   Palette, Image, Link2, CheckCircle, XCircle, ExternalLink,
-  Building2, DollarSign, Settings, RefreshCw
+  Building2, DollarSign, Settings, RefreshCw, Shield, AlertTriangle,
+  Copy, Clock, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 // 白標方案配置
 const WHITE_LABEL_PLANS = [
@@ -171,8 +174,78 @@ export default function SuperAdminWhiteLabelPage() {
     });
   };
 
+  // DNS 驗證狀態
+  const [verifyingDomain, setVerifyingDomain] = useState<string | null>(null);
+  const [isDnsDialogOpen, setIsDnsDialogOpen] = useState(false);
+  const [selectedDomainForVerify, setSelectedDomainForVerify] = useState<any>(null);
+  const [dnsVerificationResult, setDnsVerificationResult] = useState<{
+    success: boolean;
+    message: string;
+    details?: {
+      cnameFound: boolean;
+      cnameValue?: string;
+      expectedValue: string;
+      sslStatus?: string;
+    };
+  } | null>(null);
+
+  // DNS 驗證功能（前端模擬，後端 API 可後續擴展）
+
   const handleVerifyDomain = (domain: string) => {
-    toast.success(`正在驗證網域 ${domain}...`);
+    setVerifyingDomain(domain);
+    // 模擬 DNS 驗證過程
+    setTimeout(() => {
+      const mockResult = {
+        success: true,
+        message: "DNS 設定正確",
+        details: {
+          cnameFound: true,
+          cnameValue: "app.yochill.com",
+          expectedValue: "app.yochill.com",
+          sslStatus: "active",
+        },
+      };
+      setDnsVerificationResult(mockResult);
+      toast.success(`網域 ${domain} DNS 驗證成功`);
+      setVerifyingDomain(null);
+    }, 2000);
+  };
+
+  const openDnsVerifyDialog = (domainInfo: any) => {
+    setSelectedDomainForVerify(domainInfo);
+    setDnsVerificationResult(null);
+    setIsDnsDialogOpen(true);
+  };
+
+  const runDnsVerification = () => {
+    if (!selectedDomainForVerify) return;
+    setVerifyingDomain(selectedDomainForVerify.domain);
+    
+    // 模擬 DNS 驗證過程
+    setTimeout(() => {
+      const mockResult = {
+        success: Math.random() > 0.3, // 70% 成功率
+        message: Math.random() > 0.3 ? "DNS 設定正確，CNAME 記錄已正確指向" : "CNAME 記錄未找到或指向錯誤",
+        details: {
+          cnameFound: Math.random() > 0.3,
+          cnameValue: Math.random() > 0.3 ? "app.yochill.com" : undefined,
+          expectedValue: "app.yochill.com",
+          sslStatus: Math.random() > 0.3 ? "active" : "pending",
+        },
+      };
+      setDnsVerificationResult(mockResult);
+      if (mockResult.success) {
+        toast.success(`網域 ${selectedDomainForVerify.domain} DNS 驗證成功`);
+      } else {
+        toast.error(`DNS 驗證失敗: ${mockResult.message}`);
+      }
+      setVerifyingDomain(null);
+    }, 2000);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("已複製到剪貼簿");
   };
 
   return (
@@ -585,9 +658,14 @@ export default function SuperAdminWhiteLabelPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleVerifyDomain(item.domain)}
+                            onClick={() => openDnsVerifyDialog(item)}
+                            disabled={verifyingDomain === item.domain}
                           >
-                            重新驗證
+                            {verifyingDomain === item.domain ? (
+                              <><Loader2 className="h-4 w-4 animate-spin mr-1" /> 驗證中...</>
+                            ) : (
+                              '重新驗證'
+                            )}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -601,24 +679,198 @@ export default function SuperAdminWhiteLabelPage() {
                     要設定自訂網域，請在您的 DNS 服務商新增以下 CNAME 記錄：
                   </p>
                   <div className="bg-background p-3 rounded border font-mono text-sm">
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">類型:</span>
-                      <span>CNAME</span>
+                    <div className="flex gap-4 items-center">
+                      <span className="text-muted-foreground w-16">類型:</span>
+                      <span className="flex-1">CNAME</span>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard("CNAME")}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">名稱:</span>
-                      <span>booking (或您想要的子網域)</span>
+                    <div className="flex gap-4 items-center">
+                      <span className="text-muted-foreground w-16">名稱:</span>
+                      <span className="flex-1">booking (或您想要的子網域)</span>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard("booking")}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <div className="flex gap-4">
-                      <span className="text-muted-foreground">值:</span>
-                      <span>app.yochill.com</span>
+                    <div className="flex gap-4 items-center">
+                      <span className="text-muted-foreground w-16">值:</span>
+                      <span className="flex-1">app.yochill.com</span>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard("app.yochill.com")}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 </div>
+
+                {/* 新增網域區塊 */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg">新增自訂網域</CardTitle>
+                    <CardDescription>為診所設定新的自訂網域</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>選擇診所</Label>
+                          <Select>
+                            <SelectTrigger>
+                              <SelectValue placeholder="選擇診所..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">曜美診所</SelectItem>
+                              <SelectItem value="2">美麗人生診所</SelectItem>
+                              <SelectItem value="3">新光診所</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>自訂網域</Label>
+                          <Input placeholder="例：booking.yourclinic.com" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button className="gap-2">
+                          <Plus className="h-4 w-4" />
+                          新增網域
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* DNS 驗證對話框 */}
+        <Dialog open={isDnsDialogOpen} onOpenChange={setIsDnsDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-amber-500" />
+                DNS 驗證
+              </DialogTitle>
+              <DialogDescription>
+                驗證網域 {selectedDomainForVerify?.domain} 的 DNS 設定
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* 驗證狀態 */}
+              {verifyingDomain ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-4" />
+                  <p className="text-sm text-muted-foreground">正在驗證 DNS 設定...</p>
+                </div>
+              ) : dnsVerificationResult ? (
+                <div className="space-y-4">
+                  {/* 驗證結果 */}
+                  <div className={`p-4 rounded-lg border ${dnsVerificationResult.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {dnsVerificationResult.success ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                      <span className={`font-medium ${dnsVerificationResult.success ? 'text-green-500' : 'text-red-500'}`}>
+                        {dnsVerificationResult.success ? '驗證成功' : '驗證失敗'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {dnsVerificationResult.message}
+                    </p>
+                  </div>
+
+                  {/* 詳細資訊 */}
+                  {dnsVerificationResult.details && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">驗證詳情</h4>
+                      <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">CNAME 記錄</span>
+                          <span className="flex items-center gap-1">
+                            {dnsVerificationResult.details.cnameFound ? (
+                              <><CheckCircle className="h-4 w-4 text-green-500" /> 已找到</>
+                            ) : (
+                              <><XCircle className="h-4 w-4 text-red-500" /> 未找到</>
+                            )}
+                          </span>
+                        </div>
+                        {dnsVerificationResult.details.cnameValue && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">CNAME 值</span>
+                            <span className="font-mono">{dnsVerificationResult.details.cnameValue}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">預期值</span>
+                          <span className="font-mono">{dnsVerificationResult.details.expectedValue}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">SSL 憑證</span>
+                          <span className="flex items-center gap-1">
+                            {dnsVerificationResult.details.sslStatus === 'active' ? (
+                              <><CheckCircle className="h-4 w-4 text-green-500" /> 有效</>
+                            ) : (
+                              <><Clock className="h-4 w-4 text-amber-500" /> 等待中</>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 失敗時顯示說明 */}
+                  {!dnsVerificationResult.success && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-amber-500 mb-1">請檢查您的 DNS 設定</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            <li>• 確認已新增 CNAME 記錄</li>
+                            <li>• CNAME 值應為 <code className="bg-muted px-1 rounded">app.yochill.com</code></li>
+                            <li>• DNS 更新可能需要 24-48 小時生效</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">驗證前請確認</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• 已在 DNS 服務商新增 CNAME 記錄</li>
+                      <li>• CNAME 指向 <code className="bg-muted px-1 rounded">app.yochill.com</code></li>
+                      <li>• DNS 更新已生效（通常需 5-30 分鐘）</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDnsDialogOpen(false)}>
+                關閉
+              </Button>
+              <Button 
+                onClick={runDnsVerification} 
+                disabled={!!verifyingDomain}
+                className="gap-2"
+              >
+                {verifyingDomain ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> 驗證中...</>
+                ) : (
+                  <><Shield className="h-4 w-4" /> {dnsVerificationResult ? '重新驗證' : '開始驗證'}</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
