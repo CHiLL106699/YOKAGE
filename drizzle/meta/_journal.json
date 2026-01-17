@@ -57,6 +57,13 @@
       "when": 1768675440408,
       "tag": "0007_organic_phantom_reporter",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1768678514283,
+      "tag": "0008_bent_cloak",
+      "breakpoints": true
     }
   ]
 }

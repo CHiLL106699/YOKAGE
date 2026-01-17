@@ -1358,3 +1358,48 @@ export const voucherTransfers = mysqlTable("voucherTransfers", {
 
 export type VoucherTransfer = typeof voucherTransfers.$inferSelect;
 export type InsertVoucherTransfer = typeof voucherTransfers.$inferInsert;
+
+
+// ============================================
+// 系統設定表 - Super Admin 全域設定
+// ============================================
+export const systemSettings = mysqlTable("systemSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value"),
+  description: text("description"),
+  category: mysqlEnum("category", ["platform", "voucher", "notification", "system"]).default("platform"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSetting = typeof systemSettings.$inferInsert;
+
+// ============================================
+// 票券到期提醒記錄表
+// ============================================
+export const voucherReminderLogs = mysqlTable("voucherReminderLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  voucherInstanceId: int("voucherInstanceId").notNull(),
+  customerId: int("customerId").notNull(),
+  // 提醒資訊
+  reminderType: mysqlEnum("reminderType", ["expiry_warning", "expiry_final", "promotion"]).default("expiry_warning"),
+  daysBeforeExpiry: int("daysBeforeExpiry"),
+  // 發送狀態
+  status: mysqlEnum("status", ["pending", "sent", "failed", "cancelled"]).default("pending"),
+  channel: mysqlEnum("channel", ["line", "sms", "email"]).default("line"),
+  // 發送時間
+  scheduledAt: timestamp("scheduledAt"),
+  sentAt: timestamp("sentAt"),
+  // 錯誤訊息
+  errorMessage: text("errorMessage"),
+  // LINE 訊息 ID
+  lineMessageId: varchar("lineMessageId", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VoucherReminderLog = typeof voucherReminderLogs.$inferSelect;
+export type InsertVoucherReminderLog = typeof voucherReminderLogs.$inferInsert;

@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, openId, name, email, role FROM users WHERE role = 'super_admin' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2v5iTujRSfvcRKU.56d39c80eada --database fFbhtkm95dX7aZUie4ZnaL --execute SELECT id, openId, name, email, role FROM users WHERE role = 'super_admin' LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "6nbmBfeGa9H7GZ8Ak5r2sm",
+      "name": "道玄 劉",
+      "email": "emadaushen@gmail.com",
+      "role": "super_admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\trole\n1\t6nbmBfeGa9H7GZ8Ak5r2sm\t道玄 劉\temadaushen@gmail.com\tsuper_admin\n",
+  "stderr": "",
+  "execution_time_ms": 1664
+}

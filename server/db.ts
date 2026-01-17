@@ -19,6 +19,8 @@ import {
   aftercareRecords, InsertAftercareRecord,
   lineChannels, InsertLineChannel,
   activityLogs, InsertActivityLog,
+  systemSettings, InsertSystemSetting,
+  voucherReminderLogs, InsertVoucherReminderLog,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -3004,6 +3006,417 @@ export async function getTransferStats(organizationId: number) {
     if (stat.status === 'accepted') result.accepted = stat.count;
     if (stat.status === 'expired') result.expired = stat.count;
     if (stat.status === 'cancelled') result.cancelled = stat.count;
+  }
+  
+  return result;
+}
+
+
+// ============================================
+// 批量匯入票券模板
+// ============================================
+export async function batchCreateVoucherTemplates(templates: InsertVoucherTemplate[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const results: number[] = [];
+  for (const template of templates) {
+    const result = await db.insert(voucherTemplates).values(template);
+    results.push(result[0].insertId);
+  }
+  
+  return results;
+}
+
+// ============================================
+// 票券到期提醒設定
+// ============================================
+export async function getVouchersExpiringInDays(organizationId: number, days: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const now = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + days);
+  
+  // 找出即將到期的有效票券
+  return await db.select({
+    voucher: voucherInstances,
+    template: voucherTemplates,
+    customer: customers,
+  })
+    .from(voucherInstances)
+    .innerJoin(voucherTemplates, eq(voucherInstances.templateId, voucherTemplates.id))
+    .innerJoin(customers, eq(voucherInstances.customerId, customers.id))
+    .where(and(
+      eq(voucherInstances.organizationId, organizationId),
+      eq(voucherInstances.status, 'active'),
+      gte(voucherInstances.validUntil, now),
+      lte(voucherInstances.validUntil, futureDate)
+    ))
+    .orderBy(voucherInstances.validUntil);
+}
+
+// 獲取所有診所的即將到期票券（Super Admin 用）
+export async function getAllExpiringVouchers(days: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const now = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + days);
+  
+  return await db.select({
+    voucher: voucherInstances,
+    template: voucherTemplates,
+    customer: customers,
+    organization: organizations,
+  })
+    .from(voucherInstances)
+    .innerJoin(voucherTemplates, eq(voucherInstances.templateId, voucherTemplates.id))
+    .innerJoin(customers, eq(voucherInstances.customerId, customers.id))
+    .innerJoin(organizations, eq(voucherInstances.organizationId, organizations.id))
+    .where(and(
+      eq(voucherInstances.status, 'active'),
+      gte(voucherInstances.validUntil, now),
+      lte(voucherInstances.validUntil, futureDate)
+    ))
+    .orderBy(voucherInstances.validUntil);
+}
+
+// 獲取票券報表統計（Super Admin 用）
+export async function getGlobalVoucherStats() {
+  const db = await getDb();
+  if (!db) return {
+    totalTemplates: 0,
+    totalIssued: 0,
+    totalRedeemed: 0,
+    totalExpired: 0,
+    redemptionRate: 0,
+    pendingReminders: 0,
+  };
+  
+  // 統計模板數量
+  const templateCount = await db.select({ count: sql<number>`count(*)` }).from(voucherTemplates).where(eq(voucherTemplates.isActive, true));
+  
+  // 統計票券實例
+  const instanceStats = await db.select({
+    status: voucherInstances.status,
+    count: sql<number>`count(*)`,
+  }).from(voucherInstances).groupBy(voucherInstances.status);
+  
+  let totalIssued = 0;
+  let totalRedeemed = 0;
+  let totalExpired = 0;
+  
+  for (const stat of instanceStats) {
+    totalIssued += stat.count;
+    if (stat.status === 'used') totalRedeemed = stat.count;
+    if (stat.status === 'expired') totalExpired = stat.count;
+  }
+  
+  // 計算核銷率
+  const redemptionRate = totalIssued > 0 ? (totalRedeemed / totalIssued) * 100 : 0;
+  
+  // 統計待發送提醒（3天內到期）
+  const now = new Date();
+  const threeDaysLater = new Date();
+  threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+  
+  const pendingRemindersResult = await db.select({ count: sql<number>`count(*)` })
+    .from(voucherInstances)
+    .where(and(
+      eq(voucherInstances.status, 'active'),
+      gte(voucherInstances.validUntil, now),
+      lte(voucherInstances.validUntil, threeDaysLater)
+    ));
+  
+  return {
+    totalTemplates: templateCount[0]?.count || 0,
+    totalIssued,
+    totalRedeemed,
+    totalExpired,
+    redemptionRate: Math.round(redemptionRate * 10) / 10,
+    pendingReminders: pendingRemindersResult[0]?.count || 0,
+  };
+}
+
+// 列出所有診所的票券模板（Super Admin 用）
+export async function listAllVoucherTemplates(options?: { type?: string; isActive?: boolean; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause: any = undefined;
+  if (options?.type) {
+    whereClause = eq(voucherTemplates.type, options.type as any);
+  }
+  if (options?.isActive !== undefined) {
+    whereClause = whereClause 
+      ? and(whereClause, eq(voucherTemplates.isActive, options.isActive))
+      : eq(voucherTemplates.isActive, options.isActive);
+  }
+
+  const query = db.select({
+    template: voucherTemplates,
+    organization: organizations,
+  })
+    .from(voucherTemplates)
+    .innerJoin(organizations, eq(voucherTemplates.organizationId, organizations.id));
+  
+  const data = whereClause 
+    ? await query.where(whereClause).orderBy(desc(voucherTemplates.createdAt)).limit(limit).offset(offset)
+    : await query.orderBy(desc(voucherTemplates.createdAt)).limit(limit).offset(offset);
+  
+  const countQuery = db.select({ count: sql<number>`count(*)` }).from(voucherTemplates);
+  const countResult = whereClause 
+    ? await countQuery.where(whereClause)
+    : await countQuery;
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+// 各診所票券統計（Super Admin 用）
+export async function getVoucherStatsByOrganization() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const stats = await db.select({
+    organizationId: voucherInstances.organizationId,
+    organizationName: organizations.name,
+    templateCount: sql<number>`count(distinct ${voucherInstances.templateId})`,
+    issuedCount: sql<number>`count(*)`,
+    redeemedCount: sql<number>`sum(case when ${voucherInstances.status} = 'used' then 1 else 0 end)`,
+  })
+    .from(voucherInstances)
+    .innerJoin(organizations, eq(voucherInstances.organizationId, organizations.id))
+    .groupBy(voucherInstances.organizationId, organizations.name);
+  
+  return stats.map(stat => ({
+    ...stat,
+    redemptionRate: stat.issuedCount > 0 
+      ? Math.round((Number(stat.redeemedCount) / stat.issuedCount) * 1000) / 10 
+      : 0,
+  }));
+}
+
+
+// ============================================
+// 系統設定 CRUD
+// ============================================
+export async function getSystemSetting(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(systemSettings).where(eq(systemSettings.key, key)).limit(1);
+  return result[0] || null;
+}
+
+export async function getSystemSettingsByCategory(category: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(systemSettings).where(eq(systemSettings.category, category as any));
+}
+
+export async function getAllSystemSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(systemSettings).orderBy(systemSettings.category, systemSettings.key);
+}
+
+export async function upsertSystemSetting(key: string, value: string, description?: string, category?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getSystemSetting(key);
+  if (existing) {
+    await db.update(systemSettings).set({ value, description, category: category as any }).where(eq(systemSettings.key, key));
+    return existing.id;
+  } else {
+    const result = await db.insert(systemSettings).values({ key, value, description, category: category as any });
+    return result[0].insertId;
+  }
+}
+
+export async function deleteSystemSetting(key: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(systemSettings).where(eq(systemSettings.key, key));
+}
+
+// ============================================
+// 票券到期提醒記錄 CRUD
+// ============================================
+export async function createVoucherReminderLog(data: InsertVoucherReminderLog) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(voucherReminderLogs).values(data);
+  return result[0].insertId;
+}
+
+export async function updateVoucherReminderLog(id: number, data: Partial<InsertVoucherReminderLog>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(voucherReminderLogs).set(data).where(eq(voucherReminderLogs.id, id));
+}
+
+export async function getVoucherReminderLogById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(voucherReminderLogs).where(eq(voucherReminderLogs.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function listVoucherReminderLogs(options?: { organizationId?: number; status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereClause: any = undefined;
+  if (options?.organizationId) {
+    whereClause = eq(voucherReminderLogs.organizationId, options.organizationId);
+  }
+  if (options?.status) {
+    whereClause = whereClause 
+      ? and(whereClause, eq(voucherReminderLogs.status, options.status as any))
+      : eq(voucherReminderLogs.status, options.status as any);
+  }
+  
+  const query = db.select().from(voucherReminderLogs);
+  const data = whereClause 
+    ? await query.where(whereClause).orderBy(desc(voucherReminderLogs.createdAt)).limit(limit).offset(offset)
+    : await query.orderBy(desc(voucherReminderLogs.createdAt)).limit(limit).offset(offset);
+  
+  const countQuery = db.select({ count: sql<number>`count(*)` }).from(voucherReminderLogs);
+  const countResult = whereClause 
+    ? await countQuery.where(whereClause)
+    : await countQuery;
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 獲取待發送的提醒
+export async function getPendingReminders(organizationId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let whereClause: any = and(
+    eq(voucherReminderLogs.status, 'pending'),
+    lte(voucherReminderLogs.scheduledAt, new Date())
+  );
+  
+  if (organizationId) {
+    whereClause = and(whereClause, eq(voucherReminderLogs.organizationId, organizationId));
+  }
+  
+  return await db.select({
+    reminder: voucherReminderLogs,
+    voucher: voucherInstances,
+    template: voucherTemplates,
+    customer: customers,
+  })
+    .from(voucherReminderLogs)
+    .innerJoin(voucherInstances, eq(voucherReminderLogs.voucherInstanceId, voucherInstances.id))
+    .innerJoin(voucherTemplates, eq(voucherInstances.templateId, voucherTemplates.id))
+    .innerJoin(customers, eq(voucherReminderLogs.customerId, customers.id))
+    .where(whereClause)
+    .orderBy(voucherReminderLogs.scheduledAt);
+}
+
+// 建立票券到期提醒排程
+export async function scheduleVoucherExpiryReminders(organizationId: number, daysBeforeExpiry: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 找出即將到期且尚未建立提醒的票券
+  const now = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + daysBeforeExpiry);
+  
+  const expiringVouchers = await db.select({
+    voucher: voucherInstances,
+    customer: customers,
+  })
+    .from(voucherInstances)
+    .innerJoin(customers, eq(voucherInstances.customerId, customers.id))
+    .where(and(
+      eq(voucherInstances.organizationId, organizationId),
+      eq(voucherInstances.status, 'active'),
+      gte(voucherInstances.validUntil, now),
+      lte(voucherInstances.validUntil, futureDate)
+    ));
+  
+  // 檢查是否已有提醒記錄
+  const createdCount = { count: 0 };
+  for (const item of expiringVouchers) {
+    const existingReminder = await db.select().from(voucherReminderLogs).where(and(
+      eq(voucherReminderLogs.voucherInstanceId, item.voucher.id),
+      eq(voucherReminderLogs.daysBeforeExpiry, daysBeforeExpiry),
+      eq(voucherReminderLogs.status, 'pending')
+    )).limit(1);
+    
+    if (existingReminder.length === 0) {
+      // 計算提醒時間（到期前 N 天的早上 10 點）
+      const reminderDate = new Date(item.voucher.validUntil!);
+      reminderDate.setDate(reminderDate.getDate() - daysBeforeExpiry);
+      reminderDate.setHours(10, 0, 0, 0);
+      
+      await createVoucherReminderLog({
+        organizationId,
+        voucherInstanceId: item.voucher.id,
+        customerId: item.voucher.customerId!,
+        reminderType: daysBeforeExpiry <= 1 ? 'expiry_final' : 'expiry_warning',
+        daysBeforeExpiry,
+        status: 'pending',
+        channel: 'line',
+        scheduledAt: reminderDate,
+      });
+      createdCount.count++;
+    }
+  }
+  
+  return createdCount.count;
+}
+
+// 獲取提醒統計
+export async function getReminderStats(organizationId?: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, pending: 0, sent: 0, failed: 0 };
+  
+  let whereClause: any = undefined;
+  if (organizationId) {
+    whereClause = eq(voucherReminderLogs.organizationId, organizationId);
+  }
+  
+  const query = db.select({
+    status: voucherReminderLogs.status,
+    count: sql<number>`count(*)`,
+  }).from(voucherReminderLogs);
+  
+  const stats = whereClause 
+    ? await query.where(whereClause).groupBy(voucherReminderLogs.status)
+    : await query.groupBy(voucherReminderLogs.status);
+  
+  const result = { total: 0, pending: 0, sent: 0, failed: 0 };
+  for (const stat of stats) {
+    result.total += stat.count;
+    if (stat.status === 'pending') result.pending = stat.count;
+    if (stat.status === 'sent') result.sent = stat.count;
+    if (stat.status === 'failed') result.failed = stat.count;
   }
   
   return result;

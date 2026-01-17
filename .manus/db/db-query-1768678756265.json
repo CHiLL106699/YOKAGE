@@ -1,0 +1,24 @@
+{
+  "query": "SELECT * FROM users WHERE role = 'super_admin';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2v5iTujRSfvcRKU.56d39c80eada --database fFbhtkm95dX7aZUie4ZnaL --execute SELECT * FROM users WHERE role = 'super_admin';",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "6nbmBfeGa9H7GZ8Ak5r2sm",
+      "name": "道玄 劉",
+      "email": "emadaushen@gmail.com",
+      "loginMethod": "google",
+      "role": "super_admin",
+      "createdAt": "2026-01-17 10:12:45",
+      "updatedAt": "2026-01-17 19:38:34",
+      "lastSignedIn": "2026-01-17 19:38:34",
+      "phone": "NULL",
+      "avatar": "NULL",
+      "lineUserId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tphone\tavatar\tlineUserId\n1\t6nbmBfeGa9H7GZ8Ak5r2sm\t道玄 劉\temadaushen@gmail.com\tgoogle\tsuper_admin\t2026-01-17 10:12:45\t2026-01-17 19:38:34\t2026-01-17 19:38:34\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1494
+}

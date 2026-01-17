@@ -89,6 +89,8 @@ import VouchersPage from "@/pages/VouchersPage";
 import MyVouchersPage from "@/pages/liff/MyVouchersPage";
 import VoucherRedemptionPage from "@/pages/VoucherRedemptionPage";
 import VoucherReportsPage from "@/pages/VoucherReportsPage";
+import SuperAdminSettingsPage from "@/pages/SuperAdminSettingsPage";
+import SuperAdminVouchersPage from "@/pages/SuperAdminVouchersPage";
 
 function Router() {
   return (
@@ -131,6 +133,8 @@ function Router() {
       <Route path="/super-admin/billing" component={BillingPage} />
       <Route path="/super-admin/api-docs" component={ApiDocsPage} />
       <Route path="/super-admin/white-label" component={WhiteLabelPage} />
+      <Route path="/super-admin/settings" component={SuperAdminSettingsPage} />
+      <Route path="/super-admin/vouchers" component={SuperAdminVouchersPage} />
       
       {/* LIFF 顧客端頁面 */}
       <Route path="/liff/booking" component={LiffBookingPage} />

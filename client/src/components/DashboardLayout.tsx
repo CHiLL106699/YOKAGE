@@ -103,8 +103,10 @@ const superAdminMenuItems = [
   { icon: LayoutDashboard, label: "系統儀表板", path: "/super-admin" },
   { icon: Building2, label: "診所管理", path: "/super-admin/organizations" },
   { icon: CreditCard, label: "計費管理", path: "/super-admin/billing" },
+  { icon: Ticket, label: "票券管理", path: "/super-admin/vouchers" },
   { icon: Key, label: "API 文檔", path: "/super-admin/api-docs" },
   { icon: Globe, label: "白標方案", path: "/super-admin/white-label" },
+  { icon: Cog, label: "系統設定", path: "/super-admin/settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

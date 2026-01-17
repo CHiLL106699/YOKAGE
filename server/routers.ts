@@ -71,6 +71,148 @@ const superAdminRouter = router({
     .query(async ({ input }) => {
       return await db.getOrganizationById(input.id);
     }),
+
+  // Super Admin 票券管理
+  voucherStats: adminProcedure.query(async () => {
+    return await db.getGlobalVoucherStats();
+  }),
+
+  listAllVoucherTemplates: adminProcedure
+    .input(z.object({
+      type: z.string().optional(),
+      isActive: z.boolean().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await db.listAllVoucherTemplates(input);
+    }),
+
+  voucherStatsByOrganization: adminProcedure.query(async () => {
+    return await db.getVoucherStatsByOrganization();
+  }),
+
+  getExpiringVouchers: adminProcedure
+    .input(z.object({ days: z.number().default(3) }))
+    .query(async ({ input }) => {
+      return await db.getAllExpiringVouchers(input.days);
+    }),
+
+  // 批量匯入票券模板
+  batchImportTemplates: adminProcedure
+    .input(z.object({
+      organizationId: z.number().nullable(), // null 表示全域模板
+      templates: z.array(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        type: z.enum(["treatment", "discount", "gift_card", "stored_value", "free_item"]),
+        value: z.string(),
+        valueType: z.enum(["fixed_amount", "percentage", "treatment_count"]),
+        validDays: z.number().default(90),
+        minPurchase: z.string().optional(),
+        maxDiscount: z.string().optional(),
+        usageLimit: z.number().optional(),
+        isTransferable: z.boolean().optional(),
+      })),
+    }))
+    .mutation(async ({ input }) => {
+      // 如果沒有指定診所，則為所有診所建立模板
+      if (input.organizationId === null) {
+        const orgs = await db.listOrganizations({});
+        const results: number[] = [];
+        for (const org of orgs.data) {
+          const templatesWithOrg = input.templates.map(t => ({
+            ...t,
+            organizationId: org.id,
+            validityType: 'days_from_issue' as const,
+          }));
+          const ids = await db.batchCreateVoucherTemplates(templatesWithOrg);
+          results.push(...ids);
+        }
+        return { success: true, createdCount: results.length };
+      } else {
+        const templatesWithOrg = input.templates.map(t => ({
+          ...t,
+          organizationId: input.organizationId!,
+          validityType: 'days_from_issue' as const,
+        }));
+        const ids = await db.batchCreateVoucherTemplates(templatesWithOrg);
+        return { success: true, createdCount: ids.length };
+      }
+    }),
+
+  // 系統設定
+  getSystemSettings: adminProcedure.query(async () => {
+    return await db.getAllSystemSettings();
+  }),
+
+  getSystemSettingsByCategory: adminProcedure
+    .input(z.object({ category: z.string() }))
+    .query(async ({ input }) => {
+      return await db.getSystemSettingsByCategory(input.category);
+    }),
+
+  saveSystemSetting: adminProcedure
+    .input(z.object({
+      key: z.string(),
+      value: z.string(),
+      description: z.string().optional(),
+      category: z.enum(["platform", "voucher", "notification", "system"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.upsertSystemSetting(input.key, input.value, input.description, input.category);
+      return { success: true };
+    }),
+
+  saveSystemSettings: adminProcedure
+    .input(z.array(z.object({
+      key: z.string(),
+      value: z.string(),
+      description: z.string().optional(),
+      category: z.enum(["platform", "voucher", "notification", "system"]).optional(),
+    })))
+    .mutation(async ({ input }) => {
+      for (const setting of input) {
+        await db.upsertSystemSetting(setting.key, setting.value, setting.description, setting.category);
+      }
+      return { success: true, savedCount: input.length };
+    }),
+
+  // 票券到期提醒排程
+  scheduleExpiryReminders: adminProcedure
+    .input(z.object({
+      organizationId: z.number().nullable(), // null 表示所有診所
+      daysBeforeExpiry: z.number().default(3),
+    }))
+    .mutation(async ({ input }) => {
+      if (input.organizationId === null) {
+        const orgs = await db.listOrganizations({});
+        let totalCreated = 0;
+        for (const org of orgs.data) {
+          const count = await db.scheduleVoucherExpiryReminders(org.id, input.daysBeforeExpiry);
+          totalCreated += count;
+        }
+        return { success: true, createdCount: totalCreated };
+      } else {
+        const count = await db.scheduleVoucherExpiryReminders(input.organizationId, input.daysBeforeExpiry);
+        return { success: true, createdCount: count };
+      }
+    }),
+
+  getReminderStats: adminProcedure.query(async () => {
+    return await db.getReminderStats();
+  }),
+
+  listReminderLogs: adminProcedure
+    .input(z.object({
+      organizationId: z.number().optional(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await db.listVoucherReminderLogs(input);
+    }),
 });
 
 // ============================================
