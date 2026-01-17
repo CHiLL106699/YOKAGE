@@ -26,7 +26,8 @@ import {
   Heart, Settings, MessageSquare, Clock, Ticket, ShoppingCart,
   BarChart3, Bell, AlertTriangle, CreditCard, Menu, FileText, Webhook,
   Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox,
-  Share2, Briefcase, Truck, Star, GitBranch, FileSignature, Camera, Sparkles, Target, Eye
+  Share2, Briefcase, Truck, Star, GitBranch, FileSignature, Camera, Sparkles, Target, Eye,
+  Syringe, ClipboardList, PhoneCall, PieChart, DollarSign, ThumbsUp
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -73,6 +74,13 @@ const clinicMenuItems = [
   { icon: Sparkles, label: "智能推薦", path: "/clinic/recommendation-engine" },
   { icon: Target, label: "智能排程", path: "/clinic/smart-scheduling" },
   { icon: Eye, label: "客戶 360°", path: "/clinic/customer-360" },
+  // 核心功能實裝頁面
+  { icon: Syringe, label: "療程記錄", path: "/clinic/treatment-records" },
+  { icon: ClipboardList, label: "療程套餐", path: "/clinic/customer-packages" },
+  { icon: PhoneCall, label: "諮詢管理", path: "/clinic/consultation" },
+  { icon: PieChart, label: "RFM 分析", path: "/clinic/rfm-analysis" },
+  { icon: DollarSign, label: "佣金管理", path: "/clinic/commission" },
+  { icon: ThumbsUp, label: "滿意度調查", path: "/clinic/satisfaction" },
   { icon: Cog, label: "系統設定", path: "/clinic/settings" },
 ];
 

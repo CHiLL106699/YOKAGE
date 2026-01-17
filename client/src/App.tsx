@@ -63,6 +63,13 @@ import TreatmentTrackingPage from "@/pages/TreatmentTrackingPage";
 import RecommendationEnginePage from "@/pages/RecommendationEnginePage";
 import SmartSchedulingPage from "@/pages/SmartSchedulingPage";
 import Customer360Page from "@/pages/Customer360Page";
+// 核心功能實裝頁面
+import TreatmentRecordsPage from "@/pages/TreatmentRecordsPage";
+import CustomerPackagesPage from "@/pages/CustomerPackagesPage";
+import ConsultationManagementPage from "@/pages/ConsultationManagementPage";
+import RFMAnalysisPage from "@/pages/RFMAnalysisPage";
+import CommissionManagementPage from "@/pages/CommissionManagementPage";
+import SatisfactionSurveyPage from "@/pages/SatisfactionSurveyPage";
 
 function Router() {
   return (
@@ -142,6 +149,14 @@ function Router() {
       <Route path="/clinic/recommendation-engine" component={RecommendationEnginePage} />
       <Route path="/clinic/smart-scheduling" component={SmartSchedulingPage} />
       <Route path="/clinic/customer-360" component={Customer360Page} />
+      
+      {/* 核心功能實裝頁面 */}
+      <Route path="/clinic/treatment-records" component={TreatmentRecordsPage} />
+      <Route path="/clinic/customer-packages" component={CustomerPackagesPage} />
+      <Route path="/clinic/consultation" component={ConsultationManagementPage} />
+      <Route path="/clinic/rfm-analysis" component={RFMAnalysisPage} />
+      <Route path="/clinic/commission" component={CommissionManagementPage} />
+      <Route path="/clinic/satisfaction" component={SatisfactionSurveyPage} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />

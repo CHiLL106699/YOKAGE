@@ -647,3 +647,791 @@ export async function getSuperAdminStats() {
     appointments: appointmentCount?.count || 0,
   };
 }
+
+
+// ============================================
+// 療程記錄 Queries - 核心功能 1
+// ============================================
+import {
+  treatmentRecords, InsertTreatmentRecord,
+  treatmentPhotos, InsertTreatmentPhoto,
+  customerPackages, InsertCustomerPackage,
+  packageUsageRecords, InsertPackageUsageRecord,
+  consultations, InsertConsultation,
+  followUps, InsertFollowUp,
+  customerRfmScores, InsertCustomerRfmScore,
+  commissionRules, InsertCommissionRule,
+  staffCommissions, InsertStaffCommission,
+  inventoryTransactions, InsertInventoryTransaction,
+  revenueTargets, InsertRevenueTarget,
+  marketingCampaigns, InsertMarketingCampaign,
+  customerSources, InsertCustomerSource,
+  satisfactionSurveys, InsertSatisfactionSurvey,
+} from "../drizzle/schema";
+
+export async function createTreatmentRecord(record: InsertTreatmentRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(treatmentRecords).values(record);
+  return result[0].insertId;
+}
+
+export async function updateTreatmentRecord(id: number, record: Partial<InsertTreatmentRecord>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(treatmentRecords).set(record).where(eq(treatmentRecords.id, id));
+}
+
+export async function getTreatmentRecordById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(treatmentRecords).where(eq(treatmentRecords.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listTreatmentRecords(organizationId: number, options?: { customerId?: number; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(treatmentRecords.organizationId, organizationId);
+  if (options?.customerId) {
+    whereClause = and(whereClause, eq(treatmentRecords.customerId, options.customerId)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(treatmentRecords).where(whereClause).orderBy(desc(treatmentRecords.treatmentDate)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(treatmentRecords).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function getCustomerTreatmentTimeline(customerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(treatmentRecords).where(eq(treatmentRecords.customerId, customerId)).orderBy(desc(treatmentRecords.treatmentDate));
+}
+
+// ============================================
+// 療程照片 Queries - 核心功能 1
+// ============================================
+export async function createTreatmentPhoto(photo: InsertTreatmentPhoto) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(treatmentPhotos).values(photo);
+  return result[0].insertId;
+}
+
+export async function listTreatmentPhotos(customerId: number, options?: { treatmentRecordId?: number; photoType?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(treatmentPhotos.customerId, customerId);
+  if (options?.treatmentRecordId) {
+    whereClause = and(whereClause, eq(treatmentPhotos.treatmentRecordId, options.treatmentRecordId)) as typeof whereClause;
+  }
+
+  return await db.select().from(treatmentPhotos).where(whereClause).orderBy(desc(treatmentPhotos.photoDate));
+}
+
+export async function getBeforeAfterPhotos(customerId: number, treatmentRecordId?: number) {
+  const db = await getDb();
+  if (!db) return { before: [], after: [] };
+
+  let whereClause = eq(treatmentPhotos.customerId, customerId);
+  if (treatmentRecordId) {
+    whereClause = and(whereClause, eq(treatmentPhotos.treatmentRecordId, treatmentRecordId)) as typeof whereClause;
+  }
+
+  const photos = await db.select().from(treatmentPhotos).where(whereClause).orderBy(asc(treatmentPhotos.photoDate));
+  
+  return {
+    before: photos.filter(p => p.photoType === 'before'),
+    after: photos.filter(p => p.photoType === 'after'),
+  };
+}
+
+// ============================================
+// 客戶套餐 Queries - 核心功能 2
+// ============================================
+export async function createCustomerPackage(pkg: InsertCustomerPackage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(customerPackages).values(pkg);
+  return result[0].insertId;
+}
+
+export async function updateCustomerPackage(id: number, pkg: Partial<InsertCustomerPackage>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(customerPackages).set(pkg).where(eq(customerPackages.id, id));
+}
+
+export async function getCustomerPackageById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(customerPackages).where(eq(customerPackages.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listCustomerPackages(customerId: number, options?: { status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(customerPackages.customerId, customerId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(customerPackages.status, options.status as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(customerPackages).where(whereClause).orderBy(desc(customerPackages.purchaseDate));
+}
+
+export async function listOrganizationPackages(organizationId: number, options?: { page?: number; limit?: number; status?: string }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(customerPackages.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(customerPackages.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(customerPackages).where(whereClause).orderBy(desc(customerPackages.purchaseDate)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(customerPackages).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function deductPackageSession(packageId: number, sessionsToDeduct: number = 1) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const pkg = await getCustomerPackageById(packageId);
+  if (!pkg) throw new Error("Package not found");
+  if (pkg.remainingSessions < sessionsToDeduct) throw new Error("Insufficient sessions");
+  
+  const newUsed = pkg.usedSessions + sessionsToDeduct;
+  const newRemaining = pkg.remainingSessions - sessionsToDeduct;
+  const newStatus = newRemaining === 0 ? 'completed' : pkg.status;
+  
+  await db.update(customerPackages).set({
+    usedSessions: newUsed,
+    remainingSessions: newRemaining,
+    status: newStatus,
+  }).where(eq(customerPackages.id, packageId));
+  
+  return { usedSessions: newUsed, remainingSessions: newRemaining, status: newStatus };
+}
+
+// ============================================
+// 套餐使用記錄 Queries - 核心功能 2
+// ============================================
+export async function createPackageUsageRecord(record: InsertPackageUsageRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(packageUsageRecords).values(record);
+  return result[0].insertId;
+}
+
+export async function listPackageUsageRecords(packageId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(packageUsageRecords).where(eq(packageUsageRecords.packageId, packageId)).orderBy(desc(packageUsageRecords.usageDate));
+}
+
+// ============================================
+// 諮詢記錄 Queries - 核心功能 3
+// ============================================
+export async function createConsultation(consultation: InsertConsultation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(consultations).values(consultation);
+  return result[0].insertId;
+}
+
+export async function updateConsultation(id: number, consultation: Partial<InsertConsultation>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(consultations).set(consultation).where(eq(consultations.id, id));
+}
+
+export async function getConsultationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(consultations).where(eq(consultations.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listConsultations(organizationId: number, options?: { page?: number; limit?: number; status?: string; staffId?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(consultations.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(consultations.status, options.status as any)) as typeof whereClause;
+  }
+  if (options?.staffId) {
+    whereClause = and(whereClause, eq(consultations.staffId, options.staffId)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(consultations).where(whereClause).orderBy(desc(consultations.consultationDate)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(consultations).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function getConsultationConversionStats(organizationId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, converted: 0, conversionRate: 0 };
+  
+  const [totalResult] = await db.select({ count: sql<number>`count(*)` }).from(consultations).where(eq(consultations.organizationId, organizationId));
+  const [convertedResult] = await db.select({ count: sql<number>`count(*)` }).from(consultations).where(and(eq(consultations.organizationId, organizationId), eq(consultations.status, 'converted')));
+  
+  const total = totalResult?.count || 0;
+  const converted = convertedResult?.count || 0;
+  const conversionRate = total > 0 ? Math.round((converted / total) * 100) : 0;
+  
+  return { total, converted, conversionRate };
+}
+
+// ============================================
+// 跟進記錄 Queries - 核心功能 3
+// ============================================
+export async function createFollowUp(followUp: InsertFollowUp) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(followUps).values(followUp);
+  return result[0].insertId;
+}
+
+export async function updateFollowUp(id: number, followUp: Partial<InsertFollowUp>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(followUps).set(followUp).where(eq(followUps.id, id));
+}
+
+export async function listFollowUps(organizationId: number, options?: { consultationId?: number; customerId?: number; status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(followUps.organizationId, organizationId);
+  if (options?.consultationId) {
+    whereClause = and(whereClause, eq(followUps.consultationId, options.consultationId)) as typeof whereClause;
+  }
+  if (options?.customerId) {
+    whereClause = and(whereClause, eq(followUps.customerId, options.customerId)) as typeof whereClause;
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(followUps.status, options.status as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(followUps).where(whereClause).orderBy(desc(followUps.followUpDate));
+}
+
+export async function getPendingFollowUps(organizationId: number, staffId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = and(eq(followUps.organizationId, organizationId), eq(followUps.status, 'pending'));
+  if (staffId) {
+    whereClause = and(whereClause, eq(followUps.staffId, staffId)) as typeof whereClause;
+  }
+
+  return await db.select().from(followUps).where(whereClause).orderBy(asc(followUps.followUpDate));
+}
+
+// ============================================
+// RFM 分析 Queries - 核心功能 4
+// ============================================
+export async function upsertCustomerRfmScore(score: InsertCustomerRfmScore) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await db.select().from(customerRfmScores)
+    .where(and(eq(customerRfmScores.organizationId, score.organizationId), eq(customerRfmScores.customerId, score.customerId)))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    await db.update(customerRfmScores).set({
+      ...score,
+      calculatedAt: new Date(),
+    }).where(eq(customerRfmScores.id, existing[0].id));
+    return existing[0].id;
+  } else {
+    const result = await db.insert(customerRfmScores).values(score);
+    return result[0].insertId;
+  }
+}
+
+export async function getCustomerRfmScore(customerId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(customerRfmScores).where(eq(customerRfmScores.customerId, customerId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listCustomerRfmScores(organizationId: number, options?: { segment?: string; minChurnRisk?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(customerRfmScores.organizationId, organizationId);
+  if (options?.segment) {
+    whereClause = and(whereClause, eq(customerRfmScores.segment, options.segment)) as typeof whereClause;
+  }
+
+  const results = await db.select().from(customerRfmScores).where(whereClause).orderBy(desc(customerRfmScores.totalScore));
+  
+  if (options?.minChurnRisk !== undefined) {
+    return results.filter(r => (r.churnRisk || 0) >= options.minChurnRisk!);
+  }
+  
+  return results;
+}
+
+export async function calculateCustomerRfm(organizationId: number, customerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 取得客戶訂單資料
+  const customerOrders = await db.select().from(orders)
+    .where(and(eq(orders.organizationId, organizationId), eq(orders.customerId, customerId), eq(orders.status, 'completed')));
+  
+  if (customerOrders.length === 0) {
+    return {
+      recencyScore: 1,
+      frequencyScore: 1,
+      monetaryScore: 1,
+      totalScore: 3,
+      segment: 'new',
+      churnRisk: 50,
+    };
+  }
+  
+  // 計算 Recency (最近一次消費距今天數)
+  const lastOrder = customerOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  const daysSinceLastPurchase = Math.floor((Date.now() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  const recencyScore = daysSinceLastPurchase <= 30 ? 5 : daysSinceLastPurchase <= 60 ? 4 : daysSinceLastPurchase <= 90 ? 3 : daysSinceLastPurchase <= 180 ? 2 : 1;
+  
+  // 計算 Frequency (消費次數)
+  const purchaseCount = customerOrders.length;
+  const frequencyScore = purchaseCount >= 10 ? 5 : purchaseCount >= 6 ? 4 : purchaseCount >= 3 ? 3 : purchaseCount >= 2 ? 2 : 1;
+  
+  // 計算 Monetary (總消費金額)
+  const totalSpent = customerOrders.reduce((sum, order) => sum + Number(order.total), 0);
+  const monetaryScore = totalSpent >= 100000 ? 5 : totalSpent >= 50000 ? 4 : totalSpent >= 20000 ? 3 : totalSpent >= 5000 ? 2 : 1;
+  
+  const totalScore = recencyScore + frequencyScore + monetaryScore;
+  
+  // 判斷客戶分群
+  let segment = 'regular';
+  if (totalScore >= 13) segment = 'champion';
+  else if (totalScore >= 10) segment = 'loyal';
+  else if (recencyScore >= 4 && frequencyScore <= 2) segment = 'new';
+  else if (recencyScore <= 2 && frequencyScore >= 3) segment = 'at_risk';
+  else if (recencyScore <= 2 && frequencyScore <= 2) segment = 'lost';
+  
+  // 計算流失風險
+  const churnRisk = Math.max(0, Math.min(100, 100 - (recencyScore * 15) - (frequencyScore * 5)));
+  
+  return {
+    recencyScore,
+    frequencyScore,
+    monetaryScore,
+    totalScore,
+    segment,
+    lastPurchaseDate: lastOrder.createdAt,
+    purchaseCount,
+    totalSpent: totalSpent.toString(),
+    churnRisk,
+  };
+}
+
+// ============================================
+// 員工佣金 Queries - 核心功能 6
+// ============================================
+export async function createCommissionRule(rule: InsertCommissionRule) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(commissionRules).values(rule);
+  return result[0].insertId;
+}
+
+export async function updateCommissionRule(id: number, rule: Partial<InsertCommissionRule>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(commissionRules).set(rule).where(eq(commissionRules.id, id));
+}
+
+export async function listCommissionRules(organizationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(commissionRules).where(eq(commissionRules.organizationId, organizationId)).orderBy(desc(commissionRules.createdAt));
+}
+
+export async function createStaffCommission(commission: InsertStaffCommission) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(staffCommissions).values(commission);
+  return result[0].insertId;
+}
+
+export async function updateStaffCommission(id: number, commission: Partial<InsertStaffCommission>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(staffCommissions).set(commission).where(eq(staffCommissions.id, id));
+}
+
+export async function listStaffCommissions(organizationId: number, options?: { staffId?: number; status?: string; startDate?: Date; endDate?: Date }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(staffCommissions.organizationId, organizationId);
+  if (options?.staffId) {
+    whereClause = and(whereClause, eq(staffCommissions.staffId, options.staffId)) as typeof whereClause;
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(staffCommissions.status, options.status as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(staffCommissions).where(whereClause).orderBy(desc(staffCommissions.commissionDate));
+}
+
+export async function getStaffCommissionSummary(organizationId: number, staffId: number, startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) return { totalSales: 0, totalCommission: 0, count: 0 };
+
+  const commissions = await db.select().from(staffCommissions)
+    .where(and(
+      eq(staffCommissions.organizationId, organizationId),
+      eq(staffCommissions.staffId, staffId)
+    ));
+  
+  const filtered = commissions.filter(c => {
+    const date = new Date(c.commissionDate);
+    return date >= startDate && date <= endDate;
+  });
+
+  return {
+    totalSales: filtered.reduce((sum, c) => sum + Number(c.salesAmount), 0),
+    totalCommission: filtered.reduce((sum, c) => sum + Number(c.commissionAmount), 0),
+    count: filtered.length,
+  };
+}
+
+// ============================================
+// 庫存異動 Queries - 核心功能 7
+// ============================================
+export async function createInventoryTransaction(transaction: InsertInventoryTransaction) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(inventoryTransactions).values(transaction);
+  
+  // 更新產品庫存
+  const product = await getProductById(transaction.productId);
+  if (product) {
+    let newStock = product.stock || 0;
+    if (transaction.transactionType === 'purchase' || transaction.transactionType === 'return') {
+      newStock += transaction.quantity;
+    } else if (transaction.transactionType === 'sale' || transaction.transactionType === 'waste') {
+      newStock -= transaction.quantity;
+    }
+    await updateProduct(transaction.productId, { stock: newStock });
+  }
+  
+  return result[0].insertId;
+}
+
+export async function listInventoryTransactions(organizationId: number, options?: { productId?: number; transactionType?: string; startDate?: Date; endDate?: Date }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(inventoryTransactions.organizationId, organizationId);
+  if (options?.productId) {
+    whereClause = and(whereClause, eq(inventoryTransactions.productId, options.productId)) as typeof whereClause;
+  }
+  if (options?.transactionType) {
+    whereClause = and(whereClause, eq(inventoryTransactions.transactionType, options.transactionType as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(inventoryTransactions).where(whereClause).orderBy(desc(inventoryTransactions.transactionDate));
+}
+
+export async function getProductCostAnalysis(organizationId: number, productId: number) {
+  const db = await getDb();
+  if (!db) return { averageCost: 0, totalCost: 0, totalQuantity: 0 };
+
+  const transactions = await db.select().from(inventoryTransactions)
+    .where(and(
+      eq(inventoryTransactions.organizationId, organizationId),
+      eq(inventoryTransactions.productId, productId),
+      eq(inventoryTransactions.transactionType, 'purchase')
+    ));
+
+  const totalCost = transactions.reduce((sum, t) => sum + Number(t.totalCost || 0), 0);
+  const totalQuantity = transactions.reduce((sum, t) => sum + t.quantity, 0);
+  const averageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+
+  return { averageCost, totalCost, totalQuantity };
+}
+
+// ============================================
+// 營收目標 Queries - 核心功能 8
+// ============================================
+export async function createRevenueTarget(target: InsertRevenueTarget) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(revenueTargets).values(target);
+  return result[0].insertId;
+}
+
+export async function updateRevenueTarget(id: number, target: Partial<InsertRevenueTarget>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(revenueTargets).set(target).where(eq(revenueTargets.id, id));
+}
+
+export async function listRevenueTargets(organizationId: number, options?: { year?: number; targetType?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(revenueTargets.organizationId, organizationId);
+  if (options?.year) {
+    whereClause = and(whereClause, eq(revenueTargets.targetYear, options.year)) as typeof whereClause;
+  }
+  if (options?.targetType) {
+    whereClause = and(whereClause, eq(revenueTargets.targetType, options.targetType as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(revenueTargets).where(whereClause).orderBy(desc(revenueTargets.targetYear), asc(revenueTargets.targetMonth));
+}
+
+export async function calculateRevenueAchievement(organizationId: number, year: number, month: number) {
+  const db = await getDb();
+  if (!db) return { target: 0, actual: 0, achievementRate: 0 };
+
+  // 取得目標
+  const [targetResult] = await db.select().from(revenueTargets)
+    .where(and(
+      eq(revenueTargets.organizationId, organizationId),
+      eq(revenueTargets.targetYear, year),
+      eq(revenueTargets.targetMonth, month)
+    )).limit(1);
+
+  // 計算實際營收
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+  
+  const completedOrders = await db.select().from(orders)
+    .where(and(
+      eq(orders.organizationId, organizationId),
+      eq(orders.status, 'completed')
+    ));
+  
+  const monthlyOrders = completedOrders.filter(o => {
+    const orderDate = new Date(o.createdAt);
+    return orderDate >= startDate && orderDate <= endDate;
+  });
+
+  const actual = monthlyOrders.reduce((sum, o) => sum + Number(o.total), 0);
+  const target = targetResult ? Number(targetResult.targetAmount) : 0;
+  const achievementRate = target > 0 ? Math.round((actual / target) * 100) : 0;
+
+  // 更新目標記錄
+  if (targetResult) {
+    await updateRevenueTarget(targetResult.id, {
+      actualAmount: actual.toString(),
+      achievementRate: achievementRate.toString(),
+    });
+  }
+
+  return { target, actual, achievementRate };
+}
+
+// ============================================
+// 行銷活動 Queries - 核心功能 9
+// ============================================
+export async function createMarketingCampaign(campaign: InsertMarketingCampaign) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(marketingCampaigns).values(campaign);
+  return result[0].insertId;
+}
+
+export async function updateMarketingCampaign(id: number, campaign: Partial<InsertMarketingCampaign>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(marketingCampaigns).set(campaign).where(eq(marketingCampaigns.id, id));
+}
+
+export async function listMarketingCampaigns(organizationId: number, options?: { status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(marketingCampaigns.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(marketingCampaigns.status, options.status as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(marketingCampaigns).where(whereClause).orderBy(desc(marketingCampaigns.createdAt));
+}
+
+// ============================================
+// 客戶來源追蹤 Queries - 核心功能 9
+// ============================================
+export async function createCustomerSource(source: InsertCustomerSource) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(customerSources).values(source);
+  return result[0].insertId;
+}
+
+export async function updateCustomerSource(id: number, source: Partial<InsertCustomerSource>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(customerSources).set(source).where(eq(customerSources.id, id));
+}
+
+export async function getCustomerSourceByCustomerId(customerId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(customerSources).where(eq(customerSources.customerId, customerId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getSourceROIAnalysis(organizationId: number, campaignId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(customerSources.organizationId, organizationId);
+  if (campaignId) {
+    whereClause = and(whereClause, eq(customerSources.campaignId, campaignId)) as typeof whereClause;
+  }
+
+  const sources = await db.select().from(customerSources).where(whereClause);
+  
+  // 按來源類型分組計算
+  const sourceMap = new Map<string, { count: number; totalValue: number }>();
+  sources.forEach(s => {
+    const key = s.sourceType || 'unknown';
+    const existing = sourceMap.get(key) || { count: 0, totalValue: 0 };
+    sourceMap.set(key, {
+      count: existing.count + 1,
+      totalValue: existing.totalValue + Number(s.lifetimeValue || 0),
+    });
+  });
+
+  return Array.from(sourceMap.entries()).map(([sourceType, data]) => ({
+    sourceType,
+    customerCount: data.count,
+    totalLifetimeValue: data.totalValue,
+    averageLifetimeValue: data.count > 0 ? data.totalValue / data.count : 0,
+  }));
+}
+
+// ============================================
+// 滿意度調查 Queries - 核心功能 10
+// ============================================
+export async function createSatisfactionSurvey(survey: InsertSatisfactionSurvey) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(satisfactionSurveys).values(survey);
+  return result[0].insertId;
+}
+
+export async function updateSatisfactionSurvey(id: number, survey: Partial<InsertSatisfactionSurvey>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(satisfactionSurveys).set(survey).where(eq(satisfactionSurveys.id, id));
+}
+
+export async function listSatisfactionSurveys(organizationId: number, options?: { customerId?: number; status?: string; surveyType?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(satisfactionSurveys.organizationId, organizationId);
+  if (options?.customerId) {
+    whereClause = and(whereClause, eq(satisfactionSurveys.customerId, options.customerId)) as typeof whereClause;
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(satisfactionSurveys.status, options.status as any)) as typeof whereClause;
+  }
+  if (options?.surveyType) {
+    whereClause = and(whereClause, eq(satisfactionSurveys.surveyType, options.surveyType as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(satisfactionSurveys).where(whereClause).orderBy(desc(satisfactionSurveys.createdAt));
+}
+
+export async function getNPSStats(organizationId: number) {
+  const db = await getDb();
+  if (!db) return { nps: 0, promoters: 0, passives: 0, detractors: 0, totalResponses: 0 };
+
+  const surveys = await db.select().from(satisfactionSurveys)
+    .where(and(
+      eq(satisfactionSurveys.organizationId, organizationId),
+      eq(satisfactionSurveys.status, 'completed')
+    ));
+
+  const withNps = surveys.filter(s => s.npsScore !== null);
+  if (withNps.length === 0) return { nps: 0, promoters: 0, passives: 0, detractors: 0, totalResponses: 0 };
+
+  const promoters = withNps.filter(s => (s.npsScore || 0) >= 9).length;
+  const passives = withNps.filter(s => (s.npsScore || 0) >= 7 && (s.npsScore || 0) <= 8).length;
+  const detractors = withNps.filter(s => (s.npsScore || 0) <= 6).length;
+  
+  const nps = Math.round(((promoters - detractors) / withNps.length) * 100);
+
+  return {
+    nps,
+    promoters,
+    passives,
+    detractors,
+    totalResponses: withNps.length,
+  };
+}
+
+export async function getSatisfactionTrend(organizationId: number, months: number = 6) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const surveys = await db.select().from(satisfactionSurveys)
+    .where(and(
+      eq(satisfactionSurveys.organizationId, organizationId),
+      eq(satisfactionSurveys.status, 'completed')
+    ))
+    .orderBy(desc(satisfactionSurveys.completedAt));
+
+  // 按月份分組
+  const monthlyData = new Map<string, { scores: number[]; npsScores: number[] }>();
+  
+  surveys.forEach(s => {
+    if (!s.completedAt) return;
+    const monthKey = new Date(s.completedAt).toISOString().slice(0, 7);
+    const existing = monthlyData.get(monthKey) || { scores: [], npsScores: [] };
+    if (s.overallScore) existing.scores.push(s.overallScore);
+    if (s.npsScore) existing.npsScores.push(s.npsScore);
+    monthlyData.set(monthKey, existing);
+  });
+
+  return Array.from(monthlyData.entries())
+    .slice(0, months)
+    .map(([month, data]) => ({
+      month,
+      averageScore: data.scores.length > 0 ? data.scores.reduce((a, b) => a + b, 0) / data.scores.length : 0,
+      averageNps: data.npsScores.length > 0 ? data.npsScores.reduce((a, b) => a + b, 0) / data.npsScores.length : 0,
+      responseCount: data.scores.length,
+    }))
+    .reverse();
+}

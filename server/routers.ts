@@ -867,6 +867,790 @@ const clinicRouter = router({
 });
 
 // ============================================
+// Treatment Record Router - 核心功能 1
+// ============================================
+const treatmentRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listTreatmentRecords(organizationId, options);
+    }),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getTreatmentRecordById(input.id);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      appointmentId: z.number().optional(),
+      staffId: z.number().optional(),
+      productId: z.number().optional(),
+      treatmentDate: z.string(),
+      treatmentType: z.string().optional(),
+      treatmentArea: z.string().optional(),
+      dosage: z.string().optional(),
+      notes: z.string().optional(),
+      internalNotes: z.string().optional(),
+      satisfactionScore: z.number().optional(),
+      nextFollowUpDate: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { treatmentDate, nextFollowUpDate, ...rest } = input;
+      const data: any = {
+        ...rest,
+        treatmentDate: new Date(treatmentDate),
+      };
+      if (nextFollowUpDate) {
+        data.nextFollowUpDate = nextFollowUpDate;
+      }
+      const id = await db.createTreatmentRecord(data);
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      treatmentType: z.string().optional(),
+      treatmentArea: z.string().optional(),
+      dosage: z.string().optional(),
+      notes: z.string().optional(),
+      internalNotes: z.string().optional(),
+      satisfactionScore: z.number().optional(),
+      nextFollowUpDate: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateTreatmentRecord(id, data as any);
+      return { success: true };
+    }),
+
+  getTimeline: protectedProcedure
+    .input(z.object({ customerId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getCustomerTreatmentTimeline(input.customerId);
+    }),
+
+  // 療程照片相關
+  listPhotos: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      treatmentRecordId: z.number().optional(),
+      photoType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listTreatmentPhotos(input.customerId, input);
+    }),
+
+  uploadPhoto: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      treatmentRecordId: z.number().optional(),
+      photoType: z.enum(["before", "after", "during", "other"]),
+      photoUrl: z.string(),
+      thumbnailUrl: z.string().optional(),
+      photoDate: z.string(),
+      angle: z.string().optional(),
+      notes: z.string().optional(),
+      isPublic: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { photoDate, ...rest } = input;
+      const id = await db.createTreatmentPhoto({
+        ...rest,
+        photoDate: new Date(photoDate),
+      });
+      return { id };
+    }),
+
+  getBeforeAfter: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      treatmentRecordId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getBeforeAfterPhotos(input.customerId, input.treatmentRecordId);
+    }),
+});
+
+// ============================================
+// Customer Package Router - 核心功能 2
+// ============================================
+const packageRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      customerId: z.number().optional(),
+      organizationId: z.number().optional(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      if (input.customerId) {
+        return await db.listCustomerPackages(input.customerId, { status: input.status });
+      }
+      if (input.organizationId) {
+        return await db.listOrganizationPackages(input.organizationId, input);
+      }
+      return [];
+    }),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getCustomerPackageById(input.id);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      productId: z.number(),
+      packageName: z.string(),
+      totalSessions: z.number(),
+      purchasePrice: z.string(),
+      purchaseDate: z.string(),
+      expiryDate: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { purchaseDate, expiryDate, ...rest } = input;
+      const id = await db.createCustomerPackage({
+        ...rest,
+        remainingSessions: input.totalSessions,
+        purchaseDate: new Date(purchaseDate),
+        expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+      });
+      return { id };
+    }),
+
+  deductSession: protectedProcedure
+    .input(z.object({
+      packageId: z.number(),
+      sessionsToDeduct: z.number().optional(),
+      appointmentId: z.number().optional(),
+      treatmentRecordId: z.number().optional(),
+      staffId: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { packageId, sessionsToDeduct = 1, ...usageData } = input;
+      
+      // 扣除堂數
+      const result = await db.deductPackageSession(packageId, sessionsToDeduct);
+      
+      // 建立使用記錄
+      const pkg = await db.getCustomerPackageById(packageId);
+      if (pkg) {
+        await db.createPackageUsageRecord({
+          packageId,
+          customerId: pkg.customerId,
+          sessionsUsed: sessionsToDeduct,
+          usageDate: new Date(),
+          ...usageData,
+        });
+      }
+      
+      return result;
+    }),
+
+  getUsageRecords: protectedProcedure
+    .input(z.object({ packageId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.listPackageUsageRecords(input.packageId);
+    }),
+});
+
+// ============================================
+// Consultation Router - 核心功能 3
+// ============================================
+const consultationRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      status: z.string().optional(),
+      staffId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listConsultations(organizationId, options);
+    }),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getConsultationById(input.id);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number().optional(),
+      prospectName: z.string().optional(),
+      prospectPhone: z.string().optional(),
+      prospectEmail: z.string().optional(),
+      consultationDate: z.string(),
+      consultationType: z.enum(["walk_in", "phone", "online", "referral"]).optional(),
+      staffId: z.number().optional(),
+      interestedProducts: z.array(z.number()).optional(),
+      concerns: z.string().optional(),
+      recommendations: z.string().optional(),
+      source: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { consultationDate, ...rest } = input;
+      const id = await db.createConsultation({
+        ...rest,
+        consultationDate: new Date(consultationDate),
+      });
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["new", "contacted", "scheduled", "converted", "lost"]).optional(),
+      staffId: z.number().optional(),
+      recommendations: z.string().optional(),
+      notes: z.string().optional(),
+      convertedOrderId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      if (data.status === 'converted') {
+        (data as any).conversionDate = new Date();
+      }
+      await db.updateConsultation(id, data as any);
+      return { success: true };
+    }),
+
+  getConversionStats: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getConsultationConversionStats(input.organizationId);
+    }),
+});
+
+// ============================================
+// Follow-up Router - 核心功能 3
+// ============================================
+const followUpRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      consultationId: z.number().optional(),
+      customerId: z.number().optional(),
+      status: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listFollowUps(organizationId, options);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      consultationId: z.number().optional(),
+      customerId: z.number().optional(),
+      staffId: z.number().optional(),
+      followUpDate: z.string(),
+      followUpType: z.enum(["call", "sms", "line", "email", "visit"]).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { followUpDate, ...rest } = input;
+      const id = await db.createFollowUp({
+        ...rest,
+        followUpDate: new Date(followUpDate),
+      });
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["pending", "completed", "cancelled", "rescheduled"]).optional(),
+      outcome: z.string().optional(),
+      notes: z.string().optional(),
+      nextFollowUpDate: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, nextFollowUpDate, ...rest } = input;
+      const data: any = { ...rest };
+      if (nextFollowUpDate) data.nextFollowUpDate = new Date(nextFollowUpDate);
+      await db.updateFollowUp(id, data);
+      return { success: true };
+    }),
+
+  getPending: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      staffId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getPendingFollowUps(input.organizationId, input.staffId);
+    }),
+});
+
+// ============================================
+// RFM Analysis Router - 核心功能 4
+// ============================================
+const rfmRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      segment: z.string().optional(),
+      minChurnRisk: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listCustomerRfmScores(organizationId, options);
+    }),
+
+  getCustomerScore: protectedProcedure
+    .input(z.object({ customerId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getCustomerRfmScore(input.customerId);
+    }),
+
+  calculate: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const rfmData = await db.calculateCustomerRfm(input.organizationId, input.customerId);
+      await db.upsertCustomerRfmScore({
+        organizationId: input.organizationId,
+        customerId: input.customerId,
+        ...rfmData,
+      });
+      return rfmData;
+    }),
+
+  calculateAll: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .mutation(async ({ input }) => {
+      const customers = await db.listCustomers(input.organizationId, { limit: 1000 });
+      let processed = 0;
+      
+      for (const customer of customers.data) {
+        const rfmData = await db.calculateCustomerRfm(input.organizationId, customer.id);
+        await db.upsertCustomerRfmScore({
+          organizationId: input.organizationId,
+          customerId: customer.id,
+          ...rfmData,
+        });
+        processed++;
+      }
+      
+      return { processed };
+    }),
+
+  getChurnRiskList: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      minRisk: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const scores = await db.listCustomerRfmScores(input.organizationId, {
+        minChurnRisk: input.minRisk || 50,
+      });
+      return scores.sort((a, b) => (b.churnRisk || 0) - (a.churnRisk || 0));
+    }),
+});
+
+// ============================================
+// Commission Router - 核心功能 6
+// ============================================
+const commissionRouter = router({
+  listRules: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.listCommissionRules(input.organizationId);
+    }),
+
+  createRule: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string(),
+      productId: z.number().optional(),
+      productCategory: z.string().optional(),
+      commissionType: z.enum(["percentage", "fixed"]).optional(),
+      commissionValue: z.string(),
+      minSalesAmount: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createCommissionRule(input);
+      return { id };
+    }),
+
+  updateRule: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      commissionType: z.enum(["percentage", "fixed"]).optional(),
+      commissionValue: z.string().optional(),
+      minSalesAmount: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateCommissionRule(id, data as any);
+      return { success: true };
+    }),
+
+  listCommissions: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      staffId: z.number().optional(),
+      status: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listStaffCommissions(organizationId, options);
+    }),
+
+  createCommission: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      staffId: z.number(),
+      orderId: z.number().optional(),
+      orderItemId: z.number().optional(),
+      appointmentId: z.number().optional(),
+      commissionRuleId: z.number().optional(),
+      salesAmount: z.string(),
+      commissionAmount: z.string(),
+      commissionDate: z.string(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { commissionDate, ...rest } = input;
+      const id = await db.createStaffCommission({
+        ...rest,
+        commissionDate: new Date(commissionDate),
+      });
+      return { id };
+    }),
+
+  updateCommissionStatus: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["pending", "approved", "paid", "cancelled"]),
+    }))
+    .mutation(async ({ input }) => {
+      const data: any = { status: input.status };
+      if (input.status === 'paid') data.paidAt = new Date();
+      await db.updateStaffCommission(input.id, data);
+      return { success: true };
+    }),
+
+  getStaffSummary: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      staffId: z.number(),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getStaffCommissionSummary(
+        input.organizationId,
+        input.staffId,
+        new Date(input.startDate),
+        new Date(input.endDate)
+      );
+    }),
+});
+
+// ============================================
+// Inventory Router - 核心功能 7
+// ============================================
+const inventoryRouter = router({
+  listTransactions: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      productId: z.number().optional(),
+      transactionType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listInventoryTransactions(organizationId, options);
+    }),
+
+  createTransaction: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      productId: z.number(),
+      transactionType: z.enum(["purchase", "sale", "adjustment", "return", "transfer", "waste"]),
+      quantity: z.number(),
+      unitCost: z.string().optional(),
+      totalCost: z.string().optional(),
+      referenceId: z.number().optional(),
+      referenceType: z.string().optional(),
+      batchNumber: z.string().optional(),
+      expiryDate: z.string().optional(),
+      notes: z.string().optional(),
+      staffId: z.number().optional(),
+      transactionDate: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { transactionDate, expiryDate, ...rest } = input;
+      const data: any = {
+        ...rest,
+        transactionDate: new Date(transactionDate),
+      };
+      if (expiryDate) {
+        data.expiryDate = expiryDate;
+      }
+      const id = await db.createInventoryTransaction(data);
+      return { id };
+    }),
+
+  getCostAnalysis: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      productId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getProductCostAnalysis(input.organizationId, input.productId);
+    }),
+
+  getGrossMargin: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      productId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      const product = await db.getProductById(input.productId);
+      const costAnalysis = await db.getProductCostAnalysis(input.organizationId, input.productId);
+      
+      if (!product) return { grossMargin: 0, marginRate: 0 };
+      
+      const sellingPrice = Number(product.price);
+      const cost = costAnalysis.averageCost;
+      const grossMargin = sellingPrice - cost;
+      const marginRate = sellingPrice > 0 ? (grossMargin / sellingPrice) * 100 : 0;
+      
+      return { grossMargin, marginRate, sellingPrice, cost };
+    }),
+});
+
+// ============================================
+// Revenue Target Router - 核心功能 8
+// ============================================
+const revenueTargetRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      year: z.number().optional(),
+      targetType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listRevenueTargets(organizationId, options);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      targetType: z.enum(["monthly", "quarterly", "yearly"]).optional(),
+      targetYear: z.number(),
+      targetMonth: z.number().optional(),
+      targetQuarter: z.number().optional(),
+      targetAmount: z.string(),
+      staffId: z.number().optional(),
+      productCategory: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createRevenueTarget(input);
+      return { id };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      targetAmount: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateRevenueTarget(id, data as any);
+      return { success: true };
+    }),
+
+  getAchievement: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      year: z.number(),
+      month: z.number(),
+    }))
+    .query(async ({ input }) => {
+      return await db.calculateRevenueAchievement(input.organizationId, input.year, input.month);
+    }),
+});
+
+// ============================================
+// Marketing Campaign Router - 核心功能 9
+// ============================================
+const marketingRouter = router({
+  listCampaigns: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      status: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listMarketingCampaigns(organizationId, options);
+    }),
+
+  createCampaign: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string(),
+      campaignType: z.enum(["facebook", "google", "line", "instagram", "referral", "event", "other"]).optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      budget: z.string().optional(),
+      targetAudience: z.string().optional(),
+      description: z.string().optional(),
+      trackingCode: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { startDate, endDate, ...rest } = input;
+      const id = await db.createMarketingCampaign({
+        ...rest,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+      });
+      return { id };
+    }),
+
+  updateCampaign: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      status: z.enum(["draft", "active", "paused", "completed"]).optional(),
+      actualSpend: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateMarketingCampaign(id, data as any);
+      return { success: true };
+    }),
+
+  getSourceROI: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      campaignId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getSourceROIAnalysis(input.organizationId, input.campaignId);
+    }),
+
+  trackCustomerSource: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      campaignId: z.number().optional(),
+      sourceType: z.string().optional(),
+      sourceName: z.string().optional(),
+      referralCode: z.string().optional(),
+      referredByCustomerId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createCustomerSource({
+        ...input,
+        firstVisitDate: new Date(),
+      });
+      return { id };
+    }),
+});
+
+// ============================================
+// Satisfaction Survey Router - 核心功能 10
+// ============================================
+const satisfactionRouter = router({
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number().optional(),
+      status: z.string().optional(),
+      surveyType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listSatisfactionSurveys(organizationId, options);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      appointmentId: z.number().optional(),
+      treatmentRecordId: z.number().optional(),
+      surveyType: z.enum(["post_treatment", "post_purchase", "general", "nps"]).optional(),
+      staffId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createSatisfactionSurvey(input);
+      return { id };
+    }),
+
+  submit: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      overallScore: z.number().optional(),
+      serviceScore: z.number().optional(),
+      staffScore: z.number().optional(),
+      facilityScore: z.number().optional(),
+      valueScore: z.number().optional(),
+      npsScore: z.number().optional(),
+      wouldRecommend: z.boolean().optional(),
+      feedback: z.string().optional(),
+      improvementSuggestions: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateSatisfactionSurvey(id, {
+        ...data,
+        status: 'completed',
+        completedAt: new Date(),
+      });
+      return { success: true };
+    }),
+
+  getNPSStats: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getNPSStats(input.organizationId);
+    }),
+
+  getTrend: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      months: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getSatisfactionTrend(input.organizationId, input.months);
+    }),
+});
+
+// ============================================
 // Main App Router
 // ============================================
 export const appRouter = router({
@@ -894,6 +1678,17 @@ export const appRouter = router({
   line: lineRouter,
   clinic: clinicRouter,
   report: reportRouter,
+  // 核心功能模組
+  treatment: treatmentRouter,
+  package: packageRouter,
+  consultation: consultationRouter,
+  followUp: followUpRouter,
+  rfm: rfmRouter,
+  commission: commissionRouter,
+  inventory: inventoryRouter,
+  revenueTarget: revenueTargetRouter,
+  marketing: marketingRouter,
+  satisfaction: satisfactionRouter,
 });
 
 export type AppRouter = typeof appRouter;
