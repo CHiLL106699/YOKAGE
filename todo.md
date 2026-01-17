@@ -682,3 +682,40 @@
 - [x] 更新 DropdownMenu 元件樣式
 - [x] 更新 Select 元件樣式
 - [x] 驗證彈窗視覺效果
+
+
+---
+
+## Phase 52: 操作手冊懶人包
+
+### 系統架構與角色權限
+- [x] 系統架構總覽圖
+- [x] 角色權限說明（Super Admin / Clinic Admin / Staff / Customer）
+- [x] 功能模組關係圖
+
+### 功能模組操作指南
+- [x] 診所管理模組操作指南
+- [x] 客戶管理模組操作指南
+- [x] 預約管理模組操作指南
+- [x] 產品與庫存管理操作指南
+- [x] 員工與排班管理操作指南
+- [x] 療程記錄與套餐管理操作指南
+- [x] 諮詢與跟進管理操作指南
+- [x] RFM 分析與客戶分群操作指南
+- [x] 營收目標與報表操作指南
+- [x] 滿意度調查與 NPS 操作指南
+
+### LINE 整合設定指南
+- [x] LINE Channel 設定步驟
+- [x] Rich Menu 設定與管理
+- [x] Flex Message 模板設定
+- [x] Webhook 事件處理說明
+
+### 資料流向與串接關係
+- [x] 客戶 → 預約 → 療程 資料流
+- [x] 產品 → 訂單 → 庫存 資料流
+- [x] 員工 → 排班 → 業績 資料流
+- [x] 行銷活動 → 客戶來源 → ROI 資料流
+
+### 交付
+- [x] 完成操作手冊文檔（docs/USER_MANUAL.md, QUICK_START_GUIDE.md, LINE_INTEGRATION_GUIDE.md）
