@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Ticket, Gift, Percent, CreditCard, Package, QrCode, Clock, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { Ticket, Gift, Percent, CreditCard, Package, QrCode, Clock, CheckCircle, XCircle, AlertTriangle, Send, Copy, Share2 } from "lucide-react";
 import QRCode from "react-qr-code";
 
 // 使用 any 類型以簡化類型定義
@@ -94,23 +98,38 @@ function getStatusBadge(status: string, expiresAt: string | null) {
           已取消
         </Badge>
       );
+    case "transferred":
+      return (
+        <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/50">
+          <Send className="h-3 w-3 mr-1" />
+          已轉贈
+        </Badge>
+      );
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
 }
 
-function VoucherCard({ voucher, onShowQR }: { voucher: VoucherInstance; onShowQR: (voucher: VoucherInstance) => void }) {
+function VoucherCard({ 
+  voucher, 
+  onShowQR,
+  onTransfer,
+}: { 
+  voucher: VoucherInstance; 
+  onShowQR: (voucher: VoucherInstance) => void;
+  onTransfer: (voucher: VoucherInstance) => void;
+}) {
   const template = voucher.template;
   const bgColor = template?.backgroundColor || "#1E3A5F";
   const txtColor = template?.textColor || "#F5D78E";
   const isUsable = voucher.status === "active";
+  const isTransferable = template?.isTransferable && isUsable;
   const expiryDate = voucher.expiryDate ? new Date(voucher.expiryDate) : null;
 
   return (
     <Card
-      className="overflow-hidden cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg"
+      className="overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg"
       style={{ backgroundColor: bgColor }}
-      onClick={() => isUsable && onShowQR(voucher)}
     >
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
@@ -157,17 +176,25 @@ function VoucherCard({ voucher, onShowQR }: { voucher: VoucherInstance; onShowQR
         </div>
 
         {isUsable && (
-          <Button
-            className="w-full mt-2"
-            style={{ backgroundColor: txtColor, color: bgColor }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onShowQR(voucher);
-            }}
-          >
-            <QrCode className="h-4 w-4 mr-2" />
-            顯示 QR Code
-          </Button>
+          <div className="flex gap-2 mt-2">
+            <Button
+              className="flex-1"
+              style={{ backgroundColor: txtColor, color: bgColor }}
+              onClick={() => onShowQR(voucher)}
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              顯示 QR Code
+            </Button>
+            {isTransferable && (
+              <Button
+                variant="outline"
+                className="border-white/30 text-white hover:bg-white/10"
+                onClick={() => onTransfer(voucher)}
+              >
+                <Gift className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
@@ -202,7 +229,7 @@ function QRCodeDialog({
           {/* QR Code */}
           <div className="bg-white p-4 rounded-lg">
             <QRCode
-              value={`VOUCHER:${voucher.code}`}
+              value={`VOUCHER:${voucher.voucherCode}`}
               size={200}
               level="H"
               fgColor={bgColor}
@@ -213,7 +240,7 @@ function QRCodeDialog({
           <div className="text-center">
             <p className="text-sm text-slate-400">票券代碼</p>
             <p className="text-2xl font-mono font-bold" style={{ color: txtColor }}>
-              {voucher.code}
+              {voucher.voucherCode}
             </p>
           </div>
 
@@ -243,15 +270,319 @@ function QRCodeDialog({
   );
 }
 
-export default function MyVouchersPage() {
-  const [activeTab, setActiveTab] = useState("active");
-  const [selectedVoucher, setSelectedVoucher] = useState<VoucherInstance | null>(null);
-  const [showQRDialog, setShowQRDialog] = useState(false);
+function TransferDialog({
+  voucher,
+  open,
+  onClose,
+  onSuccess,
+}: {
+  voucher: VoucherInstance | null;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  
+  const [step, setStep] = useState<"form" | "success">("form");
+  const [formData, setFormData] = useState({
+    toCustomerName: "",
+    toCustomerPhone: "",
+    giftMessage: "",
+  });
+  const [claimCode, setClaimCode] = useState("");
+
+  const createTransfer = trpc.voucher.createTransfer.useMutation({
+    onSuccess: (data) => {
+      setClaimCode(data.claimCode || "");
+      setStep("success");
+      toast.success("轉贈成功，請將領取碼分享給對方");
+    },
+    onError: (error) => {
+      toast.error(`轉贈失敗: ${error.message}`);
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!voucher) return;
+    if (!formData.toCustomerPhone) {
+      toast.error("請填寫收禮人手機號碼");
+      return;
+    }
+
+    createTransfer.mutate({
+      organizationId: voucher.organizationId,
+      voucherInstanceId: voucher.id,
+      fromCustomerId: voucher.customerId,
+      toCustomerName: formData.toCustomerName,
+      toCustomerPhone: formData.toCustomerPhone,
+      giftMessage: formData.giftMessage,
+      notificationChannel: "line",
+    });
+  };
+
+  const handleCopyClaimCode = () => {
+    navigator.clipboard.writeText(claimCode);
+toast.success("已複製領取碼");
+  };
+
+  const handleShare = () => {
+    const shareText = `🎁 您收到一份禮物！\n\n${voucher?.template?.name || "優惠券"}\n${formData.giftMessage ? `\n留言：${formData.giftMessage}\n` : ""}\n領取碼：${claimCode}\n\n請前往會員中心領取`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: "票券轉贈",
+        text: shareText,
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast.success("已複製分享內容");
+    }
+  };
+
+  const handleClose = () => {
+    setStep("form");
+    setFormData({ toCustomerName: "", toCustomerPhone: "", giftMessage: "" });
+    setClaimCode("");
+    onClose();
+    if (step === "success") {
+      onSuccess();
+    }
+  };
+
+  if (!voucher) return null;
+
+  const template = voucher.template;
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md" style={{ backgroundColor: "#0A1628" }}>
+        <DialogHeader>
+          <DialogTitle className="text-white flex items-center gap-2">
+            <Gift className="h-5 w-5 text-[#F5D78E]" />
+            {step === "form" ? "轉贈票券" : "轉贈成功"}
+          </DialogTitle>
+          {step === "form" && (
+            <DialogDescription className="text-slate-400">
+              將此票券轉贈給親友，對方可使用領取碼領取
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {step === "form" ? (
+          <div className="space-y-4 py-4">
+            {/* 票券預覽 */}
+            <div 
+              className="p-4 rounded-lg"
+              style={{ backgroundColor: template?.backgroundColor || "#1E3A5F" }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-white/70">{getTypeLabel(template?.type || "discount")}</p>
+                  <p className="text-lg font-bold text-white">{template?.name || "優惠券"}</p>
+                </div>
+                <p className="text-2xl font-bold" style={{ color: template?.textColor || "#F5D78E" }}>
+                  {getValueDisplay(template?.value || "0", template?.valueType || "fixed_amount")}
+                </p>
+              </div>
+            </div>
+
+            {/* 收禮人資訊 */}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="toCustomerName" className="text-slate-300">收禮人姓名（選填）</Label>
+                <Input
+                  id="toCustomerName"
+                  placeholder="請輸入收禮人姓名"
+                  value={formData.toCustomerName}
+                  onChange={(e) => setFormData({ ...formData, toCustomerName: e.target.value })}
+                  className="mt-1 bg-[#1E3A5F]/50 border-[#F5D78E]/30 text-white"
+                />
+              </div>
+              <div>
+                <Label htmlFor="toCustomerPhone" className="text-slate-300">收禮人手機號碼 *</Label>
+                <Input
+                  id="toCustomerPhone"
+                  placeholder="請輸入手機號碼"
+                  value={formData.toCustomerPhone}
+                  onChange={(e) => setFormData({ ...formData, toCustomerPhone: e.target.value })}
+                  className="mt-1 bg-[#1E3A5F]/50 border-[#F5D78E]/30 text-white"
+                />
+              </div>
+              <div>
+                <Label htmlFor="giftMessage" className="text-slate-300">祝福留言（選填）</Label>
+                <Textarea
+                  id="giftMessage"
+                  placeholder="寫下您的祝福..."
+                  value={formData.giftMessage}
+                  onChange={(e) => setFormData({ ...formData, giftMessage: e.target.value })}
+                  className="mt-1 bg-[#1E3A5F]/50 border-[#F5D78E]/30 text-white resize-none"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              * 轉贈後此票券將無法使用，對方需在 7 天內領取
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 py-4">
+            {/* 成功圖示 */}
+            <div className="flex justify-center">
+              <div className="p-4 bg-emerald-500/20 rounded-full">
+                <CheckCircle className="h-12 w-12 text-emerald-400" />
+              </div>
+            </div>
+
+            {/* 領取碼 */}
+            <div className="text-center space-y-2">
+              <p className="text-slate-400">領取碼</p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-3xl font-mono font-bold text-[#F5D78E]">{claimCode}</p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopyClaimCode}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <Copy className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-400 text-center">
+              請將此領取碼分享給 {formData.toCustomerName || formData.toCustomerPhone}，<br />
+              對方可在會員中心使用此碼領取票券
+            </p>
+
+            {/* 分享按鈕 */}
+            <Button
+              className="w-full bg-[#F5D78E] text-[#0A1628] hover:bg-[#F5D78E]/90"
+              onClick={handleShare}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              分享給好友
+            </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          {step === "form" ? (
+            <>
+              <Button variant="outline" onClick={handleClose} className="border-slate-600 text-slate-300">
+                取消
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={createTransfer.isPending}
+                className="bg-[#F5D78E] text-[#0A1628] hover:bg-[#F5D78E]/90"
+              >
+                {createTransfer.isPending ? "處理中..." : "確認轉贈"}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handleClose} className="w-full bg-[#1E3A5F] text-white hover:bg-[#1E3A5F]/80">
+              完成
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ClaimVoucherDialog({
+  open,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  
+  const [claimCode, setClaimCode] = useState("");
 
   // TODO: 從 LIFF context 取得 customerId
   const customerId = 1;
 
-  const { data: vouchers, isLoading } = trpc.voucher.myVouchers.useQuery({
+  const claimTransfer = trpc.voucher.claimTransfer.useMutation({
+    onSuccess: () => {
+      toast.success("領取成功，票券已加入您的票券夾");
+      setClaimCode("");
+      onClose();
+      onSuccess();
+    },
+    onError: (error) => {
+      toast.error(`領取失敗: ${error.message}`);
+    },
+  });
+
+  const handleClaim = () => {
+    if (!claimCode.trim()) {
+      toast.error("請輸入領取碼");
+      return;
+    }
+
+    claimTransfer.mutate({
+      claimCode: claimCode.trim(),
+      customerId,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm" style={{ backgroundColor: "#0A1628" }}>
+        <DialogHeader>
+          <DialogTitle className="text-white flex items-center gap-2">
+            <Gift className="h-5 w-5 text-[#F5D78E]" />
+            領取票券
+          </DialogTitle>
+          <DialogDescription className="text-slate-400">
+            輸入好友分享的領取碼，即可領取票券
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div>
+            <Label htmlFor="claimCode" className="text-slate-300">領取碼</Label>
+            <Input
+              id="claimCode"
+              placeholder="請輸入領取碼 (例如: GIFT-XXXXXXXX)"
+              value={claimCode}
+              onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
+              className="mt-1 bg-[#1E3A5F]/50 border-[#F5D78E]/30 text-white font-mono text-lg text-center"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="border-slate-600 text-slate-300">
+            取消
+          </Button>
+          <Button
+            onClick={handleClaim}
+            disabled={claimTransfer.isPending}
+            className="bg-[#F5D78E] text-[#0A1628] hover:bg-[#F5D78E]/90"
+          >
+            {claimTransfer.isPending ? "處理中..." : "領取票券"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function MyVouchersPage() {
+  const [activeTab, setActiveTab] = useState("active");
+  const [selectedVoucher, setSelectedVoucher] = useState<VoucherInstance | null>(null);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [showClaimDialog, setShowClaimDialog] = useState(false);
+
+  // TODO: 從 LIFF context 取得 customerId
+  const customerId = 1;
+
+  const { data: vouchers, isLoading, refetch } = trpc.voucher.myVouchers.useQuery({
     customerId,
     status: activeTab === "all" ? undefined : activeTab,
     includeExpired: activeTab === "expired" || activeTab === "all",
@@ -262,24 +593,40 @@ export default function MyVouchersPage() {
     setShowQRDialog(true);
   };
 
+  const handleTransfer = (voucher: VoucherInstance) => {
+    setSelectedVoucher(voucher);
+    setShowTransferDialog(true);
+  };
+
   const activeVouchers = vouchers?.filter((v: VoucherInstance) => v.status === "active") || [];
   const usedVouchers = vouchers?.filter((v: VoucherInstance) => v.status === "used") || [];
-  const expiredVouchers = vouchers?.filter((v: VoucherInstance) => v.status === "expired" || v.status === "cancelled") || [];
+  const expiredVouchers = vouchers?.filter((v: VoucherInstance) => v.status === "expired" || v.status === "cancelled" || v.status === "transferred") || [];
 
   return (
     <div className="min-h-screen bg-[#0A1628] text-white">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1E3A5F] to-[#0F172A] p-6">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-[#F5D78E]/20 rounded-full">
-            <Ticket className="h-6 w-6 text-[#F5D78E]" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-[#F5D78E]/20 rounded-full">
+              <Ticket className="h-6 w-6 text-[#F5D78E]" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">我的票券</h1>
+              <p className="text-sm text-slate-400">
+                共 {activeVouchers.length} 張可用票券
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold">我的票券</h1>
-            <p className="text-sm text-slate-400">
-              共 {activeVouchers.length} 張可用票券
-            </p>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowClaimDialog(true)}
+            className="border-[#F5D78E]/50 text-[#F5D78E] hover:bg-[#F5D78E]/10"
+          >
+            <Gift className="h-4 w-4 mr-1" />
+            領取票券
+          </Button>
         </div>
       </div>
 
@@ -304,10 +651,22 @@ export default function MyVouchersPage() {
             <div className="text-center py-8">
               <Ticket className="h-12 w-12 mx-auto text-slate-600 mb-3" />
               <p className="text-slate-400">目前沒有可使用的票券</p>
+              <Button
+                variant="link"
+                onClick={() => setShowClaimDialog(true)}
+                className="text-[#F5D78E] mt-2"
+              >
+                有領取碼？點此領取
+              </Button>
             </div>
           ) : (
             activeVouchers.map((voucher: VoucherInstance) => (
-              <VoucherCard key={voucher.id} voucher={voucher} onShowQR={handleShowQR} />
+              <VoucherCard 
+                key={voucher.id} 
+                voucher={voucher} 
+                onShowQR={handleShowQR}
+                onTransfer={handleTransfer}
+              />
             ))
           )}
         </TabsContent>
@@ -320,7 +679,12 @@ export default function MyVouchersPage() {
             </div>
           ) : (
             usedVouchers.map((voucher: VoucherInstance) => (
-              <VoucherCard key={voucher.id} voucher={voucher} onShowQR={handleShowQR} />
+              <VoucherCard 
+                key={voucher.id} 
+                voucher={voucher} 
+                onShowQR={handleShowQR}
+                onTransfer={handleTransfer}
+              />
             ))
           )}
         </TabsContent>
@@ -333,7 +697,12 @@ export default function MyVouchersPage() {
             </div>
           ) : (
             expiredVouchers.map((voucher: VoucherInstance) => (
-              <VoucherCard key={voucher.id} voucher={voucher} onShowQR={handleShowQR} />
+              <VoucherCard 
+                key={voucher.id} 
+                voucher={voucher} 
+                onShowQR={handleShowQR}
+                onTransfer={handleTransfer}
+              />
             ))
           )}
         </TabsContent>
@@ -344,6 +713,21 @@ export default function MyVouchersPage() {
         voucher={selectedVoucher}
         open={showQRDialog}
         onClose={() => setShowQRDialog(false)}
+      />
+
+      {/* Transfer Dialog */}
+      <TransferDialog
+        voucher={selectedVoucher}
+        open={showTransferDialog}
+        onClose={() => setShowTransferDialog(false)}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Claim Dialog */}
+      <ClaimVoucherDialog
+        open={showClaimDialog}
+        onClose={() => setShowClaimDialog(false)}
+        onSuccess={() => refetch()}
       />
     </div>
   );

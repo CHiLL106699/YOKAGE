@@ -1321,3 +1321,40 @@ export const voucherBatches = mysqlTable("voucherBatches", {
 
 export type VoucherBatch = typeof voucherBatches.$inferSelect;
 export type InsertVoucherBatch = typeof voucherBatches.$inferInsert;
+
+
+// 票券轉贈記錄表
+export const voucherTransfers = mysqlTable("voucherTransfers", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  voucherInstanceId: int("voucherInstanceId").notNull(),
+  // 轉贈者資訊
+  fromCustomerId: int("fromCustomerId").notNull(),
+  fromCustomerName: varchar("fromCustomerName", { length: 100 }),
+  fromCustomerPhone: varchar("fromCustomerPhone", { length: 20 }),
+  // 受贈者資訊
+  toCustomerId: int("toCustomerId"),
+  toCustomerName: varchar("toCustomerName", { length: 100 }),
+  toCustomerPhone: varchar("toCustomerPhone", { length: 20 }).notNull(),
+  toCustomerEmail: varchar("toCustomerEmail", { length: 320 }),
+  // 轉贈狀態
+  status: mysqlEnum("status", ["pending", "accepted", "rejected", "expired", "cancelled"]).default("pending"),
+  // 轉贈訊息
+  giftMessage: text("giftMessage"),
+  // 領取資訊
+  claimCode: varchar("claimCode", { length: 50 }).notNull().unique(),
+  claimedAt: timestamp("claimedAt"),
+  // 通知狀態
+  notificationSent: boolean("notificationSent").default(false),
+  notificationChannel: mysqlEnum("notificationChannel", ["line", "sms", "email"]).default("line"),
+  notificationSentAt: timestamp("notificationSentAt"),
+  // 有效期限（轉贈邀請的有效期）
+  expiresAt: timestamp("expiresAt").notNull(),
+  // 備註
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type VoucherTransfer = typeof voucherTransfers.$inferSelect;
+export type InsertVoucherTransfer = typeof voucherTransfers.$inferInsert;

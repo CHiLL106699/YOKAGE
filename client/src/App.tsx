@@ -88,6 +88,7 @@ import SocialIntegrationPage from "@/pages/SocialIntegrationPage";
 import VouchersPage from "@/pages/VouchersPage";
 import MyVouchersPage from "@/pages/liff/MyVouchersPage";
 import VoucherRedemptionPage from "@/pages/VoucherRedemptionPage";
+import VoucherReportsPage from "@/pages/VoucherReportsPage";
 
 function Router() {
   return (
@@ -194,6 +195,7 @@ function Router() {
       {/* Phase 56: 電子票券系統 */}
       <Route path="/clinic/vouchers" component={VouchersPage} />
       <Route path="/clinic/voucher-redemption" component={VoucherRedemptionPage} />
+      <Route path="/clinic/voucher-reports" component={VoucherReportsPage} />
       
       {/* LIFF 票券頁面 */}
       <Route path="/liff/my-vouchers" component={MyVouchersPage} />

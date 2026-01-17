@@ -2789,3 +2789,222 @@ export async function transferVoucher(voucherId: number, newCustomerId: number) 
   
   return newVoucherId;
 }
+
+
+// ============================================
+// 票券轉贈功能
+// ============================================
+import { voucherTransfers, InsertVoucherTransfer } from "../drizzle/schema";
+
+// 生成轉贈領取碼
+export async function generateClaimCode(): Promise<string> {
+  return `GIFT-${nanoid(8).toUpperCase()}`;
+}
+
+// 建立轉贈記錄
+export async function createVoucherTransfer(transfer: InsertVoucherTransfer) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 檢查票券是否存在且可轉贈
+  const voucher = await getVoucherInstanceById(transfer.voucherInstanceId);
+  if (!voucher) throw new Error("Voucher not found");
+  if (voucher.status !== 'active') throw new Error("Voucher is not active");
+  
+  // 檢查模板是否允許轉贈
+  const template = await getVoucherTemplateById(voucher.templateId);
+  if (!template?.isTransferable) throw new Error("This voucher is not transferable");
+  
+  // 生成領取碼
+  if (!transfer.claimCode) {
+    transfer.claimCode = await generateClaimCode();
+  }
+  
+  // 設定預設有效期（7天）
+  if (!transfer.expiresAt) {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    transfer.expiresAt = expiresAt;
+  }
+  
+  const result = await db.insert(voucherTransfers).values(transfer);
+  
+  // 更新票券狀態為待轉贈
+  await updateVoucherInstance(transfer.voucherInstanceId, {
+    status: 'transferred',
+  });
+  
+  return result[0].insertId;
+}
+
+// 根據領取碼獲取轉贈記錄
+export async function getVoucherTransferByClaimCode(claimCode: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(voucherTransfers).where(eq(voucherTransfers.claimCode, claimCode)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// 根據 ID 獲取轉贈記錄
+export async function getVoucherTransferById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(voucherTransfers).where(eq(voucherTransfers.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// 更新轉贈記錄
+export async function updateVoucherTransfer(id: number, transfer: Partial<InsertVoucherTransfer>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(voucherTransfers).set(transfer).where(eq(voucherTransfers.id, id));
+}
+
+// 領取轉贈票券
+export async function claimVoucherTransfer(claimCode: string, toCustomerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 獲取轉贈記錄
+  const transfer = await getVoucherTransferByClaimCode(claimCode);
+  if (!transfer) throw new Error("Transfer not found");
+  if (transfer.status !== 'pending') throw new Error("Transfer is not pending");
+  if (new Date(transfer.expiresAt) < new Date()) throw new Error("Transfer has expired");
+  
+  // 獲取原始票券
+  const originalVoucher = await getVoucherInstanceById(transfer.voucherInstanceId);
+  if (!originalVoucher) throw new Error("Original voucher not found");
+  
+  // 獲取模板
+  const template = await getVoucherTemplateById(originalVoucher.templateId);
+  if (!template) throw new Error("Voucher template not found");
+  
+  // 建立新票券給受贈者
+  const newVoucherId = await createVoucherInstance({
+    organizationId: originalVoucher.organizationId,
+    templateId: originalVoucher.templateId,
+    customerId: toCustomerId,
+    voucherCode: await generateVoucherCode(),
+    status: 'active',
+    remainingUses: originalVoucher.remainingUses,
+    validFrom: new Date(),
+    validUntil: originalVoucher.validUntil,
+    originalOwnerId: transfer.fromCustomerId,
+    issueChannel: 'manual',
+    notes: `Received as gift from transfer ${transfer.claimCode}`,
+  });
+  
+  // 更新轉贈記錄
+  await updateVoucherTransfer(transfer.id, {
+    status: 'accepted',
+    toCustomerId,
+    claimedAt: new Date(),
+  });
+  
+  return newVoucherId;
+}
+
+// 取消轉贈
+export async function cancelVoucherTransfer(transferId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const transfer = await getVoucherTransferById(transferId);
+  if (!transfer) throw new Error("Transfer not found");
+  if (transfer.status !== 'pending') throw new Error("Transfer is not pending");
+  
+  // 恢復原始票券狀態
+  await updateVoucherInstance(transfer.voucherInstanceId, {
+    status: 'active',
+  });
+  
+  // 更新轉贈記錄
+  await updateVoucherTransfer(transferId, {
+    status: 'cancelled',
+  });
+}
+
+// 列出客戶的轉贈記錄（發出的）
+export async function listSentTransfers(customerId: number, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereClause = eq(voucherTransfers.fromCustomerId, customerId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(voucherTransfers.status, options.status as any)) as typeof whereClause;
+  }
+  
+  const data = await db.select().from(voucherTransfers).where(whereClause).orderBy(desc(voucherTransfers.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherTransfers).where(whereClause);
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 列出待領取的轉贈（根據手機號碼）
+export async function listPendingTransfersByPhone(phone: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(voucherTransfers).where(and(
+    eq(voucherTransfers.toCustomerPhone, phone),
+    eq(voucherTransfers.status, 'pending'),
+    gte(voucherTransfers.expiresAt, new Date())
+  )).orderBy(desc(voucherTransfers.createdAt));
+}
+
+// 過期未領取的轉贈
+export async function expirePendingTransfers(organizationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 找出過期的轉贈
+  const expiredTransfers = await db.select().from(voucherTransfers).where(and(
+    eq(voucherTransfers.organizationId, organizationId),
+    eq(voucherTransfers.status, 'pending'),
+    lte(voucherTransfers.expiresAt, new Date())
+  ));
+  
+  // 逐一處理
+  for (const transfer of expiredTransfers) {
+    // 恢復原始票券
+    await updateVoucherInstance(transfer.voucherInstanceId, {
+      status: 'active',
+    });
+    
+    // 更新轉贈狀態
+    await updateVoucherTransfer(transfer.id, {
+      status: 'expired',
+    });
+  }
+  
+  return expiredTransfers.length;
+}
+
+// 獲取轉贈統計
+export async function getTransferStats(organizationId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, pending: 0, accepted: 0, expired: 0, cancelled: 0 };
+  
+  const stats = await db.select({
+    status: voucherTransfers.status,
+    count: sql<number>`count(*)`,
+  }).from(voucherTransfers)
+    .where(eq(voucherTransfers.organizationId, organizationId))
+    .groupBy(voucherTransfers.status);
+  
+  const result = { total: 0, pending: 0, accepted: 0, expired: 0, cancelled: 0 };
+  for (const stat of stats) {
+    result.total += stat.count;
+    if (stat.status === 'pending') result.pending = stat.count;
+    if (stat.status === 'accepted') result.accepted = stat.count;
+    if (stat.status === 'expired') result.expired = stat.count;
+    if (stat.status === 'cancelled') result.cancelled = stat.count;
+  }
+  
+  return result;
+}

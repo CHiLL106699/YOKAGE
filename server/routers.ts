@@ -2769,6 +2769,96 @@ const voucherRouter = router({
       return { success: true };
     }),
 
+  // 建立轉贈記錄
+  createTransfer: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      voucherInstanceId: z.number(),
+      fromCustomerId: z.number(),
+      fromCustomerName: z.string().optional(),
+      fromCustomerPhone: z.string().optional(),
+      toCustomerName: z.string().optional(),
+      toCustomerPhone: z.string(),
+      toCustomerEmail: z.string().optional(),
+      giftMessage: z.string().optional(),
+      notificationChannel: z.enum(["line", "sms", "email"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      // 生成領取碼
+      const claimCode = `GIFT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      // 設定預設有效期（7天）
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      
+      const transferId = await db.createVoucherTransfer({
+        ...input,
+        claimCode,
+        expiresAt,
+      });
+      const transfer = await db.getVoucherTransferById(transferId);
+      return { transferId, claimCode: transfer?.claimCode, success: true };
+    }),
+
+  // 領取轉贈票券
+  claimTransfer: publicProcedure
+    .input(z.object({
+      claimCode: z.string(),
+      customerId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const newVoucherId = await db.claimVoucherTransfer(input.claimCode, input.customerId);
+      return { newVoucherId, success: true };
+    }),
+
+  // 取消轉贈
+  cancelTransfer: protectedProcedure
+    .input(z.object({ transferId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.cancelVoucherTransfer(input.transferId);
+      return { success: true };
+    }),
+
+  // 查詢轉贈記錄（根據領取碼）
+  getTransferByClaimCode: publicProcedure
+    .input(z.object({ claimCode: z.string() }))
+    .query(async ({ input }) => {
+      return await db.getVoucherTransferByClaimCode(input.claimCode);
+    }),
+
+  // 列出客戶發出的轉贈
+  listSentTransfers: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listSentTransfers(input.customerId, input);
+    }),
+
+  // 列出待領取的轉贈（根據手機號碼）
+  listPendingTransfers: publicProcedure
+    .input(z.object({ phone: z.string() }))
+    .query(async ({ input }) => {
+      return await db.listPendingTransfersByPhone(input.phone);
+    }),
+
+  // 轉贈統計
+  getTransferStats: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getTransferStats(input.organizationId);
+    }),
+
+  // 過期未領取的轉贈處理
+  expirePendingTransfers: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .mutation(async ({ input }) => {
+      const count = await db.expirePendingTransfers(input.organizationId);
+      return { expiredCount: count, success: true };
+    }),
+
   // 發送 LINE Flex Message 票券
   sendLineVoucher: protectedProcedure
     .input(z.object({

@@ -50,6 +50,13 @@
       "when": 1768672648389,
       "tag": "0006_salty_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1768675440408,
+      "tag": "0007_organic_phantom_reporter",
+      "breakpoints": true
     }
   ]
 }
