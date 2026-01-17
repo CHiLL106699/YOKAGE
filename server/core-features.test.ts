@@ -386,3 +386,85 @@ describe("Core Features - Customer Source ROI", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 });
+
+
+// ============================================
+// Phase 41-48 競品分析差異化功能測試
+// ============================================
+
+describe("Phase 41 - Injection Mapping", () => {
+  it("should list injection records via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.injection.listRecords({ customerId: 1 });
+    expect(result).toBeDefined();
+    expect(result !== null && result !== undefined).toBe(true);
+  });
+});
+
+describe("Phase 42 - Consent Forms", () => {
+  it("should list consent templates via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.consent.listTemplates({ organizationId: 1 });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe("Phase 43 - Prescriptions", () => {
+  it("should list medications via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.prescription.listMedications({ organizationId: 1 });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe("Phase 44 - Skin Analysis", () => {
+  it("should list skin analyses via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.skinAnalysis.listRecords({ customerId: 1 });
+    expect(result).toBeDefined();
+    // result 可能是物件或陣列，檢查它是否存在
+    expect(result !== null && result !== undefined).toBe(true);
+  });
+});
+
+describe("Phase 45 - Subscriptions", () => {
+  it("should list subscription plans via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.subscription.listPlans({ organizationId: 1 });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe("Phase 46 - Teleconsultations", () => {
+  it("should list teleconsult sessions via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.teleConsult.list({ organizationId: 1 });
+    expect(result).toBeDefined();
+    // result 可能是物件或陣列，檢查它是否存在
+    expect(result !== null && result !== undefined).toBe(true);
+  });
+});
+
+describe("Phase 47 - Referrals", () => {
+  it("should generate referral code via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.referral.generateCode({
+      organizationId: 1,
+      customerId: 1,
+    });
+    expect(result).toBeDefined();
+    expect(result.code).toBeDefined();
+  });
+});
+
+describe("Phase 48 - Social Integration", () => {
+  it("should list social accounts via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.social.listAccounts({ organizationId: 1 });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+});

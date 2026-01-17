@@ -1704,6 +1704,736 @@ const satisfactionRouter = router({
 });
 
 // ============================================
+// Phase 41: 注射點位圖 Router
+// ============================================
+const injectionRouter = router({
+  createRecord: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      appointmentId: z.number().optional(),
+      treatmentRecordId: z.number().optional(),
+      staffId: z.number(),
+      templateType: z.enum(["face_front", "face_side_left", "face_side_right", "body_front", "body_back"]).optional(),
+      productUsed: z.string().optional(),
+      totalUnits: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createInjectionRecord(input);
+      return { id };
+    }),
+
+  getRecord: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const record = await db.getInjectionRecordById(input.id);
+      if (!record) throw new TRPCError({ code: "NOT_FOUND" });
+      const points = await db.listInjectionPoints(input.id);
+      return { ...record, points };
+    }),
+
+  listRecords: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listInjectionRecords(input.customerId, input);
+    }),
+
+  addPoint: protectedProcedure
+    .input(z.object({
+      injectionRecordId: z.number(),
+      positionX: z.string(),
+      positionY: z.string(),
+      units: z.string(),
+      depth: z.string().optional(),
+      technique: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createInjectionPoint(input);
+      return { id };
+    }),
+
+  compareHistory: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      templateType: z.string(),
+    }))
+    .query(async ({ input }) => {
+      return await db.compareInjectionHistory(input.customerId, input.templateType);
+    }),
+});
+
+// ============================================
+// Phase 42: 電子同意書 Router
+// ============================================
+const consentRouter = router({
+  createTemplate: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string(),
+      category: z.enum(["treatment", "surgery", "anesthesia", "photography", "general"]).optional(),
+      content: z.string(),
+      requiredFields: z.any().optional(),
+      version: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createConsentFormTemplate(input);
+      return { id };
+    }),
+
+  updateTemplate: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      content: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateConsentFormTemplate(id, data);
+      return { success: true };
+    }),
+
+  listTemplates: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      category: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listConsentFormTemplates(input.organizationId, input);
+    }),
+
+  sign: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      templateId: z.number(),
+      appointmentId: z.number().optional(),
+      treatmentRecordId: z.number().optional(),
+      signatureImageUrl: z.string(),
+      signedContent: z.string().optional(),
+      ipAddress: z.string().optional(),
+      userAgent: z.string().optional(),
+      witnessName: z.string().optional(),
+      witnessSignatureUrl: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createConsentSignature({ ...input, status: 'signed' });
+      return { id };
+    }),
+
+  getSignature: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getConsentSignatureById(input.id);
+    }),
+
+  listSignatures: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listCustomerConsentSignatures(input.customerId, input);
+    }),
+});
+
+// ============================================
+// Phase 43: 處方管理 Router
+// ============================================
+const prescriptionRouter = router({
+  createMedication: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string(),
+      genericName: z.string().optional(),
+      category: z.enum(["oral", "topical", "injection", "supplement", "other"]).optional(),
+      dosageForm: z.string().optional(),
+      strength: z.string().optional(),
+      unit: z.string().optional(),
+      manufacturer: z.string().optional(),
+      contraindications: z.string().optional(),
+      sideEffects: z.string().optional(),
+      instructions: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createMedication(input);
+      return { id };
+    }),
+
+  listMedications: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      category: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listMedications(input.organizationId, input);
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      prescriberId: z.number(),
+      appointmentId: z.number().optional(),
+      treatmentRecordId: z.number().optional(),
+      medicationId: z.number(),
+      dosage: z.string(),
+      frequency: z.string(),
+      duration: z.string().optional(),
+      quantity: z.number(),
+      refillsAllowed: z.number().optional(),
+      instructions: z.string().optional(),
+      warnings: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      // 檢查過敏衝突
+      const conflict = await db.checkAllergyConflict(input.customerId, input.medicationId);
+      if (conflict.hasConflict) {
+        throw new TRPCError({ 
+          code: "PRECONDITION_FAILED", 
+          message: `過敏警告: ${conflict.conflicts.map(c => c.allergen).join(', ')}` 
+        });
+      }
+      const id = await db.createPrescription(input);
+      return { id };
+    }),
+
+  listPrescriptions: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listCustomerPrescriptions(input.customerId, input);
+    }),
+
+  addAllergy: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      allergyType: z.enum(["medication", "food", "environmental", "other"]).optional(),
+      allergen: z.string(),
+      severity: z.enum(["mild", "moderate", "severe", "life_threatening"]).optional(),
+      reaction: z.string().optional(),
+      diagnosedDate: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createCustomerAllergy({
+        ...input,
+        diagnosedDate: input.diagnosedDate ? new Date(input.diagnosedDate) : undefined,
+      });
+      return { id };
+    }),
+
+  listAllergies: protectedProcedure
+    .input(z.object({ customerId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.listCustomerAllergies(input.customerId);
+    }),
+
+  checkConflict: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      medicationId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      return await db.checkAllergyConflict(input.customerId, input.medicationId);
+    }),
+});
+
+// ============================================
+// Phase 44: AI 膚質分析 Router
+// ============================================
+const skinAnalysisRouter = router({
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      appointmentId: z.number().optional(),
+      photoUrl: z.string(),
+      analysisType: z.enum(["full_face", "forehead", "cheeks", "chin", "nose", "eyes"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      // 建立分析記錄（實際 AI 分析需要整合外部服務）
+      const id = await db.createSkinAnalysisRecord(input);
+      
+      // 模擬 AI 分析結果（實際應用時替換為真實 AI 服務）
+      const metricTypes = ['wrinkles', 'spots', 'pores', 'texture', 'hydration', 'oiliness', 'redness', 'elasticity'] as const;
+      for (const metricType of metricTypes) {
+        await db.createSkinMetric({
+          analysisRecordId: id,
+          metricType,
+          score: Math.floor(Math.random() * 40) + 60, // 60-100 的隨機分數
+          severity: 'mild',
+        });
+      }
+      
+      return { id };
+    }),
+
+  getRecord: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const record = await db.getSkinAnalysisRecordById(input.id);
+      if (!record) throw new TRPCError({ code: "NOT_FOUND" });
+      const metrics = await db.listSkinMetrics(input.id);
+      return { ...record, metrics };
+    }),
+
+  listRecords: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listSkinAnalysisRecords(input.customerId, input);
+    }),
+
+  compare: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      metricType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.compareSkinAnalysis(input.customerId, input.metricType);
+    }),
+});
+
+// ============================================
+// Phase 45: 會員訂閱制 Router
+// ============================================
+const subscriptionRouter = router({
+  createPlan: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string(),
+      description: z.string().optional(),
+      monthlyPrice: z.string(),
+      annualPrice: z.string().optional(),
+      benefits: z.any().optional(),
+      includedServices: z.any().optional(),
+      discountPercentage: z.number().optional(),
+      priorityBooking: z.boolean().optional(),
+      freeConsultations: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createMembershipPlan(input);
+      return { id };
+    }),
+
+  updatePlan: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      monthlyPrice: z.string().optional(),
+      annualPrice: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateMembershipPlan(id, data);
+      return { success: true };
+    }),
+
+  listPlans: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      isActive: z.boolean().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listMembershipPlans(input.organizationId, input);
+    }),
+
+  subscribe: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      planId: z.number(),
+      billingCycle: z.enum(["monthly", "annual"]).optional(),
+      paymentMethod: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const startDate = new Date();
+      const endDate = new Date();
+      if (input.billingCycle === 'annual') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
+      
+      const id = await db.createMemberSubscription({
+        ...input,
+        startDate,
+        endDate,
+        nextBillingDate: endDate,
+        status: 'active',
+      });
+      return { id };
+    }),
+
+  cancelSubscription: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      cancelReason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.updateMemberSubscription(input.id, {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelReason: input.cancelReason,
+        autoRenew: false,
+      });
+      return { success: true };
+    }),
+
+  getCustomerSubscription: protectedProcedure
+    .input(z.object({ customerId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getCustomerSubscription(input.customerId);
+    }),
+
+  listSubscriptions: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listOrganizationSubscriptions(input.organizationId, input);
+    }),
+
+  listPayments: protectedProcedure
+    .input(z.object({ subscriptionId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.listSubscriptionPayments(input.subscriptionId);
+    }),
+});
+
+// ============================================
+// Phase 46: 遠程諮詢 Router
+// ============================================
+const teleConsultRouter = router({
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      staffId: z.number(),
+      appointmentId: z.number().optional(),
+      scheduledAt: z.string(),
+      duration: z.number().optional(),
+      consultationType: z.enum(["initial", "follow_up", "pre_treatment", "post_treatment"]).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const id = await db.createTeleConsultation({
+        ...input,
+        scheduledAt: new Date(input.scheduledAt),
+        roomId,
+        roomUrl: `https://meet.example.com/${roomId}`,
+      });
+      return { id, roomId };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["scheduled", "in_progress", "completed", "cancelled", "no_show"]).optional(),
+      notes: z.string().optional(),
+      summary: z.string().optional(),
+      startedAt: z.string().optional(),
+      endedAt: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, startedAt, endedAt, ...data } = input;
+      await db.updateTeleConsultation(id, {
+        ...data,
+        startedAt: startedAt ? new Date(startedAt) : undefined,
+        endedAt: endedAt ? new Date(endedAt) : undefined,
+      });
+      return { success: true };
+    }),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const consultation = await db.getTeleConsultationById(input.id);
+      if (!consultation) throw new TRPCError({ code: "NOT_FOUND" });
+      const recordings = await db.listConsultationRecordings(input.id);
+      return { ...consultation, recordings };
+    }),
+
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      status: z.string().optional(),
+      customerId: z.number().optional(),
+      staffId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listTeleConsultations(input.organizationId, input);
+    }),
+
+  addRecording: protectedProcedure
+    .input(z.object({
+      teleConsultationId: z.number(),
+      recordingUrl: z.string(),
+      duration: z.number().optional(),
+      fileSize: z.number().optional(),
+      format: z.string().optional(),
+      transcription: z.string().optional(),
+      consentGiven: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createConsultationRecording(input);
+      return { id };
+    }),
+});
+
+// ============================================
+// Phase 47: 推薦獎勵系統 Router
+// ============================================
+const referralRouter = router({
+  generateCode: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      referrerRewardType: z.enum(["points", "credit", "discount", "free_service"]).optional(),
+      referrerRewardValue: z.string().optional(),
+      refereeRewardType: z.enum(["points", "credit", "discount", "free_service"]).optional(),
+      refereeRewardValue: z.string().optional(),
+      maxUses: z.number().optional(),
+      expiresAt: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const code = `REF${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const id = await db.createReferralCode({
+        ...input,
+        code,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+      });
+      return { id, code };
+    }),
+
+  getCode: protectedProcedure
+    .input(z.object({ code: z.string() }))
+    .query(async ({ input }) => {
+      return await db.getReferralCodeByCode(input.code);
+    }),
+
+  getCustomerCode: protectedProcedure
+    .input(z.object({ customerId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getCustomerReferralCode(input.customerId);
+    }),
+
+  useCode: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      code: z.string(),
+      refereeId: z.number(),
+      refereeOrderId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const referralCode = await db.getReferralCodeByCode(input.code);
+      if (!referralCode) throw new TRPCError({ code: "NOT_FOUND", message: "推薦碼不存在" });
+      if (!referralCode.isActive) throw new TRPCError({ code: "BAD_REQUEST", message: "推薦碼已停用" });
+      if (referralCode.maxUses && (referralCode.usedCount || 0) >= referralCode.maxUses) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "推薦碼已達使用上限" });
+      }
+      
+      // 建立推薦記錄
+      const recordId = await db.createReferralRecord({
+        organizationId: input.organizationId,
+        referralCodeId: referralCode.id,
+        referrerId: referralCode.customerId,
+        refereeId: input.refereeId,
+        refereeOrderId: input.refereeOrderId,
+        status: 'qualified',
+        qualifiedAt: new Date(),
+      });
+      
+      // 更新使用次數
+      await db.updateReferralCodeUsage(referralCode.id);
+      
+      // 建立推薦人獎勵
+      await db.createReferralReward({
+        referralRecordId: recordId,
+        recipientId: referralCode.customerId,
+        recipientType: 'referrer',
+        rewardType: referralCode.referrerRewardType || 'points',
+        rewardValue: referralCode.referrerRewardValue || '0',
+        status: 'issued',
+        issuedAt: new Date(),
+      });
+      
+      // 建立被推薦人獎勵
+      await db.createReferralReward({
+        referralRecordId: recordId,
+        recipientId: input.refereeId,
+        recipientType: 'referee',
+        rewardType: referralCode.refereeRewardType || 'discount',
+        rewardValue: referralCode.refereeRewardValue || '0',
+        status: 'issued',
+        issuedAt: new Date(),
+      });
+      
+      return { success: true, recordId };
+    }),
+
+  listRecords: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      referrerId: z.number().optional(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listReferralRecords(input.organizationId, input);
+    }),
+
+  listRewards: protectedProcedure
+    .input(z.object({
+      customerId: z.number(),
+      status: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listCustomerReferralRewards(input.customerId, input);
+    }),
+
+  getStats: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getReferralStats(input.organizationId);
+    }),
+});
+
+// ============================================
+// Phase 48: 社群媒體整合 Router
+// ============================================
+const socialRouter = router({
+  connectAccount: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      platform: z.enum(["facebook", "instagram", "line", "tiktok", "youtube", "xiaohongshu"]),
+      accountName: z.string(),
+      accountId: z.string().optional(),
+      accessToken: z.string().optional(),
+      refreshToken: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await db.createSocialAccount({
+        ...input,
+        isConnected: !!input.accessToken,
+      });
+      return { id };
+    }),
+
+  updateAccount: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      accountName: z.string().optional(),
+      accessToken: z.string().optional(),
+      refreshToken: z.string().optional(),
+      isConnected: z.boolean().optional(),
+      followerCount: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateSocialAccount(id, data);
+      return { success: true };
+    }),
+
+  listAccounts: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.listSocialAccounts(input.organizationId);
+    }),
+
+  createPost: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      socialAccountId: z.number(),
+      content: z.string(),
+      mediaUrls: z.array(z.string()).optional(),
+      hashtags: z.array(z.string()).optional(),
+      scheduledAt: z.string(),
+      postType: z.enum(["image", "video", "carousel", "story", "reel"]).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const id = await db.createScheduledPost({
+        ...input,
+        scheduledAt: new Date(input.scheduledAt),
+        status: 'scheduled',
+        createdBy: ctx.user?.id,
+      });
+      return { id };
+    }),
+
+  updatePost: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      content: z.string().optional(),
+      mediaUrls: z.array(z.string()).optional(),
+      scheduledAt: z.string().optional(),
+      status: z.enum(["draft", "scheduled", "published", "failed", "cancelled"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, scheduledAt, ...data } = input;
+      await db.updateScheduledPost(id, {
+        ...data,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+      });
+      return { success: true };
+    }),
+
+  listPosts: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      status: z.string().optional(),
+      socialAccountId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listScheduledPosts(input.organizationId, input);
+    }),
+
+  getAnalytics: protectedProcedure
+    .input(z.object({
+      socialAccountId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getSocialAnalytics(input.socialAccountId, input);
+    }),
+
+  getStats: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getSocialAccountStats(input.organizationId);
+    }),
+});
+
+// ============================================
 // Main App Router
 // ============================================
 export const appRouter = router({
@@ -1742,6 +2472,15 @@ export const appRouter = router({
   revenueTarget: revenueTargetRouter,
   marketing: marketingRouter,
   satisfaction: satisfactionRouter,
+  // Phase 41-48 進階功能模組
+  injection: injectionRouter,
+  consent: consentRouter,
+  prescription: prescriptionRouter,
+  skinAnalysis: skinAnalysisRouter,
+  subscription: subscriptionRouter,
+  teleConsult: teleConsultRouter,
+  referral: referralRouter,
+  social: socialRouter,
 });
 
 export type AppRouter = typeof appRouter;

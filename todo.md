@@ -452,3 +452,79 @@
 - [x] 實作調查管理與趨勢圖表
 - [x] 撰寫單元測試
 
+
+
+---
+
+## Phase 41: 注射點位圖與臉部標記
+- [x] 建立 injectionRecords 資料表
+- [x] 建立 injectionPoints 資料表
+- [x] 建立臉部/身體 SVG 模板
+- [x] 實作點位標記 CRUD API
+- [x] 實作歷史點位比較 API
+- [x] 建立注射記錄前端頁面
+- [x] 實作互動式點位標記元件
+- [x] 撰寫單元測試
+
+## Phase 42: 電子同意書與數位簽章
+- [x] 建立 consentFormTemplates 資料表
+- [x] 建立 consentSignatures 資料表
+- [x] 實作同意書模板管理 API
+- [x] 實作電子簽名 API（整合 S3）
+- [x] 建立同意書簽署前端頁面
+- [x] 實作簽署歷史查詢
+- [x] 撰寫單元測試
+
+## Phase 43: 處方管理系統
+- [x] 建立 medications 資料表
+- [x] 建立 prescriptions 資料表
+- [x] 建立 customerAllergies 資料表
+- [x] 實作處方開立 API
+- [x] 實作過敏/禁忌症檢查 API
+- [x] 建立處方管理前端頁面
+- [x] 撰寫單元測試
+
+## Phase 44: AI 膚質分析整合
+- [x] 建立 skinAnalysisRecords 資料表
+- [x] 建立 skinMetrics 資料表
+- [x] 實作膚質分析 API（整合 AI）
+- [x] 實作膚質指標追蹤 API
+- [x] 建立膚質分析前端頁面
+- [x] 實作療程前後比較功能
+- [x] 撰寫單元測試
+
+## Phase 45: 會員訂閱制管理
+- [x] 建立 membershipPlans 資料表
+- [x] 建立 memberSubscriptions 資料表
+- [x] 建立 subscriptionPayments 資料表
+- [x] 實作訂閱管理 API
+- [x] 實作自動扣款邏輯
+- [x] 建立會員訂閱前端頁面
+- [x] 撰寫單元測試
+
+## Phase 46: 遠程諮詢功能
+- [x] 建立 teleConsultations 資料表
+- [x] 建立 consultationRecordings 資料表
+- [x] 實作諮詢排程 API
+- [x] 實作視訊房間管理 API
+- [x] 建立遠程諮詢前端頁面
+- [x] 實作錄影存檔功能
+- [x] 撰寫單元測試
+
+## Phase 47: 客戶推薦獎勵系統
+- [x] 建立 referralCodes 資料表
+- [x] 建立 referralRecords 資料表
+- [x] 建立 referralRewards 資料表
+- [x] 實作推薦碼生成 API
+- [x] 實作獎勵發放 API
+- [x] 建立推薦管理前端頁面
+- [x] 撰寫單元測試
+
+## Phase 48: 社群媒體整合管理
+- [x] 建立 socialAccounts 資料表
+- [x] 建立 scheduledPosts 資料表
+- [x] 建立 socialAnalytics 資料表
+- [x] 實作社群帳號管理 API
+- [x] 實作貼文排程 API
+- [x] 建立社群管理前端頁面
+- [x] 撰寫單元測試

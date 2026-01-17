@@ -74,6 +74,15 @@ import AttendanceTrackingPage from "@/pages/AttendanceTrackingPage";
 import InventoryCostPage from "@/pages/InventoryCostPage";
 import RevenueTargetPage from "@/pages/RevenueTargetPage";
 import CustomerSourceROIPage from "@/pages/CustomerSourceROIPage";
+// Phase 41-48 競品分析差異化功能
+import InjectionMappingPage from "@/pages/InjectionMappingPage";
+import ConsentFormPage from "@/pages/ConsentFormPage";
+import PrescriptionPage from "@/pages/PrescriptionPage";
+import SkinAnalysisPage from "@/pages/SkinAnalysisPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
+import TeleconsultPage from "@/pages/TeleconsultPage";
+import ReferralPage from "@/pages/ReferralPage";
+import SocialIntegrationPage from "@/pages/SocialIntegrationPage";
 
 function Router() {
   return (
@@ -165,6 +174,16 @@ function Router() {
       <Route path="/clinic/inventory-cost" component={InventoryCostPage} />
       <Route path="/clinic/revenue-target" component={RevenueTargetPage} />
       <Route path="/clinic/customer-source-roi" component={CustomerSourceROIPage} />
+      
+      {/* Phase 41-48 競品分析差異化功能 */}
+      <Route path="/clinic/injection-mapping" component={InjectionMappingPage} />
+      <Route path="/clinic/consent-form" component={ConsentFormPage} />
+      <Route path="/clinic/prescription" component={PrescriptionPage} />
+      <Route path="/clinic/skin-analysis" component={SkinAnalysisPage} />
+      <Route path="/clinic/subscription" component={SubscriptionPage} />
+      <Route path="/clinic/teleconsult" component={TeleconsultPage} />
+      <Route path="/clinic/referral" component={ReferralPage} />
+      <Route path="/clinic/social-integration" component={SocialIntegrationPage} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />

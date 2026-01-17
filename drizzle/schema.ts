@@ -748,3 +748,412 @@ export const waitlist = mysqlTable("waitlist", {
 
 export type Waitlist = typeof waitlist.$inferSelect;
 export type InsertWaitlist = typeof waitlist.$inferInsert;
+
+
+// ============================================
+// Phase 41: 注射點位圖與臉部標記
+// ============================================
+export const injectionRecords = mysqlTable("injectionRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  appointmentId: int("appointmentId"),
+  treatmentRecordId: int("treatmentRecordId"),
+  staffId: int("staffId").notNull(),
+  templateType: mysqlEnum("templateType", ["face_front", "face_side_left", "face_side_right", "body_front", "body_back"]).default("face_front"),
+  productUsed: varchar("productUsed", { length: 255 }),
+  totalUnits: decimal("totalUnits", { precision: 8, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type InjectionRecord = typeof injectionRecords.$inferSelect;
+export type InsertInjectionRecord = typeof injectionRecords.$inferInsert;
+
+export const injectionPoints = mysqlTable("injectionPoints", {
+  id: int("id").autoincrement().primaryKey(),
+  injectionRecordId: int("injectionRecordId").notNull(),
+  positionX: decimal("positionX", { precision: 5, scale: 2 }).notNull(),
+  positionY: decimal("positionY", { precision: 5, scale: 2 }).notNull(),
+  units: decimal("units", { precision: 6, scale: 2 }).notNull(),
+  depth: varchar("depth", { length: 50 }),
+  technique: varchar("technique", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type InjectionPoint = typeof injectionPoints.$inferSelect;
+export type InsertInjectionPoint = typeof injectionPoints.$inferInsert;
+
+// ============================================
+// Phase 42: 電子同意書與數位簽章
+// ============================================
+export const consentFormTemplates = mysqlTable("consentFormTemplates", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("category", ["treatment", "surgery", "anesthesia", "photography", "general"]).default("treatment"),
+  content: text("content").notNull(),
+  requiredFields: json("requiredFields"),
+  version: varchar("version", { length: 20 }).default("1.0"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ConsentFormTemplate = typeof consentFormTemplates.$inferSelect;
+export type InsertConsentFormTemplate = typeof consentFormTemplates.$inferInsert;
+
+export const consentSignatures = mysqlTable("consentSignatures", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  templateId: int("templateId").notNull(),
+  appointmentId: int("appointmentId"),
+  treatmentRecordId: int("treatmentRecordId"),
+  signatureImageUrl: text("signatureImageUrl").notNull(),
+  signedContent: text("signedContent"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  signedAt: timestamp("signedAt").defaultNow().notNull(),
+  witnessName: varchar("witnessName", { length: 255 }),
+  witnessSignatureUrl: text("witnessSignatureUrl"),
+  status: mysqlEnum("status", ["pending", "signed", "revoked"]).default("pending"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ConsentSignature = typeof consentSignatures.$inferSelect;
+export type InsertConsentSignature = typeof consentSignatures.$inferInsert;
+
+// ============================================
+// Phase 43: 處方管理系統
+// ============================================
+export const medications = mysqlTable("medications", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  genericName: varchar("genericName", { length: 255 }),
+  category: mysqlEnum("category", ["oral", "topical", "injection", "supplement", "other"]).default("oral"),
+  dosageForm: varchar("dosageForm", { length: 100 }),
+  strength: varchar("strength", { length: 100 }),
+  unit: varchar("unit", { length: 50 }),
+  manufacturer: varchar("manufacturer", { length: 255 }),
+  contraindications: text("contraindications"),
+  sideEffects: text("sideEffects"),
+  instructions: text("instructions"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Medication = typeof medications.$inferSelect;
+export type InsertMedication = typeof medications.$inferInsert;
+
+export const prescriptions = mysqlTable("prescriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  prescriberId: int("prescriberId").notNull(),
+  appointmentId: int("appointmentId"),
+  treatmentRecordId: int("treatmentRecordId"),
+  medicationId: int("medicationId").notNull(),
+  dosage: varchar("dosage", { length: 100 }).notNull(),
+  frequency: varchar("frequency", { length: 100 }).notNull(),
+  duration: varchar("duration", { length: 100 }),
+  quantity: int("quantity").notNull(),
+  refillsAllowed: int("refillsAllowed").default(0),
+  refillsUsed: int("refillsUsed").default(0),
+  instructions: text("instructions"),
+  warnings: text("warnings"),
+  status: mysqlEnum("status", ["active", "completed", "cancelled", "expired"]).default("active"),
+  prescribedAt: timestamp("prescribedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Prescription = typeof prescriptions.$inferSelect;
+export type InsertPrescription = typeof prescriptions.$inferInsert;
+
+export const customerAllergies = mysqlTable("customerAllergies", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customerId").notNull(),
+  allergyType: mysqlEnum("allergyType", ["medication", "food", "environmental", "other"]).default("medication"),
+  allergen: varchar("allergen", { length: 255 }).notNull(),
+  severity: mysqlEnum("severity", ["mild", "moderate", "severe", "life_threatening"]).default("moderate"),
+  reaction: text("reaction"),
+  diagnosedDate: date("diagnosedDate"),
+  notes: text("notes"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomerAllergy = typeof customerAllergies.$inferSelect;
+export type InsertCustomerAllergy = typeof customerAllergies.$inferInsert;
+
+// ============================================
+// Phase 44: AI 膚質分析
+// ============================================
+export const skinAnalysisRecords = mysqlTable("skinAnalysisRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  appointmentId: int("appointmentId"),
+  photoUrl: text("photoUrl").notNull(),
+  analysisType: mysqlEnum("analysisType", ["full_face", "forehead", "cheeks", "chin", "nose", "eyes"]).default("full_face"),
+  overallScore: int("overallScore"),
+  skinAge: int("skinAge"),
+  analyzedAt: timestamp("analyzedAt").defaultNow().notNull(),
+  aiModel: varchar("aiModel", { length: 100 }),
+  rawResults: json("rawResults"),
+  recommendations: text("recommendations"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SkinAnalysisRecord = typeof skinAnalysisRecords.$inferSelect;
+export type InsertSkinAnalysisRecord = typeof skinAnalysisRecords.$inferInsert;
+
+export const skinMetrics = mysqlTable("skinMetrics", {
+  id: int("id").autoincrement().primaryKey(),
+  analysisRecordId: int("analysisRecordId").notNull(),
+  metricType: mysqlEnum("metricType", ["wrinkles", "spots", "pores", "texture", "hydration", "oiliness", "redness", "elasticity"]).notNull(),
+  score: int("score").notNull(),
+  severity: mysqlEnum("severity", ["none", "mild", "moderate", "severe"]).default("none"),
+  affectedArea: varchar("affectedArea", { length: 100 }),
+  details: text("details"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SkinMetric = typeof skinMetrics.$inferSelect;
+export type InsertSkinMetric = typeof skinMetrics.$inferInsert;
+
+// ============================================
+// Phase 45: 會員訂閱制管理
+// ============================================
+export const membershipPlans = mysqlTable("membershipPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  monthlyPrice: decimal("monthlyPrice", { precision: 10, scale: 2 }).notNull(),
+  annualPrice: decimal("annualPrice", { precision: 10, scale: 2 }),
+  benefits: json("benefits"),
+  includedServices: json("includedServices"),
+  discountPercentage: int("discountPercentage").default(0),
+  priorityBooking: boolean("priorityBooking").default(false),
+  freeConsultations: int("freeConsultations").default(0),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MembershipPlan = typeof membershipPlans.$inferSelect;
+export type InsertMembershipPlan = typeof membershipPlans.$inferInsert;
+
+export const memberSubscriptions = mysqlTable("memberSubscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  planId: int("planId").notNull(),
+  billingCycle: mysqlEnum("billingCycle", ["monthly", "annual"]).default("monthly"),
+  status: mysqlEnum("status", ["active", "paused", "cancelled", "expired"]).default("active"),
+  startDate: date("startDate").notNull(),
+  endDate: date("endDate"),
+  nextBillingDate: date("nextBillingDate"),
+  autoRenew: boolean("autoRenew").default(true),
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  lastPaymentDate: date("lastPaymentDate"),
+  cancelledAt: timestamp("cancelledAt"),
+  cancelReason: text("cancelReason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MemberSubscription = typeof memberSubscriptions.$inferSelect;
+export type InsertMemberSubscription = typeof memberSubscriptions.$inferInsert;
+
+export const subscriptionPayments = mysqlTable("subscriptionPayments", {
+  id: int("id").autoincrement().primaryKey(),
+  subscriptionId: int("subscriptionId").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TWD"),
+  paymentMethod: varchar("paymentMethod", { length: 50 }),
+  transactionId: varchar("transactionId", { length: 255 }),
+  status: mysqlEnum("status", ["pending", "completed", "failed", "refunded"]).default("pending"),
+  billingPeriodStart: date("billingPeriodStart"),
+  billingPeriodEnd: date("billingPeriodEnd"),
+  paidAt: timestamp("paidAt"),
+  failureReason: text("failureReason"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
+export type InsertSubscriptionPayment = typeof subscriptionPayments.$inferInsert;
+
+// ============================================
+// Phase 46: 遠程諮詢功能
+// ============================================
+export const teleConsultations = mysqlTable("teleConsultations", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  staffId: int("staffId").notNull(),
+  appointmentId: int("appointmentId"),
+  scheduledAt: timestamp("scheduledAt").notNull(),
+  duration: int("duration").default(30),
+  roomId: varchar("roomId", { length: 255 }),
+  roomUrl: text("roomUrl"),
+  status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "cancelled", "no_show"]).default("scheduled"),
+  consultationType: mysqlEnum("consultationType", ["initial", "follow_up", "pre_treatment", "post_treatment"]).default("initial"),
+  notes: text("notes"),
+  summary: text("summary"),
+  startedAt: timestamp("startedAt"),
+  endedAt: timestamp("endedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TeleConsultation = typeof teleConsultations.$inferSelect;
+export type InsertTeleConsultation = typeof teleConsultations.$inferInsert;
+
+export const consultationRecordings = mysqlTable("consultationRecordings", {
+  id: int("id").autoincrement().primaryKey(),
+  teleConsultationId: int("teleConsultationId").notNull(),
+  recordingUrl: text("recordingUrl").notNull(),
+  duration: int("duration"),
+  fileSize: int("fileSize"),
+  format: varchar("format", { length: 20 }),
+  transcription: text("transcription"),
+  consentGiven: boolean("consentGiven").default(false),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ConsultationRecording = typeof consultationRecordings.$inferSelect;
+export type InsertConsultationRecording = typeof consultationRecordings.$inferInsert;
+
+// ============================================
+// Phase 47: 客戶推薦獎勵系統
+// ============================================
+export const referralCodes = mysqlTable("referralCodes", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  referrerRewardType: mysqlEnum("referrerRewardType", ["points", "credit", "discount", "free_service"]).default("points"),
+  referrerRewardValue: decimal("referrerRewardValue", { precision: 10, scale: 2 }).default("0"),
+  refereeRewardType: mysqlEnum("refereeRewardType", ["points", "credit", "discount", "free_service"]).default("discount"),
+  refereeRewardValue: decimal("refereeRewardValue", { precision: 10, scale: 2 }).default("0"),
+  maxUses: int("maxUses"),
+  usedCount: int("usedCount").default(0),
+  isActive: boolean("isActive").default(true),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type InsertReferralCode = typeof referralCodes.$inferInsert;
+
+export const referralRecords = mysqlTable("referralRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  referralCodeId: int("referralCodeId").notNull(),
+  referrerId: int("referrerId").notNull(),
+  refereeId: int("refereeId").notNull(),
+  refereeOrderId: int("refereeOrderId"),
+  status: mysqlEnum("status", ["pending", "qualified", "rewarded", "expired"]).default("pending"),
+  qualifiedAt: timestamp("qualifiedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReferralRecord = typeof referralRecords.$inferSelect;
+export type InsertReferralRecord = typeof referralRecords.$inferInsert;
+
+export const referralRewards = mysqlTable("referralRewards", {
+  id: int("id").autoincrement().primaryKey(),
+  referralRecordId: int("referralRecordId").notNull(),
+  recipientId: int("recipientId").notNull(),
+  recipientType: mysqlEnum("recipientType", ["referrer", "referee"]).notNull(),
+  rewardType: mysqlEnum("rewardType", ["points", "credit", "discount", "free_service"]).notNull(),
+  rewardValue: decimal("rewardValue", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["pending", "issued", "used", "expired"]).default("pending"),
+  issuedAt: timestamp("issuedAt"),
+  usedAt: timestamp("usedAt"),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReferralReward = typeof referralRewards.$inferSelect;
+export type InsertReferralReward = typeof referralRewards.$inferInsert;
+
+// ============================================
+// Phase 48: 社群媒體整合管理
+// ============================================
+export const socialAccounts = mysqlTable("socialAccounts", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  platform: mysqlEnum("platform", ["facebook", "instagram", "line", "tiktok", "youtube", "xiaohongshu"]).notNull(),
+  accountName: varchar("accountName", { length: 255 }).notNull(),
+  accountId: varchar("accountId", { length: 255 }),
+  accessToken: text("accessToken"),
+  refreshToken: text("refreshToken"),
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
+  followerCount: int("followerCount").default(0),
+  isConnected: boolean("isConnected").default(false),
+  lastSyncAt: timestamp("lastSyncAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SocialAccount = typeof socialAccounts.$inferSelect;
+export type InsertSocialAccount = typeof socialAccounts.$inferInsert;
+
+export const scheduledPosts = mysqlTable("scheduledPosts", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  socialAccountId: int("socialAccountId").notNull(),
+  content: text("content").notNull(),
+  mediaUrls: json("mediaUrls"),
+  hashtags: json("hashtags"),
+  scheduledAt: timestamp("scheduledAt").notNull(),
+  publishedAt: timestamp("publishedAt"),
+  status: mysqlEnum("status", ["draft", "scheduled", "published", "failed", "cancelled"]).default("draft"),
+  postType: mysqlEnum("postType", ["image", "video", "carousel", "story", "reel"]).default("image"),
+  externalPostId: varchar("externalPostId", { length: 255 }),
+  errorMessage: text("errorMessage"),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ScheduledPost = typeof scheduledPosts.$inferSelect;
+export type InsertScheduledPost = typeof scheduledPosts.$inferInsert;
+
+export const socialAnalytics = mysqlTable("socialAnalytics", {
+  id: int("id").autoincrement().primaryKey(),
+  socialAccountId: int("socialAccountId").notNull(),
+  postId: int("postId"),
+  date: date("date").notNull(),
+  impressions: int("impressions").default(0),
+  reach: int("reach").default(0),
+  engagement: int("engagement").default(0),
+  likes: int("likes").default(0),
+  comments: int("comments").default(0),
+  shares: int("shares").default(0),
+  saves: int("saves").default(0),
+  clicks: int("clicks").default(0),
+  followerGrowth: int("followerGrowth").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SocialAnalytic = typeof socialAnalytics.$inferSelect;
+export type InsertSocialAnalytic = typeof socialAnalytics.$inferInsert;

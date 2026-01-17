@@ -27,7 +27,8 @@ import {
   BarChart3, Bell, AlertTriangle, CreditCard, Menu, FileText, Webhook,
   Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox,
   Share2, Briefcase, Truck, Star, GitBranch, FileSignature, Camera, Sparkles, Target, Eye,
-  Syringe, ClipboardList, PhoneCall, PieChart, DollarSign, ThumbsUp
+  Syringe, ClipboardList, PhoneCall, PieChart, DollarSign, ThumbsUp,
+  Crosshair, FileCheck, Pill, ScanFace, CreditCard as CreditCardIcon, Video, Gift, Globe2
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -85,6 +86,15 @@ const clinicMenuItems = [
   { icon: Package, label: "庫存成本", path: "/clinic/inventory-cost" },
   { icon: Target, label: "營收目標", path: "/clinic/revenue-target" },
   { icon: BarChart3, label: "客戶來源 ROI", path: "/clinic/customer-source-roi" },
+  // Phase 41-48 競品分析差異化功能
+  { icon: Crosshair, label: "注射點位圖", path: "/clinic/injection-mapping" },
+  { icon: FileCheck, label: "電子同意書", path: "/clinic/consent-form" },
+  { icon: Pill, label: "處方管理", path: "/clinic/prescription" },
+  { icon: ScanFace, label: "AI 膚質分析", path: "/clinic/skin-analysis" },
+  { icon: CreditCardIcon, label: "會員訂閱", path: "/clinic/subscription" },
+  { icon: Video, label: "遠程諮詢", path: "/clinic/teleconsult" },
+  { icon: Gift, label: "推薦獎勵", path: "/clinic/referral" },
+  { icon: Globe2, label: "社群整合", path: "/clinic/social-integration" },
   { icon: Cog, label: "系統設定", path: "/clinic/settings" },
 ];
 

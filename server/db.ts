@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, like, or } from "drizzle-orm";
+import { eq, and, desc, asc, sql, like, or, gte, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -1601,4 +1601,648 @@ export async function notifyWaitlistForCancellation(organizationId: number, appo
   
   // 返回前 3 位候補客戶
   return candidates.slice(0, 3);
+}
+
+
+// ============================================
+// Phase 41: 注射點位圖 Queries
+// ============================================
+import {
+  injectionRecords, InsertInjectionRecord,
+  injectionPoints, InsertInjectionPoint,
+  consentFormTemplates, InsertConsentFormTemplate,
+  consentSignatures, InsertConsentSignature,
+  medications, InsertMedication,
+  prescriptions, InsertPrescription,
+  customerAllergies, InsertCustomerAllergy,
+  skinAnalysisRecords, InsertSkinAnalysisRecord,
+  skinMetrics, InsertSkinMetric,
+  membershipPlans, InsertMembershipPlan,
+  memberSubscriptions, InsertMemberSubscription,
+  subscriptionPayments, InsertSubscriptionPayment,
+  teleConsultations, InsertTeleConsultation,
+  consultationRecordings, InsertConsultationRecording,
+  referralCodes, InsertReferralCode,
+  referralRecords, InsertReferralRecord,
+  referralRewards, InsertReferralReward,
+  socialAccounts, InsertSocialAccount,
+  scheduledPosts, InsertScheduledPost,
+  socialAnalytics, InsertSocialAnalytic,
+} from "../drizzle/schema";
+
+export async function createInjectionRecord(record: InsertInjectionRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(injectionRecords).values(record);
+  return result[0].insertId;
+}
+
+export async function getInjectionRecordById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(injectionRecords).where(eq(injectionRecords.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listInjectionRecords(customerId: number, options?: { page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  const data = await db.select().from(injectionRecords).where(eq(injectionRecords.customerId, customerId)).orderBy(desc(injectionRecords.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(injectionRecords).where(eq(injectionRecords.customerId, customerId));
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createInjectionPoint(point: InsertInjectionPoint) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(injectionPoints).values(point);
+  return result[0].insertId;
+}
+
+export async function listInjectionPoints(injectionRecordId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(injectionPoints).where(eq(injectionPoints.injectionRecordId, injectionRecordId));
+}
+
+export async function compareInjectionHistory(customerId: number, templateType: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const records = await db.select().from(injectionRecords)
+    .where(and(eq(injectionRecords.customerId, customerId), eq(injectionRecords.templateType, templateType as any)))
+    .orderBy(desc(injectionRecords.createdAt))
+    .limit(5);
+  
+  const result = [];
+  for (const record of records) {
+    const points = await listInjectionPoints(record.id);
+    result.push({ ...record, points });
+  }
+  return result;
+}
+
+// ============================================
+// Phase 42: 電子同意書 Queries
+// ============================================
+export async function createConsentFormTemplate(template: InsertConsentFormTemplate) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(consentFormTemplates).values(template);
+  return result[0].insertId;
+}
+
+export async function updateConsentFormTemplate(id: number, template: Partial<InsertConsentFormTemplate>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(consentFormTemplates).set(template).where(eq(consentFormTemplates.id, id));
+}
+
+export async function listConsentFormTemplates(organizationId: number, options?: { category?: string; isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(consentFormTemplates.organizationId, organizationId);
+  if (options?.category) {
+    whereClause = and(whereClause, eq(consentFormTemplates.category, options.category as any)) as typeof whereClause;
+  }
+  if (options?.isActive !== undefined) {
+    whereClause = and(whereClause, eq(consentFormTemplates.isActive, options.isActive)) as typeof whereClause;
+  }
+
+  return await db.select().from(consentFormTemplates).where(whereClause).orderBy(desc(consentFormTemplates.createdAt));
+}
+
+export async function createConsentSignature(signature: InsertConsentSignature) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(consentSignatures).values(signature);
+  return result[0].insertId;
+}
+
+export async function getConsentSignatureById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(consentSignatures).where(eq(consentSignatures.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listCustomerConsentSignatures(customerId: number, options?: { page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  const data = await db.select().from(consentSignatures).where(eq(consentSignatures.customerId, customerId)).orderBy(desc(consentSignatures.signedAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(consentSignatures).where(eq(consentSignatures.customerId, customerId));
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+// ============================================
+// Phase 43: 處方管理 Queries
+// ============================================
+export async function createMedication(medication: InsertMedication) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(medications).values(medication);
+  return result[0].insertId;
+}
+
+export async function updateMedication(id: number, medication: Partial<InsertMedication>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(medications).set(medication).where(eq(medications.id, id));
+}
+
+export async function listMedications(organizationId: number, options?: { category?: string; isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(medications.organizationId, organizationId);
+  if (options?.category) {
+    whereClause = and(whereClause, eq(medications.category, options.category as any)) as typeof whereClause;
+  }
+  if (options?.isActive !== undefined) {
+    whereClause = and(whereClause, eq(medications.isActive, options.isActive)) as typeof whereClause;
+  }
+
+  return await db.select().from(medications).where(whereClause).orderBy(medications.name);
+}
+
+export async function createPrescription(prescription: InsertPrescription) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(prescriptions).values(prescription);
+  return result[0].insertId;
+}
+
+export async function updatePrescription(id: number, prescription: Partial<InsertPrescription>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(prescriptions).set(prescription).where(eq(prescriptions.id, id));
+}
+
+export async function listCustomerPrescriptions(customerId: number, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(prescriptions.customerId, customerId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(prescriptions.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(prescriptions).where(whereClause).orderBy(desc(prescriptions.prescribedAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(prescriptions).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createCustomerAllergy(allergy: InsertCustomerAllergy) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(customerAllergies).values(allergy);
+  return result[0].insertId;
+}
+
+export async function listCustomerAllergies(customerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(customerAllergies).where(and(eq(customerAllergies.customerId, customerId), eq(customerAllergies.isActive, true)));
+}
+
+export async function checkAllergyConflict(customerId: number, medicationId: number) {
+  const db = await getDb();
+  if (!db) return { hasConflict: false, conflicts: [] };
+  
+  const allergies = await listCustomerAllergies(customerId);
+  const medication = await db.select().from(medications).where(eq(medications.id, medicationId)).limit(1);
+  
+  if (!medication.length) return { hasConflict: false, conflicts: [] };
+  
+  const conflicts = allergies.filter(a => 
+    medication[0].name?.toLowerCase().includes(a.allergen.toLowerCase()) ||
+    medication[0].genericName?.toLowerCase().includes(a.allergen.toLowerCase())
+  );
+  
+  return { hasConflict: conflicts.length > 0, conflicts };
+}
+
+// ============================================
+// Phase 44: AI 膚質分析 Queries
+// ============================================
+export async function createSkinAnalysisRecord(record: InsertSkinAnalysisRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(skinAnalysisRecords).values(record);
+  return result[0].insertId;
+}
+
+export async function getSkinAnalysisRecordById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(skinAnalysisRecords).where(eq(skinAnalysisRecords.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listSkinAnalysisRecords(customerId: number, options?: { page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  const data = await db.select().from(skinAnalysisRecords).where(eq(skinAnalysisRecords.customerId, customerId)).orderBy(desc(skinAnalysisRecords.analyzedAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(skinAnalysisRecords).where(eq(skinAnalysisRecords.customerId, customerId));
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createSkinMetric(metric: InsertSkinMetric) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(skinMetrics).values(metric);
+  return result[0].insertId;
+}
+
+export async function listSkinMetrics(analysisRecordId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(skinMetrics).where(eq(skinMetrics.analysisRecordId, analysisRecordId));
+}
+
+export async function compareSkinAnalysis(customerId: number, metricType?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const records = await db.select().from(skinAnalysisRecords)
+    .where(eq(skinAnalysisRecords.customerId, customerId))
+    .orderBy(desc(skinAnalysisRecords.analyzedAt))
+    .limit(10);
+  
+  const result = [];
+  for (const record of records) {
+    let metrics = await listSkinMetrics(record.id);
+    if (metricType) {
+      metrics = metrics.filter(m => m.metricType === metricType);
+    }
+    result.push({ ...record, metrics });
+  }
+  return result;
+}
+
+// ============================================
+// Phase 45: 會員訂閱制 Queries
+// ============================================
+export async function createMembershipPlan(plan: InsertMembershipPlan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(membershipPlans).values(plan);
+  return result[0].insertId;
+}
+
+export async function updateMembershipPlan(id: number, plan: Partial<InsertMembershipPlan>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(membershipPlans).set(plan).where(eq(membershipPlans.id, id));
+}
+
+export async function listMembershipPlans(organizationId: number, options?: { isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(membershipPlans.organizationId, organizationId);
+  if (options?.isActive !== undefined) {
+    whereClause = and(whereClause, eq(membershipPlans.isActive, options.isActive)) as typeof whereClause;
+  }
+
+  return await db.select().from(membershipPlans).where(whereClause).orderBy(membershipPlans.sortOrder);
+}
+
+export async function createMemberSubscription(subscription: InsertMemberSubscription) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(memberSubscriptions).values(subscription);
+  return result[0].insertId;
+}
+
+export async function updateMemberSubscription(id: number, subscription: Partial<InsertMemberSubscription>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(memberSubscriptions).set(subscription).where(eq(memberSubscriptions.id, id));
+}
+
+export async function getCustomerSubscription(customerId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(memberSubscriptions)
+    .where(and(eq(memberSubscriptions.customerId, customerId), eq(memberSubscriptions.status, 'active')))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listOrganizationSubscriptions(organizationId: number, options?: { status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(memberSubscriptions.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(memberSubscriptions.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(memberSubscriptions).where(whereClause).orderBy(desc(memberSubscriptions.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(memberSubscriptions).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createSubscriptionPayment(payment: InsertSubscriptionPayment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(subscriptionPayments).values(payment);
+  return result[0].insertId;
+}
+
+export async function listSubscriptionPayments(subscriptionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(subscriptionPayments).where(eq(subscriptionPayments.subscriptionId, subscriptionId)).orderBy(desc(subscriptionPayments.createdAt));
+}
+
+// ============================================
+// Phase 46: 遠程諮詢 Queries
+// ============================================
+export async function createTeleConsultation(consultation: InsertTeleConsultation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(teleConsultations).values(consultation);
+  return result[0].insertId;
+}
+
+export async function updateTeleConsultation(id: number, consultation: Partial<InsertTeleConsultation>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(teleConsultations).set(consultation).where(eq(teleConsultations.id, id));
+}
+
+export async function getTeleConsultationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(teleConsultations).where(eq(teleConsultations.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function listTeleConsultations(organizationId: number, options?: { status?: string; customerId?: number; staffId?: number; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(teleConsultations.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(teleConsultations.status, options.status as any)) as typeof whereClause;
+  }
+  if (options?.customerId) {
+    whereClause = and(whereClause, eq(teleConsultations.customerId, options.customerId)) as typeof whereClause;
+  }
+  if (options?.staffId) {
+    whereClause = and(whereClause, eq(teleConsultations.staffId, options.staffId)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(teleConsultations).where(whereClause).orderBy(desc(teleConsultations.scheduledAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(teleConsultations).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createConsultationRecording(recording: InsertConsultationRecording) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(consultationRecordings).values(recording);
+  return result[0].insertId;
+}
+
+export async function listConsultationRecordings(teleConsultationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(consultationRecordings).where(eq(consultationRecordings.teleConsultationId, teleConsultationId));
+}
+
+// ============================================
+// Phase 47: 推薦獎勵系統 Queries
+// ============================================
+export async function createReferralCode(code: InsertReferralCode) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(referralCodes).values(code);
+  return result[0].insertId;
+}
+
+export async function getReferralCodeByCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(referralCodes).where(eq(referralCodes.code, code)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getCustomerReferralCode(customerId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(referralCodes)
+    .where(and(eq(referralCodes.customerId, customerId), eq(referralCodes.isActive, true)))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateReferralCodeUsage(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(referralCodes).set({ usedCount: sql`${referralCodes.usedCount} + 1` }).where(eq(referralCodes.id, id));
+}
+
+export async function createReferralRecord(record: InsertReferralRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(referralRecords).values(record);
+  return result[0].insertId;
+}
+
+export async function listReferralRecords(organizationId: number, options?: { referrerId?: number; status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(referralRecords.organizationId, organizationId);
+  if (options?.referrerId) {
+    whereClause = and(whereClause, eq(referralRecords.referrerId, options.referrerId)) as typeof whereClause;
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(referralRecords.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(referralRecords).where(whereClause).orderBy(desc(referralRecords.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(referralRecords).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createReferralReward(reward: InsertReferralReward) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(referralRewards).values(reward);
+  return result[0].insertId;
+}
+
+export async function listCustomerReferralRewards(customerId: number, options?: { status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(referralRewards.recipientId, customerId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(referralRewards.status, options.status as any)) as typeof whereClause;
+  }
+
+  return await db.select().from(referralRewards).where(whereClause).orderBy(desc(referralRewards.createdAt));
+}
+
+export async function getReferralStats(organizationId: number) {
+  const db = await getDb();
+  if (!db) return { totalReferrals: 0, qualifiedReferrals: 0, totalRewardsIssued: 0 };
+  
+  const totalResult = await db.select({ count: sql<number>`count(*)` }).from(referralRecords).where(eq(referralRecords.organizationId, organizationId));
+  const qualifiedResult = await db.select({ count: sql<number>`count(*)` }).from(referralRecords).where(and(eq(referralRecords.organizationId, organizationId), eq(referralRecords.status, 'rewarded')));
+  const rewardsResult = await db.select({ count: sql<number>`count(*)` }).from(referralRewards).where(eq(referralRewards.status, 'issued'));
+  
+  return {
+    totalReferrals: totalResult[0]?.count || 0,
+    qualifiedReferrals: qualifiedResult[0]?.count || 0,
+    totalRewardsIssued: rewardsResult[0]?.count || 0,
+  };
+}
+
+// ============================================
+// Phase 48: 社群媒體整合 Queries
+// ============================================
+export async function createSocialAccount(account: InsertSocialAccount) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(socialAccounts).values(account);
+  return result[0].insertId;
+}
+
+export async function updateSocialAccount(id: number, account: Partial<InsertSocialAccount>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(socialAccounts).set(account).where(eq(socialAccounts.id, id));
+}
+
+export async function listSocialAccounts(organizationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(socialAccounts).where(eq(socialAccounts.organizationId, organizationId));
+}
+
+export async function createScheduledPost(post: InsertScheduledPost) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(scheduledPosts).values(post);
+  return result[0].insertId;
+}
+
+export async function updateScheduledPost(id: number, post: Partial<InsertScheduledPost>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(scheduledPosts).set(post).where(eq(scheduledPosts.id, id));
+}
+
+export async function listScheduledPosts(organizationId: number, options?: { status?: string; socialAccountId?: number; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(scheduledPosts.organizationId, organizationId);
+  if (options?.status) {
+    whereClause = and(whereClause, eq(scheduledPosts.status, options.status as any)) as typeof whereClause;
+  }
+  if (options?.socialAccountId) {
+    whereClause = and(whereClause, eq(scheduledPosts.socialAccountId, options.socialAccountId)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(scheduledPosts).where(whereClause).orderBy(desc(scheduledPosts.scheduledAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(scheduledPosts).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function createSocialAnalytic(analytic: InsertSocialAnalytic) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(socialAnalytics).values(analytic);
+  return result[0].insertId;
+}
+
+export async function getSocialAnalytics(socialAccountId: number, options?: { startDate?: string; endDate?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = eq(socialAnalytics.socialAccountId, socialAccountId);
+  if (options?.startDate) {
+    whereClause = and(whereClause, gte(socialAnalytics.date, new Date(options.startDate))) as typeof whereClause;
+  }
+  if (options?.endDate) {
+    whereClause = and(whereClause, lte(socialAnalytics.date, new Date(options.endDate))) as typeof whereClause;
+  }
+
+  return await db.select().from(socialAnalytics).where(whereClause).orderBy(socialAnalytics.date);
+}
+
+export async function getSocialAccountStats(organizationId: number) {
+  const db = await getDb();
+  if (!db) return { totalAccounts: 0, connectedAccounts: 0, totalFollowers: 0, totalPosts: 0 };
+  
+  const accounts = await listSocialAccounts(organizationId);
+  const connectedAccounts = accounts.filter(a => a.isConnected).length;
+  const totalFollowers = accounts.reduce((sum, a) => sum + (a.followerCount || 0), 0);
+  
+  const postsResult = await db.select({ count: sql<number>`count(*)` }).from(scheduledPosts).where(eq(scheduledPosts.organizationId, organizationId));
+  
+  return {
+    totalAccounts: accounts.length,
+    connectedAccounts,
+    totalFollowers,
+    totalPosts: postsResult[0]?.count || 0,
+  };
 }
