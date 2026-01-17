@@ -1,0 +1,88 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1E3A5F', 'primaryTextColor': '#F5D78E', 'primaryBorderColor': '#D4AF37', 'lineColor': '#D4AF37', 'secondaryColor': '#0A1628', 'tertiaryColor': '#152238'}}}%%
+flowchart TB
+    START(["🚀 Clinic Admin 登入"])
+    
+    START --> DASHBOARD["📊 診所儀表板<br/>今日預約/本月營收"]
+    
+    DASHBOARD --> CUSTOMER{"👤 客戶管理"}
+    DASHBOARD --> APPOINTMENT{"📅 預約管理"}
+    DASHBOARD --> TREATMENT{"💉 療程管理"}
+    DASHBOARD --> PRODUCT{"📦 產品管理"}
+    DASHBOARD --> STAFF{"👨‍💼 員工管理"}
+    DASHBOARD --> ANALYSIS{"📈 分析報表"}
+    DASHBOARD --> LINE{"💬 LINE 設定"}
+    
+    subgraph CUSTOMER_OPS["👤 客戶管理流程"]
+        CUSTOMER --> CU1["新增客戶"]
+        CUSTOMER --> CU2["搜尋客戶"]
+        CUSTOMER --> CU3["客戶詳情"]
+        CU1 --> CU1A["填寫基本資料"]
+        CU1A --> CU1B["設定會員等級"]
+        CU1B --> CU1C["設定客戶來源"]
+        CU3 --> CU3A["查看消費記錄"]
+        CU3 --> CU3B["查看療程歷史"]
+        CU3 --> CU3C["管理標籤"]
+    end
+    
+    subgraph APPOINTMENT_OPS["📅 預約管理流程"]
+        APPOINTMENT --> AP1["新增預約"]
+        APPOINTMENT --> AP2["確認預約"]
+        APPOINTMENT --> AP3["完成預約"]
+        AP1 --> AP1A["選擇客戶"]
+        AP1A --> AP1B["選擇服務"]
+        AP1B --> AP1C["選擇時段"]
+        AP1C --> AP1D["指派人員"]
+        AP2 --> AP2A["發送確認通知"]
+        AP3 --> AP3A["標記到診"]
+        AP3A --> AP3B["建立療程記錄"]
+    end
+    
+    subgraph TREATMENT_OPS["💉 療程管理流程"]
+        TREATMENT --> TR1["療程記錄"]
+        TREATMENT --> TR2["套餐管理"]
+        TR1 --> TR1A["填寫療程詳情"]
+        TR1A --> TR1B["上傳照片"]
+        TR1B --> TR1C["設定滿意度"]
+        TR2 --> TR2A["購買套餐"]
+        TR2 --> TR2B["扣除堂數"]
+        TR2 --> TR2C["查看到期"]
+    end
+    
+    subgraph STAFF_OPS["👨‍💼 員工管理流程"]
+        STAFF --> ST1["新增員工"]
+        STAFF --> ST2["排班管理"]
+        STAFF --> ST3["打卡記錄"]
+        STAFF --> ST4["佣金計算"]
+        ST1 --> ST1A["設定職位"]
+        ST1A --> ST1B["設定薪資"]
+        ST2 --> ST2A["建立班表"]
+        ST2A --> ST2B["調整排班"]
+    end
+    
+    subgraph ANALYSIS_OPS["📈 分析報表流程"]
+        ANALYSIS --> AN1["RFM 分析"]
+        ANALYSIS --> AN2["營收報表"]
+        ANALYSIS --> AN3["滿意度 NPS"]
+        ANALYSIS --> AN4["來源 ROI"]
+        AN1 --> AN1A["計算 RFM"]
+        AN1A --> AN1B["查看分群"]
+        AN1B --> AN1C["制定策略"]
+    end
+    
+    subgraph LINE_OPS["💬 LINE 設定流程"]
+        LINE --> LN1["Channel 設定"]
+        LINE --> LN2["Rich Menu"]
+        LINE --> LN3["Flex Message"]
+        LINE --> LN4["Webhook"]
+        LN1 --> LN1A["輸入憑證"]
+        LN1A --> LN1B["驗證連線"]
+        LN2 --> LN2A["設計選單"]
+        LN2A --> LN2B["發布選單"]
+    end
+    
+    CU3C --> DASHBOARD
+    AP3B --> DASHBOARD
+    TR1C --> DASHBOARD
+    ST4 --> DASHBOARD
+    AN1C --> DASHBOARD
+    LN2B --> DASHBOARD

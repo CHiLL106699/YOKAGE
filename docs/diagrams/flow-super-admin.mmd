@@ -1,0 +1,50 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1E3A5F', 'primaryTextColor': '#F5D78E', 'primaryBorderColor': '#D4AF37', 'lineColor': '#D4AF37', 'secondaryColor': '#0A1628', 'tertiaryColor': '#152238'}}}%%
+flowchart TB
+    START(["🚀 Super Admin 登入"])
+    
+    START --> DASHBOARD["📊 系統儀表板<br/>查看全平台概況"]
+    
+    DASHBOARD --> CLINIC_MGT{"診所管理"}
+    DASHBOARD --> BILLING{"計費管理"}
+    DASHBOARD --> USER_MGT{"使用者管理"}
+    DASHBOARD --> REPORT{"報表分析"}
+    
+    subgraph CLINIC_OPS["🏥 診所管理操作"]
+        CLINIC_MGT --> C1["新增診所"]
+        CLINIC_MGT --> C2["編輯診所資料"]
+        CLINIC_MGT --> C3["停用/啟用診所"]
+        CLINIC_MGT --> C4["設定診所方案"]
+        C1 --> C1A["設定診所名稱"]
+        C1A --> C1B["指派管理員"]
+        C1B --> C1C["選擇訂閱方案"]
+        C1C --> C1D["啟用診所"]
+    end
+    
+    subgraph BILLING_OPS["💰 計費管理操作"]
+        BILLING --> B1["查看訂閱狀態"]
+        BILLING --> B2["管理方案定價"]
+        BILLING --> B3["查看帳單記錄"]
+        BILLING --> B4["處理退款"]
+        B2 --> B2A["設定基本方案"]
+        B2A --> B2B["設定進階方案"]
+        B2B --> B2C["設定企業方案"]
+    end
+    
+    subgraph USER_OPS["👥 使用者管理操作"]
+        USER_MGT --> U1["查看所有使用者"]
+        USER_MGT --> U2["新增管理員"]
+        USER_MGT --> U3["重設密碼"]
+        USER_MGT --> U4["停用帳號"]
+    end
+    
+    subgraph REPORT_OPS["📈 報表分析操作"]
+        REPORT --> R1["全平台營收報表"]
+        REPORT --> R2["診所活躍度分析"]
+        REPORT --> R3["使用者成長趨勢"]
+        REPORT --> R4["功能使用統計"]
+    end
+    
+    C4 --> DASHBOARD
+    B4 --> DASHBOARD
+    U4 --> DASHBOARD
+    R4 --> DASHBOARD

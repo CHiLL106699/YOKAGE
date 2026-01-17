@@ -1,0 +1,65 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1E3A5F', 'primaryTextColor': '#F5D78E', 'primaryBorderColor': '#D4AF37', 'lineColor': '#D4AF37', 'secondaryColor': '#0A1628', 'tertiaryColor': '#152238'}}}%%
+flowchart TB
+    subgraph PLATFORM["🏢 YOChiLL SaaS 平台"]
+        direction TB
+        SA["👑 Super Admin<br/>平台管理者"]
+        
+        subgraph CLINIC1["🏥 診所 A"]
+            direction TB
+            CA1["👔 Clinic Admin<br/>診所管理員"]
+            
+            subgraph STAFF1["👥 員工團隊"]
+                direction LR
+                S1A["👨‍⚕️ 醫師"]
+                S1B["💆 美容師"]
+                S1C["📞 客服"]
+            end
+            
+            subgraph CUSTOMER1["👤 客戶群"]
+                direction LR
+                C1A["💎 VIP 會員"]
+                C1B["🥇 一般會員"]
+                C1C["🆕 新客戶"]
+            end
+        end
+        
+        subgraph CLINIC2["🏥 診所 B"]
+            direction TB
+            CA2["👔 Clinic Admin<br/>診所管理員"]
+            
+            subgraph STAFF2["👥 員工團隊"]
+                direction LR
+                S2A["👨‍⚕️ 醫師"]
+                S2B["💆 美容師"]
+            end
+            
+            subgraph CUSTOMER2["👤 客戶群"]
+                direction LR
+                C2A["💎 VIP 會員"]
+                C2B["🥇 一般會員"]
+            end
+        end
+        
+        subgraph CLINIC3["🏥 診所 C"]
+            direction TB
+            CA3["👔 Clinic Admin<br/>診所管理員"]
+            S3["..."]
+            C3["..."]
+        end
+    end
+    
+    SA --> CA1
+    SA --> CA2
+    SA --> CA3
+    
+    CA1 --> STAFF1
+    CA1 --> CUSTOMER1
+    
+    CA2 --> STAFF2
+    CA2 --> CUSTOMER2
+    
+    CA3 --> S3
+    CA3 --> C3
+    
+    S1A & S1B & S1C -.-> C1A & C1B & C1C
+    S2A & S2B -.-> C2A & C2B

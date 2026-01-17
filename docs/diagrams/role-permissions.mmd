@@ -1,0 +1,50 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1E3A5F', 'primaryTextColor': '#F5D78E', 'primaryBorderColor': '#D4AF37', 'lineColor': '#D4AF37', 'secondaryColor': '#0A1628', 'tertiaryColor': '#152238'}}}%%
+flowchart TB
+    subgraph SUPER["👑 Super Admin 權限範圍"]
+        direction TB
+        SA1["📊 系統儀表板"]
+        SA2["🏥 診所管理<br/>新增/編輯/停用診所"]
+        SA3["💰 計費管理<br/>訂閱方案/帳單"]
+        SA4["👥 使用者管理<br/>所有帳號"]
+        SA5["📄 API 文檔"]
+        SA6["🏷️ 白標方案"]
+        SA7["📈 全平台報表"]
+    end
+    
+    subgraph CLINIC["👔 Clinic Admin 權限範圍"]
+        direction TB
+        CA1["📊 診所儀表板"]
+        CA2["👤 客戶管理<br/>CRUD + 標籤"]
+        CA3["📅 預約管理<br/>排程/確認/取消"]
+        CA4["💉 療程記錄<br/>新增/查看"]
+        CA5["📦 產品管理<br/>CRUD + 定價"]
+        CA6["👨‍💼 員工管理<br/>CRUD + 薪資"]
+        CA7["📆 排班管理"]
+        CA8["📈 報表分析"]
+        CA9["💬 LINE 設定"]
+        CA10["🎯 行銷活動"]
+    end
+    
+    subgraph STAFF["👷 Staff 權限範圍"]
+        direction TB
+        ST1["📅 查看排班"]
+        ST2["⏰ 打卡簽到"]
+        ST3["📋 查看預約"]
+        ST4["💉 執行療程"]
+        ST5["📝 填寫記錄"]
+        ST6["👤 查看客戶<br/>僅限負責客戶"]
+    end
+    
+    subgraph CUSTOMER["👤 Customer 權限範圍"]
+        direction TB
+        CU1["📱 LIFF 會員中心"]
+        CU2["📅 線上預約"]
+        CU3["🛒 線上商城"]
+        CU4["📋 查看記錄<br/>僅限自己"]
+        CU5["⭐ 填寫評價"]
+        CU6["🎁 查看優惠"]
+    end
+    
+    SUPER --> CLINIC
+    CLINIC --> STAFF
+    STAFF -.-> CUSTOMER

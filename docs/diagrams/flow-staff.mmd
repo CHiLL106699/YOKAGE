@@ -1,0 +1,52 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1E3A5F', 'primaryTextColor': '#F5D78E', 'primaryBorderColor': '#D4AF37', 'lineColor': '#D4AF37', 'secondaryColor': '#0A1628', 'tertiaryColor': '#152238'}}}%%
+flowchart TB
+    START(["🚀 員工登入<br/>LIFF / 後台"])
+    
+    START --> CLOCK{"⏰ 打卡"}
+    START --> SCHEDULE{"📅 查看排班"}
+    START --> APPOINTMENT{"📋 今日預約"}
+    
+    subgraph CLOCK_OPS["⏰ 打卡流程"]
+        CLOCK --> CK1["上班打卡"]
+        CLOCK --> CK2["下班打卡"]
+        CK1 --> CK1A["開啟 LIFF"]
+        CK1A --> CK1B["GPS 定位驗證"]
+        CK1B --> CK1C["確認打卡"]
+        CK1C --> CK1D{{"準時 / 遲到"}}
+        CK2 --> CK2A["開啟 LIFF"]
+        CK2A --> CK2B["確認下班"]
+        CK2B --> CK2C{{"準時 / 早退"}}
+    end
+    
+    subgraph SCHEDULE_OPS["📅 排班查看"]
+        SCHEDULE --> SC1["查看本週班表"]
+        SCHEDULE --> SC2["查看本月班表"]
+        SC1 --> SC1A["確認上班時間"]
+        SC2 --> SC2A["申請換班"]
+        SC2A --> SC2B["等待審核"]
+    end
+    
+    subgraph APPOINTMENT_OPS["📋 預約處理流程"]
+        APPOINTMENT --> AP1["查看今日預約"]
+        AP1 --> AP2["客戶到診"]
+        AP2 --> AP3["執行療程"]
+        AP3 --> AP4["填寫記錄"]
+        AP4 --> AP4A["選擇療程項目"]
+        AP4A --> AP4B["填寫詳情"]
+        AP4B --> AP4C["上傳照片"]
+        AP4C --> AP4D["設定滿意度"]
+        AP4D --> AP5["完成療程"]
+    end
+    
+    subgraph CUSTOMER_OPS["👤 客戶服務"]
+        AP2 --> CUS1["查看客戶資料"]
+        CUS1 --> CUS2["查看歷史記錄"]
+        CUS2 --> CUS3["確認注意事項"]
+        CUS3 --> AP3
+    end
+    
+    CK1D --> APPOINTMENT
+    CK2C --> END(["🏠 下班"])
+    AP5 --> NEXT{{"下一位客戶?"}}
+    NEXT -->|是| AP1
+    NEXT -->|否| CK2

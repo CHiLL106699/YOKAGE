@@ -719,3 +719,27 @@
 
 ### 交付
 - [x] 完成操作手冊文檔（docs/USER_MANUAL.md, QUICK_START_GUIDE.md, LINE_INTEGRATION_GUIDE.md）
+
+
+---
+
+## Phase 53: SaaS 平台架構心智圖與流程圖
+
+### 架構圖
+- [x] SaaS 平台層級架構圖（平台 → 診所 → 員工 → 客戶）
+- [x] 角色權限層級圖
+- [x] 資料隔離架構圖
+
+### 操作流程圖
+- [x] Super Admin 操作流程圖
+- [x] Clinic Admin 操作流程圖
+- [x] Staff 操作流程圖
+- [x] Customer 操作流程圖
+
+### 功能模組心智圖
+- [x] 完整功能模組樹狀圖
+- [x] 各模組資料流向圖
+
+### 交付
+- [x] 渲染所有圖表為 PNG
+- [x] 整合到文檔中（docs/ARCHITECTURE_DIAGRAMS.md）

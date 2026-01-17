@@ -1,0 +1,63 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#1E3A5F', 'primaryTextColor': '#F5D78E', 'primaryBorderColor': '#D4AF37', 'lineColor': '#D4AF37', 'secondaryColor': '#0A1628', 'tertiaryColor': '#152238'}}}%%
+flowchart TB
+    START(["📱 客戶開啟 LINE"])
+    
+    START --> RICHMENU["🎯 Rich Menu<br/>圖文選單"]
+    
+    RICHMENU --> BOOKING{"📅 預約"}
+    RICHMENU --> MEMBER{"👤 會員中心"}
+    RICHMENU --> SHOP{"🛒 商城"}
+    RICHMENU --> SERVICE{"💬 客服"}
+    
+    subgraph BOOKING_OPS["📅 預約流程"]
+        BOOKING --> BK1["開啟 LIFF 預約"]
+        BK1 --> BK2["選擇服務項目"]
+        BK2 --> BK3["選擇日期時段"]
+        BK3 --> BK4["選擇醫師/美容師"]
+        BK4 --> BK5["確認預約"]
+        BK5 --> BK6["收到確認通知"]
+        BK6 --> BK7["預約前提醒"]
+        BK7 --> BK8["到診服務"]
+        BK8 --> BK9["收到滿意度調查"]
+        BK9 --> BK10["填寫評價"]
+    end
+    
+    subgraph MEMBER_OPS["👤 會員中心流程"]
+        MEMBER --> MB1["開啟 LIFF 會員"]
+        MB1 --> MB2["查看會員等級"]
+        MB1 --> MB3["查看消費記錄"]
+        MB1 --> MB4["查看療程記錄"]
+        MB1 --> MB5["查看套餐餘額"]
+        MB1 --> MB6["查看優惠券"]
+        MB4 --> MB4A["查看前後對比"]
+        MB5 --> MB5A["查看到期日"]
+        MB6 --> MB6A["使用優惠券"]
+    end
+    
+    subgraph SHOP_OPS["🛒 商城流程"]
+        SHOP --> SH1["開啟 LIFF 商城"]
+        SH1 --> SH2["瀏覽產品"]
+        SH2 --> SH3["加入購物車"]
+        SH3 --> SH4["結帳"]
+        SH4 --> SH5["選擇付款方式"]
+        SH5 --> SH6["完成付款"]
+        SH6 --> SH7["收到訂單確認"]
+        SH7 --> SH8{{"取貨方式"}}
+        SH8 -->|現場取貨| SH9["到店取貨"]
+        SH8 -->|宅配| SH10["等待配送"]
+    end
+    
+    subgraph SERVICE_OPS["💬 客服流程"]
+        SERVICE --> SV1["發送訊息"]
+        SV1 --> SV2{{"AI 客服回覆"}}
+        SV2 -->|已解決| SV3["結束對話"]
+        SV2 -->|需人工| SV4["轉接真人客服"]
+        SV4 --> SV5["等待回覆"]
+        SV5 --> SV3
+    end
+    
+    BK10 --> RICHMENU
+    MB6A --> SHOP
+    SH9 --> RICHMENU
+    SH10 --> RICHMENU
+    SV3 --> RICHMENU
