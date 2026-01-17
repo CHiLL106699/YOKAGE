@@ -24,7 +24,7 @@ export default function SuperAdminSettingsPage() {
   const [platformName, setPlatformName] = useState("YOChiLL 醫美診所 SaaS 平台");
   const [platformDescription, setPlatformDescription] = useState("專業醫美診所管理系統");
   const [primaryColor, setPrimaryColor] = useState("#D4AF37");
-  const [logoUrl, setLogoUrl] = useState("/logo.png");
+  const [logoUrl, setLogoUrl] = useState("/logo-new.png");
   
   // 票券設定狀態
   const [defaultReminderDays, setDefaultReminderDays] = useState("3");

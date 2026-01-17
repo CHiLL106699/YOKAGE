@@ -91,6 +91,12 @@ import VoucherRedemptionPage from "@/pages/VoucherRedemptionPage";
 import VoucherReportsPage from "@/pages/VoucherReportsPage";
 import SuperAdminSettingsPage from "@/pages/SuperAdminSettingsPage";
 import SuperAdminVouchersPage from "@/pages/SuperAdminVouchersPage";
+import SuperAdminUsersPage from "@/pages/SuperAdminUsersPage";
+import SuperAdminMonitorPage from "@/pages/SuperAdminMonitorPage";
+import SuperAdminNotificationsPage from "@/pages/SuperAdminNotificationsPage";
+import SuperAdminBillingPage from "@/pages/SuperAdminBillingPage";
+import SuperAdminApiDocsPage from "@/pages/SuperAdminApiDocsPage";
+import SuperAdminWhiteLabelPage from "@/pages/SuperAdminWhiteLabelPage";
 
 function Router() {
   return (
@@ -102,6 +108,9 @@ function Router() {
       <Route path={"/super-admin"} component={SuperAdminDashboard} />
       <Route path={"/super-admin/organizations"} component={OrganizationsPage} />
       <Route path={"/super-admin/organizations/:id"} component={OrganizationDetailPage} />
+      <Route path={"/super-admin/billing"} component={SuperAdminBillingPage} />
+      <Route path={"/super-admin/api-docs"} component={SuperAdminApiDocsPage} />
+      <Route path={"/super-admin/white-label"} component={SuperAdminWhiteLabelPage} />
       
       {/* Clinic Admin Routes */}
       <Route path={"/clinic"} component={ClinicDashboard} />
@@ -135,6 +144,9 @@ function Router() {
       <Route path="/super-admin/white-label" component={WhiteLabelPage} />
       <Route path="/super-admin/settings" component={SuperAdminSettingsPage} />
       <Route path="/super-admin/vouchers" component={SuperAdminVouchersPage} />
+      <Route path="/super-admin/users" component={SuperAdminUsersPage} />
+      <Route path="/super-admin/monitor" component={SuperAdminMonitorPage} />
+      <Route path="/super-admin/notifications" component={SuperAdminNotificationsPage} />
       
       {/* LIFF 顧客端頁面 */}
       <Route path="/liff/booking" component={LiffBookingPage} />

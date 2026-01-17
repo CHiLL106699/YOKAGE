@@ -213,6 +213,106 @@ const superAdminRouter = router({
     .query(async ({ input }) => {
       return await db.listVoucherReminderLogs(input);
     }),
+
+  // 使用者管理 API
+  listAllUsers: adminProcedure
+    .input(z.object({
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+      role: z.string().optional(),
+      status: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await db.listAllUsers(input);
+    }),
+
+  userStats: adminProcedure.query(async () => {
+    return await db.getUserStats();
+  }),
+
+  updateUser: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      role: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { userId, ...data } = input;
+      await db.updateUserById(userId, data);
+      return { success: true };
+    }),
+
+  toggleUserStatus: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.toggleUserStatus(input.userId, input.isActive);
+      return { success: true };
+    }),
+
+  // 系統監控 API
+  getSystemHealth: adminProcedure.query(async () => {
+    return await db.getSystemHealth();
+  }),
+
+  getErrorLogs: adminProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      return await db.getErrorLogs(input);
+    }),
+
+  getAuditLogs: adminProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      return await db.getAuditLogs(input);
+    }),
+
+  getPerformanceMetrics: adminProcedure.query(async () => {
+    return await db.getPerformanceMetrics();
+  }),
+
+  // 通知中心 API
+  notificationStats: adminProcedure.query(async () => {
+    return await db.getNotificationStats();
+  }),
+
+  listNotifications: adminProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      return await db.listNotifications(input);
+    }),
+
+  listNotificationTemplates: adminProcedure.query(async () => {
+    return await db.listNotificationTemplates();
+  }),
+
+  sendNotification: adminProcedure
+    .input(z.object({
+      title: z.string(),
+      content: z.string(),
+      type: z.string(),
+      targetScope: z.string(),
+      targetOrganizations: z.array(z.number()).optional(),
+      sendLine: z.boolean(),
+      sendEmail: z.boolean(),
+      scheduledAt: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return await db.sendNotification(input);
+    }),
+
+  saveNotificationTemplate: adminProcedure
+    .input(z.object({
+      title: z.string(),
+      content: z.string(),
+      type: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      return await db.saveNotificationTemplate(input);
+    }),
 });
 
 // ============================================

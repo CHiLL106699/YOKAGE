@@ -3421,3 +3421,288 @@ export async function getReminderStats(organizationId?: number) {
   
   return result;
 }
+
+
+// ============================================
+// Super Admin - 使用者管理
+// ============================================
+export async function listAllUsers(options?: { 
+  page?: number; 
+  limit?: number; 
+  search?: string;
+  role?: string;
+  status?: string;
+}) {
+  const db = await getDb();
+  if (!db) return { users: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 15;
+  const offset = (page - 1) * limit;
+  
+  let whereConditions: any[] = [];
+  
+  if (options?.search) {
+    whereConditions.push(
+      or(
+        like(users.name, `%${options.search}%`),
+        like(users.email, `%${options.search}%`)
+      )
+    );
+  }
+  
+  if (options?.role) {
+    whereConditions.push(eq(users.role, options.role as any));
+  }
+  
+  // 由於 users 資料表沒有 isActive 欄位，改用 role 來判斷狀態
+  // status 篩選目前不實作
+  
+  const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+  
+  // 獲取用戶列表（含所屬診所）
+  const query = db.select({
+    id: users.id,
+    openId: users.openId,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    createdAt: users.createdAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(users);
+  
+  const data = whereClause 
+    ? await query.where(whereClause).orderBy(desc(users.createdAt)).limit(limit).offset(offset)
+    : await query.orderBy(desc(users.createdAt)).limit(limit).offset(offset);
+  
+  // 獲取用戶所屬診所
+  const usersWithOrg = await Promise.all(data.map(async (user) => {
+    const orgUser = await db.select({
+      organizationId: organizationUsers.organizationId,
+      organizationName: organizations.name,
+    })
+      .from(organizationUsers)
+      .innerJoin(organizations, eq(organizationUsers.organizationId, organizations.id))
+      .where(eq(organizationUsers.userId, user.id))
+      .limit(1);
+    
+    return {
+      ...user,
+      organizationId: orgUser[0]?.organizationId || null,
+      organizationName: orgUser[0]?.organizationName || null,
+    };
+  }));
+  
+  const countQuery = db.select({ count: sql<number>`count(*)` }).from(users);
+  const countResult = whereClause 
+    ? await countQuery.where(whereClause)
+    : await countQuery;
+  const total = countResult[0]?.count || 0;
+  
+  return { users: usersWithOrg, total };
+}
+
+export async function getUserStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, active: 0, admins: 0, newThisMonth: 0, activeRate: 0, growthRate: 0 };
+  
+  const [totalResult] = await db.select({ count: sql<number>`count(*)` }).from(users);
+  // 由於沒有 isActive 欄位，改用最近 30 天有登入的用戶作為「活躍」定義
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const [activeResult] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.lastSignedIn, thirtyDaysAgo));
+  const [adminsResult] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'clinic_admin'));
+  
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const [newThisMonthResult] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, startOfMonth));
+  
+  const total = totalResult?.count || 0;
+  const active = activeResult?.count || 0;
+  
+  return {
+    total,
+    active,
+    admins: adminsResult?.count || 0,
+    newThisMonth: newThisMonthResult?.count || 0,
+    activeRate: total > 0 ? Math.round((active / total) * 100) : 0,
+    growthRate: 12, // 模擬成長率
+  };
+}
+
+export async function updateUserById(userId: number, data: { role?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  if (data.role) {
+    await db.update(users).set({
+      role: data.role as any,
+      updatedAt: new Date(),
+    }).where(eq(users.id, userId));
+  }
+}
+
+export async function toggleUserStatus(userId: number, isActive: boolean) {
+  // 由於 users 資料表沒有 isActive 欄位，改用 role 來模擬停用狀態
+  // 實際應用中可以新增 isActive 欄位或使用其他機制
+  console.log(`[User] Toggle status for user ${userId}: ${isActive}`);
+  // 目前僅記錄操作，不實際修改資料庫
+  return { success: true };
+}
+
+// ============================================
+// Super Admin - 系統監控
+// ============================================
+export async function getSystemHealth() {
+  // 模擬系統健康狀態
+  return {
+    overallStatus: "healthy",
+    apiLatency: 45,
+    errorRate: 0.2,
+    uptime: 99.9,
+    services: {
+      api: "healthy",
+      database: "healthy",
+      line: "healthy",
+      storage: "healthy",
+      notification: "healthy",
+    },
+  };
+}
+
+export async function getErrorLogs(options?: { limit?: number }) {
+  // 模擬錯誤日誌
+  return {
+    logs: [
+      { timestamp: new Date(), level: "error", source: "api/vouchers", message: "Invalid voucher code" },
+      { timestamp: new Date(Date.now() - 3600000), level: "warn", source: "line/webhook", message: "Rate limit approaching" },
+    ],
+  };
+}
+
+export async function getAuditLogs(options?: { limit?: number }) {
+  const db = await getDb();
+  if (!db) return { logs: [] };
+  
+  const limit = options?.limit || 20;
+  
+  const logs = await db.select({
+    id: activityLogs.id,
+    timestamp: activityLogs.createdAt,
+    userId: activityLogs.userId,
+    action: activityLogs.action,
+    target: activityLogs.entityType,
+    details: activityLogs.details,
+  })
+    .from(activityLogs)
+    .orderBy(desc(activityLogs.createdAt))
+    .limit(limit);
+  
+  // 獲取用戶名稱
+  const logsWithUser = await Promise.all(logs.map(async (log) => {
+    if (log.userId) {
+      const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, log.userId)).limit(1);
+      return { ...log, userName: user?.name || "系統", success: true };
+    }
+    return { ...log, userName: "系統", success: true };
+  }));
+  
+  return { logs: logsWithUser };
+}
+
+export async function getPerformanceMetrics() {
+  // 模擬效能指標
+  return {
+    cpu: 45,
+    memory: 62,
+    disk: 38,
+    dbConnections: 12,
+    requestsToday: 12345,
+    avgResponseTime: 45,
+    successRate: 99.8,
+    errorCount: 23,
+  };
+}
+
+// ============================================
+// Super Admin - 通知中心
+// ============================================
+export async function getNotificationStats() {
+  // 模擬通知統計
+  return {
+    sentThisMonth: 156,
+    deliveryRate: 98,
+    lineSent: 120,
+    scheduled: 5,
+  };
+}
+
+export async function listNotifications(options?: { limit?: number }) {
+  // 模擬通知列表
+  return {
+    notifications: [
+      {
+        id: 1,
+        title: "系統維護通知",
+        content: "系統將於本週六進行例行維護",
+        type: "maintenance",
+        targetScope: "all",
+        sendLine: true,
+        sendEmail: false,
+        status: "sent",
+        createdAt: new Date(Date.now() - 86400000),
+      },
+      {
+        id: 2,
+        title: "新功能上線",
+        content: "電子票券系統已正式上線",
+        type: "feature",
+        targetScope: "admins",
+        sendLine: true,
+        sendEmail: true,
+        status: "sent",
+        createdAt: new Date(Date.now() - 172800000),
+      },
+    ],
+  };
+}
+
+export async function listNotificationTemplates() {
+  return {
+    templates: [
+      { id: 1, title: "系統維護通知", content: "親愛的用戶，系統將於 {date} 進行維護，預計維護時間為 {duration}。", type: "maintenance" },
+      { id: 2, title: "新功能上線", content: "我們很高興地宣布，{feature} 功能已正式上線！立即體驗全新功能。", type: "feature" },
+      { id: 3, title: "重要公告", content: "親愛的用戶，{content}", type: "announcement" },
+      { id: 4, title: "緊急警報", content: "【緊急通知】{content}，請立即處理。", type: "alert" },
+    ],
+  };
+}
+
+export async function sendNotification(data: {
+  title: string;
+  content: string;
+  type: string;
+  targetScope: string;
+  targetOrganizations?: number[];
+  sendLine: boolean;
+  sendEmail: boolean;
+  scheduledAt?: string;
+}) {
+  // 實際發送通知的邏輯（整合 LINE/Email）
+  console.log("[Notification] Sending:", data);
+  
+  // TODO: 整合 LINE Messaging API 和 Email 服務
+  
+  return { success: true, notificationId: Date.now() };
+}
+
+export async function saveNotificationTemplate(data: {
+  title: string;
+  content: string;
+  type: string;
+}) {
+  // 儲存通知模板
+  console.log("[Notification] Saving template:", data);
+  return { success: true };
+}

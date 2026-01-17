@@ -102,8 +102,11 @@ const clinicMenuItems = [
 const superAdminMenuItems = [
   { icon: LayoutDashboard, label: "系統儀表板", path: "/super-admin" },
   { icon: Building2, label: "診所管理", path: "/super-admin/organizations" },
+  { icon: Users, label: "使用者管理", path: "/super-admin/users" },
   { icon: CreditCard, label: "計費管理", path: "/super-admin/billing" },
   { icon: Ticket, label: "票券管理", path: "/super-admin/vouchers" },
+  { icon: Bell, label: "通知中心", path: "/super-admin/notifications" },
+  { icon: BarChart3, label: "系統監控", path: "/super-admin/monitor" },
   { icon: Key, label: "API 文檔", path: "/super-admin/api-docs" },
   { icon: Globe, label: "白標方案", path: "/super-admin/white-label" },
   { icon: Cog, label: "系統設定", path: "/super-admin/settings" },
@@ -141,9 +144,11 @@ export default function DashboardLayout({
           <div className="w-full p-8 rounded-2xl card-premium">
             <div className="flex flex-col items-center gap-6">
               {/* Logo 區域 */}
-              <div className="w-16 h-16 rounded-full bg-gold-gradient flex items-center justify-center shadow-lg">
-                <Crown className="w-8 h-8 text-[oklch(0.12_0.03_250)]" />
-              </div>
+              <img 
+                src="/logo-new.png" 
+                alt="Logo" 
+                className="w-16 h-16 rounded-full object-cover shadow-lg"
+              />
               <h1 className="text-2xl font-semibold tracking-tight text-center text-gold-gradient">
                 YOChiLL Premium
               </h1>
@@ -260,10 +265,12 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* 燙金 Logo */}
-                  <div className="w-8 h-8 rounded-lg bg-gold-gradient flex items-center justify-center shadow-md">
-                    <Crown className="w-4 h-4 text-[oklch(0.12_0.03_250)]" />
-                  </div>
+                  {/* 平台 Logo */}
+                  <img 
+                    src="/logo-new.png" 
+                    alt="Logo" 
+                    className="w-8 h-8 rounded-lg object-cover shadow-md"
+                  />
                   <span className="font-bold tracking-tight truncate text-lg text-gold-gradient">
                     {sidebarTitle}
                   </span>
