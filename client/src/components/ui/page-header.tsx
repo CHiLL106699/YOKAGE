@@ -28,13 +28,13 @@ export function PageHeader({
               variant="ghost"
               size="icon"
               onClick={() => navigate(backHref)}
-              className="shrink-0"
+              className="shrink-0 border border-[oklch(0.30_0.06_60/30%)] hover:border-[oklch(0.80_0.14_70)] hover:bg-[oklch(0.18_0.04_250)]"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 text-[oklch(0.80_0.14_70)]" />
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gold-gradient">{title}</h1>
             {description && (
               <p className="text-muted-foreground mt-1">{description}</p>
             )}
@@ -54,6 +54,7 @@ interface PageHeaderActionProps {
   href?: string;
   variant?: "default" | "outline" | "secondary" | "ghost" | "destructive";
   disabled?: boolean;
+  premium?: boolean;
 }
 
 export function PageHeaderAction({
@@ -63,6 +64,7 @@ export function PageHeaderAction({
   href,
   variant = "default",
   disabled = false,
+  premium = false,
 }: PageHeaderActionProps) {
   const [, navigate] = useLocation();
 
@@ -74,8 +76,20 @@ export function PageHeaderAction({
     }
   };
 
+  // 尊爵按鈕樣式
+  const premiumClass = premium 
+    ? "btn-gold" 
+    : variant === "default" 
+      ? "bg-[oklch(0.80_0.14_70)] text-[oklch(0.12_0.03_250)] hover:bg-[oklch(0.85_0.12_75)] shadow-md"
+      : "";
+
   return (
-    <Button variant={variant} onClick={handleClick} disabled={disabled}>
+    <Button 
+      variant={premium ? undefined : variant} 
+      onClick={handleClick} 
+      disabled={disabled}
+      className={premiumClass}
+    >
       {Icon && <Icon className="h-4 w-4 mr-2" />}
       {label}
     </Button>

@@ -54,8 +54,8 @@ function Input({
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-[oklch(0.80_0.14_70)] selection:text-[oklch(0.12_0.03_250)] dark:bg-[oklch(0.16_0.04_250)] border-[oklch(0.30_0.06_60/40%)] h-9 w-full min-w-0 rounded-lg border bg-[oklch(0.14_0.035_250)] px-3 py-1 text-base shadow-xs transition-all duration-200 outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm text-foreground",
+        "focus-visible:border-[oklch(0.80_0.14_70)] focus-visible:ring-[oklch(0.80_0.14_70/30%)] focus-visible:ring-[3px] hover:border-[oklch(0.80_0.14_70/60%)]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}

@@ -28,7 +28,7 @@ import {
   Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox,
   Share2, Briefcase, Truck, Star, GitBranch, FileSignature, Camera, Sparkles, Target, Eye,
   Syringe, ClipboardList, PhoneCall, PieChart, DollarSign, ThumbsUp,
-  Crosshair, FileCheck, Pill, ScanFace, CreditCard as CreditCardIcon, Video, Gift, Globe2
+  Crosshair, FileCheck, Pill, ScanFace, CreditCard as CreditCardIcon, Video, Gift, Globe2, Crown
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -133,25 +133,32 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
-            </p>
+          {/* 尊爵登入卡片 */}
+          <div className="w-full p-8 rounded-2xl card-premium">
+            <div className="flex flex-col items-center gap-6">
+              {/* Logo 區域 */}
+              <div className="w-16 h-16 rounded-full bg-gold-gradient flex items-center justify-center shadow-lg">
+                <Crown className="w-8 h-8 text-[oklch(0.12_0.03_250)]" />
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-center text-gold-gradient">
+                YOChiLL Premium
+              </h1>
+              <p className="text-sm text-muted-foreground text-center max-w-sm">
+                尊貴會員專屬管理平台，請登入以繼續
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                window.location.href = getLoginUrl();
+              }}
+              size="lg"
+              className="w-full mt-8 btn-gold"
+            >
+              登入系統
+            </Button>
           </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in
-          </Button>
         </div>
       </div>
     );
@@ -236,21 +243,26 @@ function DashboardLayoutContent({
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
-          className="border-r-0"
+          className="border-r-0 bg-sidebar"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-16 justify-center">
-            <div className="flex items-center gap-3 px-2 transition-all w-full">
+          {/* 尊爵側邊欄頭部 */}
+          <SidebarHeader className="h-20 justify-center border-b border-sidebar-border bg-[oklch(0.08_0.02_250)]">
+            <div className="flex items-center gap-3 px-3 transition-all w-full">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                className="h-10 w-10 flex items-center justify-center hover:bg-sidebar-accent rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0 border border-sidebar-border"
                 aria-label="Toggle navigation"
               >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+                <PanelLeft className="h-5 w-5 text-[oklch(0.80_0.14_70)]" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* 燙金 Logo */}
+                  <div className="w-8 h-8 rounded-lg bg-gold-gradient flex items-center justify-center shadow-md">
+                    <Crown className="w-4 h-4 text-[oklch(0.12_0.03_250)]" />
+                  </div>
+                  <span className="font-bold tracking-tight truncate text-lg text-gold-gradient">
                     {sidebarTitle}
                   </span>
                 </div>
@@ -258,8 +270,9 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0 overflow-y-auto">
-            <SidebarMenu className="px-2 py-1">
+          {/* 側邊欄選單 */}
+          <SidebarContent className="gap-0 overflow-y-auto py-3 bg-sidebar">
+            <SidebarMenu className="px-3 space-y-1">
               {menuItems.map(item => {
                 const isActive = location === item.path;
                 return (
@@ -268,10 +281,14 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
+                      className={`h-11 transition-all font-medium rounded-xl ${
+                        isActive 
+                          ? "bg-[oklch(0.18_0.04_250)] text-[oklch(0.85_0.12_75)] border-l-3 border-[oklch(0.80_0.14_70)] shadow-sm" 
+                          : "text-[oklch(0.65_0.03_250)] hover:bg-[oklch(0.14_0.035_250)] hover:text-[oklch(0.85_0.12_75)]"
+                      }`}
                     >
                       <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        className={`h-5 w-5 ${isActive ? "text-[oklch(0.80_0.14_70)]" : ""}`}
                       />
                       <span>{item.label}</span>
                     </SidebarMenuButton>
@@ -281,17 +298,22 @@ function DashboardLayoutContent({
             </SidebarMenu>
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
+          {/* 尊爵用戶資訊區 */}
+          <SidebarFooter className="p-3 border-t border-sidebar-border bg-[oklch(0.08_0.02_250)]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                <button className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-sidebar-accent transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-transparent hover:border-sidebar-border">
+                  {/* 燙金頭像邊框 */}
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-full bg-gold-gradient opacity-50 blur-sm" />
+                    <Avatar className="h-10 w-10 border-2 border-[oklch(0.75_0.15_65)] relative">
+                      <AvatarFallback className="text-sm font-bold bg-[oklch(0.16_0.04_250)] text-[oklch(0.85_0.12_75)]">
+                        {user?.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
+                    <p className="text-sm font-semibold truncate leading-none text-[oklch(0.90_0.03_70)]">
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
@@ -306,14 +328,16 @@ function DashboardLayoutContent({
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>登出系統</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
+        
+        {/* 側邊欄拖曳調整 */}
         <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[oklch(0.80_0.14_70)]/30 transition-colors ${isCollapsed ? "hidden" : ""}`}
           onMouseDown={() => {
             if (isCollapsed) return;
             setIsResizing(true);
@@ -322,22 +346,23 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset>
+      <SidebarInset className="bg-background">
+        {/* 行動版頂部導覽 */}
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
+          <div className="flex border-b border-border h-16 items-center justify-between bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="h-10 w-10 rounded-xl bg-background border border-border" />
               <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
+                <span className="tracking-tight text-foreground font-semibold">
+                  {activeMenuItem?.label ?? "選單"}
+                </span>
               </div>
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        
+        {/* 主內容區 */}
+        <main className="flex-1 p-6">{children}</main>
       </SidebarInset>
     </>
   );
