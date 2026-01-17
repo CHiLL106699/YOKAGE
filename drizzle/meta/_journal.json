@@ -36,6 +36,13 @@
       "when": 1768639635102,
       "tag": "0004_groovy_texas_twister",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1768652074109,
+      "tag": "0005_absurd_chat",
+      "breakpoints": true
     }
   ]
 }

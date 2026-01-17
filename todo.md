@@ -661,3 +661,24 @@
 - [x] 驗證客戶管理頁面
 - [x] 驗證預約管理頁面
 - [x] 驗證產品管理頁面
+
+
+---
+
+## Phase 51: RFM 效能優化與 Dialog 主題升級
+
+### RFM 計算效能優化
+- [x] 建立 rfmCalculationJobs 資料表（背景任務追蹤）
+- [x] 實作背景排程 RFM 計算 API
+- [x] 實作任務狀態查詢 API
+- [x] 更新前端 RFM 頁面（顯示計算進度）
+- [x] 修復 RFM calculateAll 測試（已改為背景任務模式）
+
+### Dialog/Modal 燙金主題升級
+- [x] 更新 Dialog 元件樣式
+- [x] 更新 AlertDialog 元件樣式
+- [x] 更新 Sheet 元件樣式
+- [x] 更新 Popover 元件樣式
+- [x] 更新 DropdownMenu 元件樣式
+- [x] 更新 Select 元件樣式
+- [x] 驗證彈窗視覺效果

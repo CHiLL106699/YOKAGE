@@ -2246,3 +2246,132 @@ export async function getSocialAccountStats(organizationId: number) {
     totalPosts: postsResult[0]?.count || 0,
   };
 }
+
+
+// ============================================
+// Phase 51: 背景任務管理 Queries
+// ============================================
+import { backgroundJobs, InsertBackgroundJob } from "../drizzle/schema";
+
+export async function createBackgroundJob(job: InsertBackgroundJob) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(backgroundJobs).values(job);
+  return result[0].insertId;
+}
+
+export async function getBackgroundJobById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateBackgroundJob(id: number, job: Partial<InsertBackgroundJob>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(backgroundJobs).set(job).where(eq(backgroundJobs.id, id));
+}
+
+export async function listBackgroundJobs(organizationId: number, options?: { jobType?: string; status?: string; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+
+  let whereClause = eq(backgroundJobs.organizationId, organizationId);
+  if (options?.jobType) {
+    whereClause = and(whereClause, eq(backgroundJobs.jobType, options.jobType as any)) as typeof whereClause;
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(backgroundJobs.status, options.status as any)) as typeof whereClause;
+  }
+
+  const data = await db.select().from(backgroundJobs).where(whereClause).orderBy(desc(backgroundJobs.createdAt)).limit(limit).offset(offset);
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(backgroundJobs).where(whereClause);
+  const total = countResult[0]?.count || 0;
+
+  return { data, total };
+}
+
+export async function getLatestJobByType(organizationId: number, jobType: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(backgroundJobs)
+    .where(and(
+      eq(backgroundJobs.organizationId, organizationId),
+      eq(backgroundJobs.jobType, jobType as any)
+    ))
+    .orderBy(desc(backgroundJobs.createdAt))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// 非同步 RFM 批次計算（背景執行）
+export async function processRfmCalculationJob(jobId: number, organizationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 更新任務狀態為執行中
+  await updateBackgroundJob(jobId, {
+    status: 'running',
+    startedAt: new Date(),
+  });
+  
+  try {
+    // 取得所有客戶
+    const customersResult = await listCustomers(organizationId, { limit: 10000 });
+    const totalItems = customersResult.data.length;
+    
+    await updateBackgroundJob(jobId, { totalItems });
+    
+    let processedItems = 0;
+    const batchSize = 50; // 每批處理 50 個客戶
+    
+    for (let i = 0; i < customersResult.data.length; i += batchSize) {
+      const batch = customersResult.data.slice(i, i + batchSize);
+      
+      // 批次處理客戶 RFM 計算
+      await Promise.all(batch.map(async (customer) => {
+        const rfmData = await calculateCustomerRfm(organizationId, customer.id);
+        await upsertCustomerRfmScore({
+          organizationId,
+          customerId: customer.id,
+          ...rfmData,
+        });
+      }));
+      
+      processedItems += batch.length;
+      const progress = Math.round((processedItems / totalItems) * 100);
+      
+      // 更新進度
+      await updateBackgroundJob(jobId, {
+        processedItems,
+        progress,
+      });
+    }
+    
+    // 完成任務
+    await updateBackgroundJob(jobId, {
+      status: 'completed',
+      processedItems: totalItems,
+      progress: 100,
+      completedAt: new Date(),
+      result: { processed: totalItems },
+    });
+    
+    return { processed: totalItems };
+  } catch (error) {
+    // 任務失敗
+    await updateBackgroundJob(jobId, {
+      status: 'failed',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      completedAt: new Date(),
+    });
+    throw error;
+  }
+}

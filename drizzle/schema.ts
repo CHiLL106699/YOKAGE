@@ -1157,3 +1157,27 @@ export const socialAnalytics = mysqlTable("socialAnalytics", {
 
 export type SocialAnalytic = typeof socialAnalytics.$inferSelect;
 export type InsertSocialAnalytic = typeof socialAnalytics.$inferInsert;
+
+
+// ============================================
+// Phase 51: 背景任務管理
+// ============================================
+export const backgroundJobs = mysqlTable("backgroundJobs", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  jobType: mysqlEnum("jobType", ["rfm_calculation", "report_generation", "data_export", "bulk_notification", "data_import"]).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed", "cancelled"]).default("pending"),
+  progress: int("progress").default(0),
+  totalItems: int("totalItems").default(0),
+  processedItems: int("processedItems").default(0),
+  result: json("result"),
+  errorMessage: text("errorMessage"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BackgroundJob = typeof backgroundJobs.$inferSelect;
+export type InsertBackgroundJob = typeof backgroundJobs.$inferInsert;

@@ -1294,23 +1294,63 @@ const rfmRouter = router({
       return rfmData;
     }),
 
+  // 背景任務模式：建立任務並立即返回，後台繼續處理
   calculateAll: protectedProcedure
     .input(z.object({ organizationId: z.number() }))
-    .mutation(async ({ input }) => {
-      const customers = await db.listCustomers(input.organizationId, { limit: 1000 });
-      let processed = 0;
+    .mutation(async ({ ctx, input }) => {
+      // 建立背景任務
+      const jobId = await db.createBackgroundJob({
+        organizationId: input.organizationId,
+        jobType: 'rfm_calculation',
+        status: 'pending',
+        createdBy: ctx.user?.id,
+      });
       
-      for (const customer of customers.data) {
-        const rfmData = await db.calculateCustomerRfm(input.organizationId, customer.id);
-        await db.upsertCustomerRfmScore({
-          organizationId: input.organizationId,
-          customerId: customer.id,
-          ...rfmData,
-        });
-        processed++;
-      }
+      // 非同步執行（不等待完成）
+      db.processRfmCalculationJob(jobId, input.organizationId).catch(err => {
+        console.error('[RFM] Background job failed:', err);
+      });
       
-      return { processed };
+      return { jobId, status: 'started' };
+    }),
+
+  // 查詢任務狀態
+  getJobStatus: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .query(async ({ input }) => {
+      const job = await db.getBackgroundJobById(input.jobId);
+      if (!job) return null;
+      return {
+        id: job.id,
+        status: job.status,
+        progress: job.progress,
+        totalItems: job.totalItems,
+        processedItems: job.processedItems,
+        result: job.result,
+        errorMessage: job.errorMessage,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+      };
+    }),
+
+  // 取得最新的 RFM 計算任務
+  getLatestJob: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      const job = await db.getLatestJobByType(input.organizationId, 'rfm_calculation');
+      if (!job) return null;
+      return {
+        id: job.id,
+        status: job.status,
+        progress: job.progress,
+        totalItems: job.totalItems,
+        processedItems: job.processedItems,
+        result: job.result,
+        errorMessage: job.errorMessage,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+        createdAt: job.createdAt,
+      };
     }),
 
   getChurnRiskList: protectedProcedure
