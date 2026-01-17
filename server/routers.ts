@@ -371,6 +371,59 @@ const appointmentRouter = router({
       await db.updateAppointment(id, data as any);
       return { success: true };
     }),
+
+  // 到診率統計 API
+  getAttendanceStats: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      staffId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, startDate, endDate, staffId } = input;
+      return await db.getAppointmentAttendanceStats(organizationId, { startDate, endDate, staffId });
+    }),
+
+  // 爹約分析 API
+  getNoShowAnalysis: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, startDate, endDate } = input;
+      return await db.getNoShowAnalysis(organizationId, { startDate, endDate });
+    }),
+
+  // 候補名單管理 API
+  getWaitlist: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      date: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getWaitlist(input.organizationId, input.date);
+    }),
+
+  addToWaitlist: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      customerId: z.number(),
+      preferredDate: z.string(),
+      preferredTimeSlot: z.string().optional(),
+      productId: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { preferredDate, ...rest } = input;
+      const id = await db.addToWaitlist({
+        ...rest,
+        preferredDate: new Date(preferredDate),
+      });
+      return { id };
+    }),
 });
 
 // ============================================

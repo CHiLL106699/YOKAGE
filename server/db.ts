@@ -1435,3 +1435,170 @@ export async function getSatisfactionTrend(organizationId: number, months: numbe
     }))
     .reverse();
 }
+
+
+// ============================================
+// 預約到診率統計 Queries - 核心功能 5
+// ============================================
+export async function getAppointmentAttendanceStats(organizationId: number, options?: { startDate?: string; endDate?: string; staffId?: number }) {
+  const db = await getDb();
+  if (!db) return { total: 0, completed: 0, noShow: 0, cancelled: 0, attendanceRate: 0, noShowRate: 0 };
+
+  let whereClause = eq(appointments.organizationId, organizationId);
+  if (options?.staffId) {
+    whereClause = and(whereClause, eq(appointments.staffId, options.staffId)) as typeof whereClause;
+  }
+
+  const allAppointments = await db.select().from(appointments).where(whereClause);
+  
+  // 過濾日期範圍
+  let filtered = allAppointments;
+  if (options?.startDate) {
+    const start = new Date(options.startDate);
+    filtered = filtered.filter(a => new Date(a.appointmentDate) >= start);
+  }
+  if (options?.endDate) {
+    const end = new Date(options.endDate);
+    filtered = filtered.filter(a => new Date(a.appointmentDate) <= end);
+  }
+
+  const total = filtered.length;
+  const completed = filtered.filter(a => a.status === 'completed' || a.status === 'arrived' || a.status === 'in_progress').length;
+  const noShow = filtered.filter(a => a.status === 'no_show').length;
+  const cancelled = filtered.filter(a => a.status === 'cancelled').length;
+  
+  const attendanceRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const noShowRate = total > 0 ? Math.round((noShow / total) * 100) : 0;
+
+  return { total, completed, noShow, cancelled, attendanceRate, noShowRate };
+}
+
+export async function getNoShowAnalysis(organizationId: number, options?: { startDate?: string; endDate?: string }) {
+  const db = await getDb();
+  if (!db) return { byDayOfWeek: [], byTimeSlot: [], byCustomer: [], trends: [] };
+
+  let whereClause = and(
+    eq(appointments.organizationId, organizationId),
+    eq(appointments.status, 'no_show')
+  );
+
+  const noShowAppointments = await db.select().from(appointments).where(whereClause);
+  
+  // 過濾日期範圍
+  let filtered = noShowAppointments;
+  if (options?.startDate) {
+    const start = new Date(options.startDate);
+    filtered = filtered.filter(a => new Date(a.appointmentDate) >= start);
+  }
+  if (options?.endDate) {
+    const end = new Date(options.endDate);
+    filtered = filtered.filter(a => new Date(a.appointmentDate) <= end);
+  }
+
+  // 按星期幾分析
+  const dayOfWeekMap = new Map<number, number>();
+  const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+  filtered.forEach(a => {
+    const day = new Date(a.appointmentDate).getDay();
+    dayOfWeekMap.set(day, (dayOfWeekMap.get(day) || 0) + 1);
+  });
+  const byDayOfWeek = Array.from(dayOfWeekMap.entries()).map(([day, count]) => ({
+    day: dayNames[day],
+    count,
+  })).sort((a, b) => dayNames.indexOf(a.day) - dayNames.indexOf(b.day));
+
+  // 按時段分析
+  const timeSlotMap = new Map<string, number>();
+  filtered.forEach(a => {
+    const hour = parseInt(a.startTime.split(':')[0]);
+    let slot = '其他';
+    if (hour >= 9 && hour < 12) slot = '上午 (9-12)';
+    else if (hour >= 12 && hour < 14) slot = '中午 (12-14)';
+    else if (hour >= 14 && hour < 18) slot = '下午 (14-18)';
+    else if (hour >= 18 && hour < 21) slot = '晚間 (18-21)';
+    timeSlotMap.set(slot, (timeSlotMap.get(slot) || 0) + 1);
+  });
+  const byTimeSlot = Array.from(timeSlotMap.entries()).map(([slot, count]) => ({ slot, count }));
+
+  // 按客戶分析（高風險客戶）
+  const customerMap = new Map<number, number>();
+  filtered.forEach(a => {
+    customerMap.set(a.customerId, (customerMap.get(a.customerId) || 0) + 1);
+  });
+  const byCustomer = Array.from(customerMap.entries())
+    .map(([customerId, count]) => ({ customerId, noShowCount: count }))
+    .sort((a, b) => b.noShowCount - a.noShowCount)
+    .slice(0, 10);
+
+  // 月度趨勢
+  const monthMap = new Map<string, number>();
+  filtered.forEach(a => {
+    const month = new Date(a.appointmentDate).toISOString().slice(0, 7);
+    monthMap.set(month, (monthMap.get(month) || 0) + 1);
+  });
+  const trends = Array.from(monthMap.entries())
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  return { byDayOfWeek, byTimeSlot, byCustomer, trends };
+}
+
+// ============================================
+// 候補名單 Queries - 核心功能 5
+// ============================================
+import { waitlist, InsertWaitlist } from "../drizzle/schema";
+
+export async function addToWaitlist(data: InsertWaitlist) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(waitlist).values(data);
+  return result[0].insertId;
+}
+
+export async function getWaitlist(organizationId: number, date?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let whereClause = and(
+    eq(waitlist.organizationId, organizationId),
+    eq(waitlist.status, 'waiting')
+  );
+
+  if (date) {
+    whereClause = and(whereClause, eq(waitlist.preferredDate, new Date(date))) as typeof whereClause;
+  }
+
+  return await db.select().from(waitlist).where(whereClause).orderBy(asc(waitlist.preferredDate), asc(waitlist.createdAt));
+}
+
+export async function updateWaitlistStatus(id: number, status: 'waiting' | 'notified' | 'booked' | 'cancelled', bookedAppointmentId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData: any = { status };
+  if (status === 'notified') {
+    updateData.notifiedAt = new Date();
+  }
+  if (bookedAppointmentId) {
+    updateData.bookedAppointmentId = bookedAppointmentId;
+  }
+  
+  await db.update(waitlist).set(updateData).where(eq(waitlist.id, id));
+}
+
+export async function notifyWaitlistForCancellation(organizationId: number, appointmentDate: string, timeSlot?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // 找到符合條件的候補客戶
+  let whereClause = and(
+    eq(waitlist.organizationId, organizationId),
+    eq(waitlist.preferredDate, new Date(appointmentDate)),
+    eq(waitlist.status, 'waiting')
+  );
+
+  const candidates = await db.select().from(waitlist).where(whereClause).orderBy(asc(waitlist.createdAt));
+  
+  // 返回前 3 位候補客戶
+  return candidates.slice(0, 3);
+}

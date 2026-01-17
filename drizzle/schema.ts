@@ -726,3 +726,25 @@ export const satisfactionSurveys = mysqlTable("satisfactionSurveys", {
 
 export type SatisfactionSurvey = typeof satisfactionSurveys.$inferSelect;
 export type InsertSatisfactionSurvey = typeof satisfactionSurveys.$inferInsert;
+
+
+// ============================================
+// 候補名單表 - 核心功能 5
+// ============================================
+export const waitlist = mysqlTable("waitlist", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  customerId: int("customerId").notNull(),
+  preferredDate: date("preferredDate").notNull(),
+  preferredTimeSlot: varchar("preferredTimeSlot", { length: 50 }),
+  productId: int("productId"),
+  status: mysqlEnum("status", ["waiting", "notified", "booked", "cancelled"]).default("waiting"),
+  notes: text("notes"),
+  notifiedAt: timestamp("notifiedAt"),
+  bookedAppointmentId: int("bookedAppointmentId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Waitlist = typeof waitlist.$inferSelect;
+export type InsertWaitlist = typeof waitlist.$inferInsert;

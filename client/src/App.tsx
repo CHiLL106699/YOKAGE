@@ -70,6 +70,10 @@ import ConsultationManagementPage from "@/pages/ConsultationManagementPage";
 import RFMAnalysisPage from "@/pages/RFMAnalysisPage";
 import CommissionManagementPage from "@/pages/CommissionManagementPage";
 import SatisfactionSurveyPage from "@/pages/SatisfactionSurveyPage";
+import AttendanceTrackingPage from "@/pages/AttendanceTrackingPage";
+import InventoryCostPage from "@/pages/InventoryCostPage";
+import RevenueTargetPage from "@/pages/RevenueTargetPage";
+import CustomerSourceROIPage from "@/pages/CustomerSourceROIPage";
 
 function Router() {
   return (
@@ -157,6 +161,10 @@ function Router() {
       <Route path="/clinic/rfm-analysis" component={RFMAnalysisPage} />
       <Route path="/clinic/commission" component={CommissionManagementPage} />
       <Route path="/clinic/satisfaction" component={SatisfactionSurveyPage} />
+      <Route path="/clinic/attendance-tracking" component={AttendanceTrackingPage} />
+      <Route path="/clinic/inventory-cost" component={InventoryCostPage} />
+      <Route path="/clinic/revenue-target" component={RevenueTargetPage} />
+      <Route path="/clinic/customer-source-roi" component={CustomerSourceROIPage} />
       
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />

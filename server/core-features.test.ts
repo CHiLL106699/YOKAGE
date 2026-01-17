@@ -284,3 +284,105 @@ describe("Core Features - Satisfaction Survey", () => {
     expect(Array.isArray(result)).toBe(true);
   });
 });
+
+// ============================================
+// Phase B: 營運分析 - 剩餘 4 項核心功能
+// ============================================
+
+function createAuthenticatedCaller() {
+  const { ctx } = createAuthContext("clinic_admin");
+  return appRouter.createCaller(ctx);
+}
+
+describe("Core Features - Attendance Tracking", () => {
+  it("should get attendance stats via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.appointment.getAttendanceStats({
+      organizationId: 1,
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+    });
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty("total");
+    expect(result).toHaveProperty("completed");
+    expect(result).toHaveProperty("noShow");
+    expect(result).toHaveProperty("attendanceRate");
+  });
+
+  it("should get waitlist entries via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.appointment.getWaitlist({
+      organizationId: 1,
+    });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe("Core Features - Inventory Cost", () => {
+  it("should list inventory transactions via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.inventory.listTransactions({
+      organizationId: 1,
+    });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should get cost analysis via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.inventory.getCostAnalysis({
+      organizationId: 1,
+      productId: 1,
+    });
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty("averageCost");
+    expect(result).toHaveProperty("totalCost");
+    expect(result).toHaveProperty("totalQuantity");
+  });
+});
+
+describe("Core Features - Revenue Target", () => {
+  it("should list revenue targets via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.revenueTarget.list({
+      organizationId: 1,
+      year: 2024,
+    });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should get achievement rate via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.revenueTarget.getAchievement({
+      organizationId: 1,
+      year: 2024,
+      month: 1,
+    });
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty("target");
+    expect(result).toHaveProperty("actual");
+    expect(result).toHaveProperty("achievementRate");
+  });
+});
+
+describe("Core Features - Customer Source ROI", () => {
+  it("should list marketing campaigns via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.marketing.listCampaigns({
+      organizationId: 1,
+    });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should get source ROI analysis via tRPC", async () => {
+    const caller = createAuthenticatedCaller();
+    const result = await caller.marketing.getSourceROI({
+      organizationId: 1,
+    });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+  });
+});

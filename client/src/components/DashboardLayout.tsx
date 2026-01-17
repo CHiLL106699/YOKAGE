@@ -81,6 +81,10 @@ const clinicMenuItems = [
   { icon: PieChart, label: "RFM 分析", path: "/clinic/rfm-analysis" },
   { icon: DollarSign, label: "佣金管理", path: "/clinic/commission" },
   { icon: ThumbsUp, label: "滿意度調查", path: "/clinic/satisfaction" },
+  { icon: Calendar, label: "到診率追蹤", path: "/clinic/attendance-tracking" },
+  { icon: Package, label: "庫存成本", path: "/clinic/inventory-cost" },
+  { icon: Target, label: "營收目標", path: "/clinic/revenue-target" },
+  { icon: BarChart3, label: "客戶來源 ROI", path: "/clinic/customer-source-roi" },
   { icon: Cog, label: "系統設定", path: "/clinic/settings" },
 ];
 
