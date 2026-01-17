@@ -1,9 +1,9 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, User, MoreHorizontal, Check, X } from "lucide-react";
+import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, User, MoreHorizontal, Check, X, CalendarDays, Users, AlertCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -13,8 +13,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
+// 使用優化後的通用元件
+import { PageHeader } from "@/components/ui/page-header";
+import { SkeletonTable } from "@/components/ui/skeleton-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+
 export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [cancelConfirm, setCancelConfirm] = useState<{ open: boolean; appointmentId: number | null }>({
+    open: false,
+    appointmentId: null,
+  });
   
   // TODO: Get organizationId from context
   const organizationId = 1;
@@ -53,7 +64,18 @@ export default function AppointmentsPage() {
   };
 
   const handleUpdateStatus = (id: number, status: "confirmed" | "arrived" | "completed" | "cancelled" | "no_show") => {
-    updateMutation.mutate({ id, status });
+    if (status === "cancelled") {
+      setCancelConfirm({ open: true, appointmentId: id });
+    } else {
+      updateMutation.mutate({ id, status });
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    if (cancelConfirm.appointmentId) {
+      updateMutation.mutate({ id: cancelConfirm.appointmentId, status: "cancelled" });
+      setCancelConfirm({ open: false, appointmentId: null });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -84,23 +106,57 @@ export default function AppointmentsPage() {
 
   const appointments = appointmentsData?.data || [];
 
+  // 計算統計數據
+  const stats = {
+    total: appointments.length,
+    pending: appointments.filter(a => a.status === "pending").length,
+    confirmed: appointments.filter(a => a.status === "confirmed" || a.status === "arrived").length,
+    completed: appointments.filter(a => a.status === "completed").length,
+  };
+
   // Group appointments by time
   const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">預約管理</h1>
-            <p className="text-gray-500 mt-1">管理診所預約排程</p>
-          </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            新增預約
-          </Button>
-        </div>
+        {/* Header with Actions */}
+        <PageHeader
+          title="預約管理"
+          description="管理診所預約排程"
+          actions={
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              新增預約
+            </Button>
+          }
+        />
+
+        {/* Stats Cards */}
+        <StatGrid columns={4}>
+          <StatCard
+            title="今日預約"
+            value={stats.total}
+            icon={CalendarDays}
+            description="筆預約"
+          />
+          <StatCard
+            title="待確認"
+            value={stats.pending}
+            icon={AlertCircle}
+            className={stats.pending > 0 ? "border-yellow-200 bg-yellow-50/50" : ""}
+          />
+          <StatCard
+            title="已確認"
+            value={stats.confirmed}
+            icon={Users}
+          />
+          <StatCard
+            title="已完成"
+            value={stats.completed}
+            icon={CheckCircle}
+          />
+        </StatGrid>
 
         {/* Date Navigation */}
         <Card>
@@ -120,22 +176,28 @@ export default function AppointmentsPage() {
                   今天
                 </Button>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 共 {appointments.length} 筆預約
               </div>
             </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
+              <SkeletonTable
+                columns={4}
+                rows={5}
+                headers={["時間", "客戶", "狀態", "操作"]}
+              />
             ) : appointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                <Calendar className="h-12 w-12 mb-4 text-gray-300" />
-                <p className="text-lg font-medium">當日無預約</p>
-                <p className="text-sm">點擊「新增預約」開始建立</p>
-              </div>
+              <EmptyState
+                icon={Calendar}
+                title="當日無預約"
+                description="點擊「新增預約」開始建立"
+                action={{
+                  label: "新增預約",
+                  onClick: () => toast.info("新增預約功能開發中"),
+                }}
+              />
             ) : (
               <div className="space-y-4">
                 {timeSlots.map((time) => {
@@ -147,7 +209,7 @@ export default function AppointmentsPage() {
                   
                   return (
                     <div key={time} className="flex gap-4">
-                      <div className="w-20 text-sm font-medium text-gray-500 pt-3">
+                      <div className="w-20 text-sm font-medium text-muted-foreground pt-3">
                         {time}
                       </div>
                       <div className="flex-1 space-y-2">
@@ -161,7 +223,7 @@ export default function AppointmentsPage() {
                                   </div>
                                   <div>
                                     <p className="font-medium">客戶 #{apt.customerId}</p>
-                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                       <Clock className="h-3 w-3" />
                                       {apt.startTime} - {apt.endTime ?? "未定"}
                                     </div>
@@ -200,7 +262,7 @@ export default function AppointmentsPage() {
                                 </div>
                               </div>
                               {apt.notes && (
-                                <p className="mt-2 text-sm text-gray-500 bg-gray-50 p-2 rounded">
+                                <p className="mt-2 text-sm text-muted-foreground bg-muted p-2 rounded">
                                   {apt.notes}
                                 </p>
                               )}
@@ -215,6 +277,18 @@ export default function AppointmentsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Confirm Cancel Dialog */}
+        <ConfirmDialog
+          open={cancelConfirm.open}
+          onOpenChange={(open) => setCancelConfirm({ ...cancelConfirm, open })}
+          title="確認取消預約"
+          description="確定要取消此預約嗎？此操作無法復原。"
+          confirmText="取消預約"
+          cancelText="返回"
+          variant="destructive"
+          onConfirm={handleConfirmCancel}
+        />
       </div>
     </DashboardLayout>
   );

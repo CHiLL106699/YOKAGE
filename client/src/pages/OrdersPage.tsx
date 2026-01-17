@@ -2,10 +2,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { ShoppingCart, Search, Eye, DollarSign, Package, Clock, CheckCircle } from "lucide-react";
+import { ShoppingCart, Eye, DollarSign, Clock, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
@@ -16,6 +15,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { toast } from "sonner";
+
+// 使用優化後的通用元件
+import { PageHeader } from "@/components/ui/page-header";
+import { SearchInput, useSearch } from "@/components/ui/search-input";
+import { SkeletonTable } from "@/components/ui/skeleton-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { DataPagination, usePagination } from "@/components/ui/data-pagination";
+import { ExportButton, downloadCSV } from "@/components/ui/export-button";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
 
 // Order status colors
 const statusColors: Record<string, string> = {
@@ -45,18 +62,18 @@ const paymentMethodLabels: Record<string, string> = {
 };
 
 export default function OrdersPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const { search, setSearch, debouncedSearch } = useSearch();
+  const { page, pageSize, setPage, setPageSize } = usePagination(20);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<number | null>(null);
-  const [page, setPage] = useState(1);
 
   // TODO: Get organizationId from context
   const organizationId = 1;
 
-  const { data: orders } = trpc.order.list.useQuery({
+  const { data: orders, isLoading } = trpc.order.list.useQuery({
     organizationId,
     page,
-    limit: 20,
+    limit: pageSize,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
@@ -73,153 +90,150 @@ export default function OrdersPage() {
     revenue: orders?.data?.reduce((sum, o) => sum + parseFloat(o.subtotal || "0"), 0) || 0,
   };
 
-  const filteredOrders = orders?.data?.filter(
-    (order) =>
-      order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOrders = debouncedSearch
+    ? orders?.data?.filter((order) =>
+        order.orderNumber?.toLowerCase().includes(debouncedSearch.toLowerCase())
+      )
+    : orders?.data;
+
+  const handleExport = async (format: "csv" | "xlsx" | "json") => {
+    const orderList = filteredOrders || [];
+    if (orderList.length === 0) {
+      toast.error("沒有資料可匯出");
+      return;
+    }
+
+    const exportData = orderList.map((o) => ({
+      訂單編號: o.orderNumber || "",
+      日期: o.createdAt ? new Date(o.createdAt).toLocaleString("zh-TW") : "",
+      金額: parseFloat(o.subtotal || "0"),
+      付款方式: paymentMethodLabels[o.paymentMethod || ""] || o.paymentMethod || "",
+      狀態: statusLabels[o.status || "pending"],
+    }));
+
+    if (format === "csv") {
+      downloadCSV(exportData, `訂單列表_${new Date().toISOString().split("T")[0]}`);
+    }
+  };
+
+  const totalPages = Math.ceil((orders?.total || 0) / pageSize);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">訂單管理</h1>
-            <p className="text-gray-500 mt-1">查看與管理所有訂單</p>
-          </div>
-        </div>
+        {/* Header with Actions */}
+        <PageHeader
+          title="訂單管理"
+          description="查看與管理所有訂單"
+          actions={
+            <ExportButton onExport={handleExport} formats={["csv"]} />
+          }
+        />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">總訂單數</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-yellow-100 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">待處理</p>
-                  <p className="text-2xl font-bold">{stats.pending}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">已完成</p>
-                  <p className="text-2xl font-bold">{stats.completed}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">總營收</p>
-                  <p className="text-2xl font-bold">NT$ {stats.revenue.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatGrid columns={4}>
+          <StatCard
+            title="總訂單數"
+            value={stats.total}
+            icon={ShoppingCart}
+            description="筆訂單"
+          />
+          <StatCard
+            title="待處理"
+            value={stats.pending}
+            icon={Clock}
+            className={stats.pending > 0 ? "border-yellow-200 bg-yellow-50/50" : ""}
+          />
+          <StatCard
+            title="已完成"
+            value={stats.completed}
+            icon={CheckCircle}
+          />
+          <StatCard
+            title="總營收"
+            value={`NT$ ${stats.revenue.toLocaleString()}`}
+            icon={DollarSign}
+          />
+        </StatGrid>
 
         {/* Filters */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="搜尋訂單編號..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="訂單狀態" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部狀態</SelectItem>
-              <SelectItem value="pending">待付款</SelectItem>
-              <SelectItem value="processing">處理中</SelectItem>
-              <SelectItem value="paid">已付款</SelectItem>
-              <SelectItem value="completed">已完成</SelectItem>
-              <SelectItem value="cancelled">已取消</SelectItem>
-              <SelectItem value="refunded">已退款</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Orders Table */}
         <Card>
           <CardHeader>
-            <CardTitle>訂單列表</CardTitle>
-            <CardDescription>共 {orders?.total || 0} 筆訂單</CardDescription>
+            <div className="flex items-center gap-4">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="搜尋訂單編號..."
+                className="max-w-md"
+              />
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="訂單狀態" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部狀態</SelectItem>
+                  <SelectItem value="pending">待付款</SelectItem>
+                  <SelectItem value="processing">處理中</SelectItem>
+                  <SelectItem value="paid">已付款</SelectItem>
+                  <SelectItem value="completed">已完成</SelectItem>
+                  <SelectItem value="cancelled">已取消</SelectItem>
+                  <SelectItem value="refunded">已退款</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-sm text-muted-foreground">
+                共 {orders?.total || 0} 筆訂單
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {!filteredOrders?.length ? (
-              <div className="text-center py-12 text-gray-500">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">尚無訂單</p>
-              </div>
+            {isLoading ? (
+              <SkeletonTable
+                columns={6}
+                rows={5}
+                headers={["訂單編號", "日期", "金額", "付款方式", "狀態", "操作"]}
+              />
+            ) : !filteredOrders?.length ? (
+              <EmptyState
+                icon={ShoppingCart}
+                title="尚無訂單"
+                description="目前沒有符合條件的訂單"
+              />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium text-gray-500">訂單編號</th>
-                      <th className="text-left p-3 font-medium text-gray-500">日期</th>
-                      <th className="text-left p-3 font-medium text-gray-500">金額</th>
-                      <th className="text-left p-3 font-medium text-gray-500">付款方式</th>
-                      <th className="text-left p-3 font-medium text-gray-500">狀態</th>
-                      <th className="text-left p-3 font-medium text-gray-500">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>訂單編號</TableHead>
+                      <TableHead>日期</TableHead>
+                      <TableHead>金額</TableHead>
+                      <TableHead>付款方式</TableHead>
+                      <TableHead>狀態</TableHead>
+                      <TableHead className="w-[80px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {filteredOrders.map((order) => (
-                      <tr key={order.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3">
+                      <TableRow key={order.id}>
+                        <TableCell>
                           <span className="font-mono font-medium">{order.orderNumber}</span>
-                        </td>
-                        <td className="p-3 text-gray-500">
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
                           {order.createdAt
                             ? format(new Date(order.createdAt), "yyyy/MM/dd HH:mm", { locale: zhTW })
                             : "-"}
-                        </td>
-                        <td className="p-3 font-medium">
+                        </TableCell>
+                        <TableCell className="font-medium">
                           NT$ {parseFloat(order.subtotal || "0").toLocaleString()}
-                        </td>
-                        <td className="p-3 text-gray-500">
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
                           {paymentMethodLabels[order.paymentMethod || ""] || order.paymentMethod || "-"}
-                        </td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell>
                           <Badge className={statusColors[order.status || "pending"]}>
                             {statusLabels[order.status || "pending"]}
                           </Badge>
-                        </td>
-                        <td className="p-3">
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -229,39 +243,26 @@ export default function OrdersPage() {
                             <Eye className="h-4 w-4" />
                             查看
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  </TableBody>
+                </Table>
 
-            {/* Pagination */}
-            {orders && orders.total > 20 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <p className="text-sm text-gray-500">
-                  顯示 {(page - 1) * 20 + 1} - {Math.min(page * 20, orders.total)} 筆，共 {orders.total} 筆
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(page - 1)}
-                    disabled={page === 1}
-                  >
-                    上一頁
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(page + 1)}
-                    disabled={page * 20 >= orders.total}
-                  >
-                    下一頁
-                  </Button>
-                </div>
-              </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-4">
+                    <DataPagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalItems={orders?.total || 0}
+                      onPageChange={setPage}
+                      onPageSizeChange={setPageSize}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -280,7 +281,7 @@ export default function OrdersPage() {
                 {/* Order Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">訂單日期</p>
+                    <p className="text-sm text-muted-foreground">訂單日期</p>
                     <p className="font-medium">
                       {orderDetail?.createdAt
                         ? format(new Date(orderDetail.createdAt), "yyyy/MM/dd HH:mm", { locale: zhTW })
@@ -288,56 +289,50 @@ export default function OrdersPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">訂單狀態</p>
-                    <Badge className={statusColors[orderDetail?.status || "pending"]}>
-                      {statusLabels[orderDetail?.status || "pending"]}
+                    <p className="text-sm text-muted-foreground">訂單狀態</p>
+                    <Badge className={statusColors[orderDetail.status || "pending"]}>
+                      {statusLabels[orderDetail.status || "pending"]}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">付款方式</p>
+                    <p className="text-sm text-muted-foreground">付款方式</p>
                     <p className="font-medium">
-                      {paymentMethodLabels[orderDetail?.paymentMethod || ""] || "-"}
+                      {paymentMethodLabels[orderDetail.paymentMethod || ""] || orderDetail.paymentMethod || "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">付款狀態</p>
-                    <p className="font-medium">{orderDetail?.paymentStatus || "-"}</p>
-                  </div>
-                </div>
-
-                {/* Order Items */}
-                <div>
-                  <h4 className="font-medium mb-3">訂單項目</h4>
-                  <div className="border rounded-lg divide-y">
-                    <div className="p-3 text-center text-gray-500">
-                      訂單項目詳情將在此顯示
-                    </div>
+                    <p className="text-sm text-muted-foreground">訂單金額</p>
+                    <p className="font-medium text-lg">
+                      NT$ {parseFloat(orderDetail.total || "0").toLocaleString()}
+                    </p>
                   </div>
                 </div>
 
                 {/* Order Summary */}
-                <div className="border-t pt-4 space-y-2">
+                <div className="border-t pt-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">小計</span>
-                    <span>NT$ {parseFloat(orderDetail?.subtotal || "0").toLocaleString()}</span>
+                    <span className="text-muted-foreground">小計</span>
+                    <span>NT$ {parseFloat(orderDetail.subtotal || "0").toLocaleString()}</span>
                   </div>
-                  {orderDetail?.discount && parseFloat(orderDetail.discount) > 0 && (
+                  {orderDetail.discount && parseFloat(orderDetail.discount) > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>折扣</span>
-                      <span>- NT$ {parseFloat(orderDetail.discount).toLocaleString()}</span>
+                      <span>-NT$ {parseFloat(orderDetail.discount).toLocaleString()}</span>
                     </div>
                   )}
-                  {orderDetail?.tax && parseFloat(orderDetail.tax) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">稅金</span>
-                      <span>NT$ {parseFloat(orderDetail.tax).toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                  <div className="flex justify-between font-medium text-lg mt-2 pt-2 border-t">
                     <span>總計</span>
-                    <span>NT$ {parseFloat(orderDetail?.total || "0").toLocaleString()}</span>
+                    <span>NT$ {parseFloat(orderDetail.total || "0").toLocaleString()}</span>
                   </div>
                 </div>
+
+                {/* Notes */}
+                {orderDetail.notes && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm text-muted-foreground mb-1">備註</p>
+                    <p className="text-sm bg-muted p-3 rounded">{orderDetail.notes}</p>
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>

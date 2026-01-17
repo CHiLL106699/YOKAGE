@@ -600,3 +600,34 @@
 - [x] 驗證滿意度調查頁面正常顯示 NPS 分析（NPS 分數 18）
 - [x] 驗證診所儀表板正確顯示統計數據
 - [x] 所有 44 個單元測試通過（1 個 RFM 計算測試因耗時過長已跳過）
+
+
+---
+
+## Phase 49: 通用 UI 元件套用與功能串接驗證
+
+### 通用元件套用
+- [x] AppointmentsPage 套用通用元件
+- [x] ProductsPage 套用通用元件
+- [x] StaffPage 套用通用元件
+- [x] OrdersPage 套用通用元件
+- [ ] AftercarePage 套用通用元件
+- [ ] CouponsPage 套用通用元件
+- [x] TreatmentRecordsPage 套用通用元件
+- [ ] ConsultationsPage 套用通用元件
+- [ ] RFMAnalysisPage 套用通用元件
+- [ ] CommissionManagementPage 套用通用元件
+- [ ] SatisfactionSurveyPage 套用通用元件
+
+### 功能模組盤點與串接驗證
+- [x] 盤點所有功能模組清單
+- [x] 驗證客戶管理與預約管理串接
+- [x] 驗證產品管理與訂單管理串接
+- [x] 驗證員工管理與排班/傭金串接
+- [x] 驗證療程記錄與套餐管理串接
+- [x] 驗證諮詢管理與跟進追蹤串接
+- [x] 驗證 RFM 分析與客戶分群串接
+- [x] 驗證滿意度調查與 NPS 統計串接
+- [x] 驗證營收目標與報表分析串接
+- [x] 驗證庫存管理與警示系統串接
+- [x] 產出功能串接驗證報告（見 docs/FEATURE_INVENTORY.md）
