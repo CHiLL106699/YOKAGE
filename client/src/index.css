@@ -410,3 +410,309 @@
     border-radius: 3px 0 0 3px;
   }
 }
+
+
+/* ============================================
+ * 響應式設計增強
+ * ============================================ */
+
+@layer utilities {
+  /* 行動裝置觸控優化 */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* 安全區域內距（針對 iPhone 瀏海等） */
+  .safe-area-inset {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* 行動裝置卡片陰影 */
+  .mobile-card-shadow {
+    box-shadow: 0 1px 3px oklch(0 0 0 / 10%), 0 1px 2px oklch(0 0 0 / 6%);
+  }
+  
+  /* 行動裝置底部導覽安全區 */
+  .bottom-nav-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+  
+  /* 滾動容器優化 */
+  .scroll-smooth-mobile {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* 防止文字選取（適用於按鈕等互動元素） */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* 行動裝置表格滾動提示 */
+  .table-scroll-hint {
+    position: relative;
+  }
+  
+  .table-scroll-hint::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 30px;
+    background: linear-gradient(to right, transparent, oklch(0.12 0.03 250 / 80%));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  .table-scroll-hint.show-hint::after {
+    opacity: 1;
+  }
+}
+
+@layer components {
+  /* 響應式表格 - 行動裝置轉為卡片 */
+  .responsive-table {
+    @apply w-full;
+  }
+  
+  @media (max-width: 639px) {
+    .responsive-table thead {
+      @apply hidden;
+    }
+    
+    .responsive-table tbody tr {
+      @apply block mb-4 rounded-lg border border-border bg-card p-4;
+    }
+    
+    .responsive-table tbody td {
+      @apply block py-2 px-0 border-0;
+    }
+    
+    .responsive-table tbody td::before {
+      content: attr(data-label);
+      @apply block text-xs text-muted-foreground mb-1 font-medium;
+    }
+  }
+  
+  /* 響應式按鈕組 */
+  .btn-group-responsive {
+    @apply flex flex-col gap-2;
+  }
+  
+  @media (min-width: 640px) {
+    .btn-group-responsive {
+      @apply flex-row;
+    }
+  }
+  
+  /* 響應式表單 */
+  .form-responsive {
+    @apply grid gap-4;
+  }
+  
+  @media (min-width: 640px) {
+    .form-responsive {
+      @apply grid-cols-2;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .form-responsive {
+      @apply grid-cols-3;
+    }
+  }
+  
+  /* 響應式對話框 */
+  .dialog-responsive {
+    @apply w-[calc(100vw-2rem)] max-w-lg;
+  }
+  
+  @media (min-width: 640px) {
+    .dialog-responsive {
+      @apply w-full;
+    }
+  }
+  
+  /* 響應式側邊欄 */
+  .sidebar-responsive {
+    @apply fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full transition-transform duration-300 ease-in-out;
+  }
+  
+  .sidebar-responsive.open {
+    @apply translate-x-0;
+  }
+  
+  @media (min-width: 1024px) {
+    .sidebar-responsive {
+      @apply relative translate-x-0;
+    }
+  }
+  
+  /* 響應式頁面標題 */
+  .page-title-responsive {
+    @apply text-xl font-bold;
+  }
+  
+  @media (min-width: 640px) {
+    .page-title-responsive {
+      @apply text-2xl;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .page-title-responsive {
+      @apply text-3xl;
+    }
+  }
+  
+  /* 響應式統計卡片 */
+  .stat-card-responsive {
+    @apply p-4;
+  }
+  
+  @media (min-width: 640px) {
+    .stat-card-responsive {
+      @apply p-5;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .stat-card-responsive {
+      @apply p-6;
+    }
+  }
+  
+  /* 行動裝置底部操作欄 */
+  .mobile-action-bar {
+    @apply fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-40;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-action-bar {
+      @apply hidden;
+    }
+  }
+  
+  /* 行動裝置搜尋欄 */
+  .mobile-search-bar {
+    @apply sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 border-b border-border;
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-search-bar {
+      @apply static bg-transparent backdrop-blur-none p-0 border-0;
+    }
+  }
+  
+  /* 響應式圖片容器 */
+  .img-responsive {
+    @apply w-full h-auto object-cover;
+  }
+  
+  /* 響應式頭像 */
+  .avatar-responsive {
+    @apply h-8 w-8;
+  }
+  
+  @media (min-width: 640px) {
+    .avatar-responsive {
+      @apply h-10 w-10;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .avatar-responsive {
+      @apply h-12 w-12;
+    }
+  }
+  
+  /* 響應式間距 */
+  .spacing-responsive {
+    @apply space-y-4;
+  }
+  
+  @media (min-width: 640px) {
+    .spacing-responsive {
+      @apply space-y-5;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .spacing-responsive {
+      @apply space-y-6;
+    }
+  }
+}
+
+/* 行動裝置觸控回饋 */
+@media (hover: none) and (pointer: coarse) {
+  .touch-feedback:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+/* 隱藏桌面版滾動條（行動裝置保留） */
+@media (min-width: 1024px) {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* 行動裝置專用動畫 */
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .mobile-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  .mobile-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Users, Plus, MoreHorizontal, Phone, Mail, Edit, Trash2, Calendar, Eye, Download } from "lucide-react";
+import { Users, Plus, MoreHorizontal, Phone, Mail, Edit, Trash2, Calendar, Eye, Download, Tag, Crown } from "lucide-react";
 import { useState } from "react";
 import {
   Table,
@@ -18,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -40,7 +41,7 @@ import {
 import { toast } from "sonner";
 
 // 使用優化後的通用元件
-import { PageHeader, PageHeaderAction } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput, useSearch } from "@/components/ui/search-input";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -48,6 +49,24 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataPagination, usePagination } from "@/components/ui/data-pagination";
 import { ExportButton, downloadCSV } from "@/components/ui/export-button";
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import {
+  BatchActionsToolbar,
+  useBatchSelection,
+  SelectionCheckbox,
+  BatchAction,
+  createBatchDeleteAction,
+} from "@/components/ui/batch-actions";
+
+type Customer = {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  gender: string | null;
+  memberLevel: string | null;
+  visitCount: number | null;
+  totalSpent: number | null;
+};
 
 export default function CustomersPage() {
   const { search, setSearch, debouncedSearch } = useSearch();
@@ -63,6 +82,10 @@ export default function CustomersPage() {
     email: "",
     gender: "other" as "male" | "female" | "other",
   });
+  const [levelUpdateDialog, setLevelUpdateDialog] = useState<{ open: boolean; level: string }>({
+    open: false,
+    level: "bronze",
+  });
   
   // TODO: Get organizationId from context
   const organizationId = 1;
@@ -73,6 +96,23 @@ export default function CustomersPage() {
     limit,
     page,
   });
+
+  const customers = (customersData?.data || []) as Customer[];
+  const totalItems = customersData?.total || 0;
+  const totalPages = Math.ceil(totalItems / pageSize);
+
+  // 批次選擇 Hook
+  const {
+    selectedIds,
+    selectedItems,
+    isAllSelected,
+    isPartialSelected,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    isSelected,
+    hasSelection,
+  } = useBatchSelection(customers);
 
   // 統計數據 - 使用列表資料計算
   const statsData = {
@@ -106,6 +146,63 @@ export default function CustomersPage() {
     },
   });
 
+  // 批次操作 Mutations
+  const batchDeleteMutation = trpc.customer.batchDelete.useMutation({
+    onSuccess: (data) => {
+      toast.success(`已成功刪除 ${data.affected} 位客戶`);
+      clearSelection();
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`批次刪除失敗: ${error.message}`);
+    },
+  });
+
+  const batchUpdateLevelMutation = trpc.customer.batchUpdateLevel.useMutation({
+    onSuccess: (data) => {
+      toast.success(`已成功更新 ${data.affected} 位客戶的會員等級`);
+      clearSelection();
+      setLevelUpdateDialog({ open: false, level: "bronze" });
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`批次更新失敗: ${error.message}`);
+    },
+  });
+
+  // 批次操作定義
+  const batchActions: BatchAction<Customer>[] = [
+    {
+      id: "batch-update-level",
+      label: "批次更新會員等級",
+      icon: <Crown className="h-4 w-4" />,
+      onExecute: async () => {
+        setLevelUpdateDialog({ open: true, level: "bronze" });
+      },
+    },
+    {
+      id: "batch-export",
+      label: "匯出選中客戶",
+      icon: <Download className="h-4 w-4" />,
+      onExecute: async (_, items) => {
+        const exportData = items.map((c) => ({
+          姓名: c.name,
+          電話: c.phone || "",
+          Email: c.email || "",
+          性別: c.gender === "male" ? "男" : c.gender === "female" ? "女" : "其他",
+          會員等級: getMemberLevelText(c.memberLevel),
+          消費次數: c.visitCount || 0,
+          累計消費: c.totalSpent || 0,
+        }));
+        downloadCSV(exportData, `選中客戶_${new Date().toISOString().split("T")[0]}`);
+        toast.success(`已匯出 ${items.length} 位客戶資料`);
+      },
+    },
+    createBatchDeleteAction<Customer>(async (ids) => {
+      await batchDeleteMutation.mutateAsync({ ids });
+    }),
+  ];
+
   const handleCreateCustomer = () => {
     if (!newCustomer.name.trim()) {
       toast.error("請輸入客戶姓名");
@@ -127,7 +224,6 @@ export default function CustomersPage() {
   };
 
   const handleExport = async (format: "csv" | "xlsx" | "json") => {
-    const customers = customersData?.data || [];
     if (customers.length === 0) {
       toast.error("沒有資料可匯出");
       return;
@@ -138,13 +234,32 @@ export default function CustomersPage() {
       電話: c.phone || "",
       Email: c.email || "",
       性別: c.gender === "male" ? "男" : c.gender === "female" ? "女" : "其他",
-      會員等級: c.memberLevel || "銅牌",
+      會員等級: getMemberLevelText(c.memberLevel),
       消費次數: c.visitCount || 0,
       累計消費: c.totalSpent || 0,
     }));
 
     if (format === "csv") {
       downloadCSV(exportData, `客戶列表_${new Date().toISOString().split("T")[0]}`);
+    }
+  };
+
+  const handleBatchUpdateLevel = () => {
+    if (selectedIds.length === 0) return;
+    batchUpdateLevelMutation.mutate({
+      ids: selectedIds,
+      memberLevel: levelUpdateDialog.level as any,
+    });
+  };
+
+  const getMemberLevelText = (level: string | null) => {
+    switch (level) {
+      case "diamond": return "鑽石";
+      case "platinum": return "白金";
+      case "gold": return "黃金";
+      case "silver": return "白銀";
+      case "bronze":
+      default: return "銅牌";
     }
   };
 
@@ -163,10 +278,6 @@ export default function CustomersPage() {
         return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">銅牌</Badge>;
     }
   };
-
-  const customers = customersData?.data || [];
-  const totalItems = customersData?.total || 0;
-  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
     <DashboardLayout>
@@ -294,11 +405,21 @@ export default function CustomersPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* 批次操作工具列 */}
+            <BatchActionsToolbar
+              selectedIds={selectedIds}
+              selectedItems={selectedItems}
+              totalCount={customers.length}
+              actions={batchActions}
+              onClearSelection={clearSelection}
+              isLoading={batchDeleteMutation.isPending || batchUpdateLevelMutation.isPending}
+            />
+
             {isLoading ? (
               <SkeletonTable
-                columns={6}
+                columns={7}
                 rows={5}
-                headers={["客戶姓名", "聯絡方式", "會員等級", "消費次數", "累計消費", ""]}
+                headers={["", "客戶姓名", "聯絡方式", "會員等級", "消費次數", "累計消費", ""]}
               />
             ) : customers.length === 0 ? (
               <EmptyState
@@ -315,6 +436,13 @@ export default function CustomersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[50px]">
+                        <SelectionCheckbox
+                          checked={isAllSelected}
+                          indeterminate={isPartialSelected}
+                          onCheckedChange={toggleAll}
+                        />
+                      </TableHead>
                       <TableHead>客戶姓名</TableHead>
                       <TableHead>聯絡方式</TableHead>
                       <TableHead>會員等級</TableHead>
@@ -325,7 +453,13 @@ export default function CustomersPage() {
                   </TableHeader>
                   <TableBody>
                     {customers.map((customer) => (
-                      <TableRow key={customer.id}>
+                      <TableRow key={customer.id} className={isSelected(customer.id) ? "bg-primary/5" : ""}>
+                        <TableCell>
+                          <SelectionCheckbox
+                            checked={isSelected(customer.id)}
+                            onCheckedChange={() => toggleItem(customer.id)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -380,6 +514,7 @@ export default function CustomersPage() {
                                 <Calendar className="h-4 w-4 mr-2" />
                                 新增預約
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setDeleteConfirm({ open: true, customerId: customer.id })}
@@ -399,8 +534,8 @@ export default function CustomersPage() {
                 <DataPagination
                   currentPage={page}
                   totalPages={totalPages}
-                  totalItems={totalItems}
                   pageSize={pageSize}
+                  totalItems={totalItems}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}
                 />
@@ -415,11 +550,52 @@ export default function CustomersPage() {
           onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
           title="確認刪除"
           description="確定要刪除此客戶嗎？此操作無法復原。"
-          confirmText="刪除"
-          variant="destructive"
           onConfirm={handleDeleteCustomer}
+          confirmText="刪除"
+          cancelText="取消"
+          variant="destructive"
           loading={deleteMutation.isPending}
         />
+
+        {/* Batch Update Level Dialog */}
+        <Dialog open={levelUpdateDialog.open} onOpenChange={(open) => setLevelUpdateDialog({ ...levelUpdateDialog, open })}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>批次更新會員等級</DialogTitle>
+              <DialogDescription>
+                將選中的 {selectedIds.length} 位客戶更新為指定會員等級
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>選擇會員等級</Label>
+                <Select
+                  value={levelUpdateDialog.level}
+                  onValueChange={(value) => setLevelUpdateDialog({ ...levelUpdateDialog, level: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="選擇會員等級" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bronze">銅牌</SelectItem>
+                    <SelectItem value="silver">白銀</SelectItem>
+                    <SelectItem value="gold">黃金</SelectItem>
+                    <SelectItem value="platinum">白金</SelectItem>
+                    <SelectItem value="diamond">鑽石</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setLevelUpdateDialog({ open: false, level: "bronze" })}>
+                取消
+              </Button>
+              <Button onClick={handleBatchUpdateLevel} disabled={batchUpdateLevelMutation.isPending}>
+                {batchUpdateLevelMutation.isPending ? "更新中..." : "確認更新"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -498,6 +498,34 @@ const customerRouter = router({
       return { success: true };
     }),
 
+  // 批次操作
+  batchDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchDeleteCustomers(input.ids);
+      return { success: true, affected: result.affected };
+    }),
+
+  batchUpdateLevel: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number()),
+      memberLevel: z.enum(["bronze", "silver", "gold", "platinum", "diamond"]),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchUpdateCustomerLevel(input.ids, input.memberLevel);
+      return { success: true, affected: result.affected };
+    }),
+
+  batchAddTag: protectedProcedure
+    .input(z.object({
+      customerIds: z.array(z.number()),
+      tagId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchAddTagToCustomers(input.customerIds, input.tagId);
+      return { success: true, affected: result.affected };
+    }),
+
   tags: router({
     list: protectedProcedure
       .input(z.object({ organizationId: z.number() }))
@@ -583,6 +611,24 @@ const productRouter = router({
       await db.updateProduct(id, data);
       return { success: true };
     }),
+
+  // 批次操作
+  batchDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchDeleteProducts(input.ids);
+      return { success: true, affected: result.affected };
+    }),
+
+  batchUpdateStatus: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number()),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchUpdateProductStatus(input.ids, input.isActive);
+      return { success: true, affected: result.affected };
+    }),
 });
 
 // ============================================
@@ -641,6 +687,24 @@ const staffRouter = router({
       const { id, ...data } = input;
       await db.updateStaff(id, data);
       return { success: true };
+    }),
+
+  // 批次操作
+  batchDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchDeleteStaff(input.ids);
+      return { success: true, affected: result.affected };
+    }),
+
+  batchUpdateStatus: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number()),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchUpdateStaffStatus(input.ids, input.isActive);
+      return { success: true, affected: result.affected };
     }),
 });
 
@@ -753,6 +817,24 @@ const appointmentRouter = router({
         preferredDate: new Date(preferredDate),
       });
       return { id };
+    }),
+
+  // 批次操作
+  batchDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchDeleteAppointments(input.ids);
+      return { success: true, affected: result.affected };
+    }),
+
+  batchUpdateStatus: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number()),
+      status: z.enum(["pending", "confirmed", "arrived", "in_progress", "completed", "cancelled", "no_show"]),
+    }))
+    .mutation(async ({ input }) => {
+      const result = await db.batchUpdateAppointmentStatus(input.ids, input.status);
+      return { success: true, affected: result.affected };
     }),
 });
 

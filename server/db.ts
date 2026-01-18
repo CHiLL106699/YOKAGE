@@ -4786,3 +4786,166 @@ export async function executeAutoSettlement(organizationId: number) {
     return { success: false, message: error.message };
   }
 }
+
+
+// ============================================
+// Batch Operations
+// ============================================
+
+// 批次刪除客戶（軟刪除）
+export async function batchDeleteCustomers(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  const result = await db.update(customers)
+    .set({ isActive: false })
+    .where(inArray(customers.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次更新客戶會員等級
+export async function batchUpdateCustomerLevel(ids: number[], memberLevel: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(customers)
+    .set({ memberLevel: memberLevel as any })
+    .where(inArray(customers.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次添加客戶標籤
+export async function batchAddTagToCustomers(customerIds: number[], tagId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (customerIds.length === 0) return { affected: 0 };
+  
+  // 先檢查已存在的關聯
+  const existing = await db.select()
+    .from(customerTagRelations)
+    .where(
+      and(
+        inArray(customerTagRelations.customerId, customerIds),
+        eq(customerTagRelations.tagId, tagId)
+      )
+    );
+  
+  const existingCustomerIds = new Set(existing.map(e => e.customerId));
+  const newCustomerIds = customerIds.filter(id => !existingCustomerIds.has(id));
+  
+  if (newCustomerIds.length > 0) {
+    await db.insert(customerTagRelations).values(
+      newCustomerIds.map(customerId => ({ customerId, tagId }))
+    );
+  }
+  
+  return { affected: newCustomerIds.length };
+}
+
+// 批次刪除產品（軟刪除）
+export async function batchDeleteProducts(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(products)
+    .set({ isActive: false })
+    .where(inArray(products.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次更新產品狀態
+export async function batchUpdateProductStatus(ids: number[], isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(products)
+    .set({ isActive })
+    .where(inArray(products.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次刪除預約
+export async function batchDeleteAppointments(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(appointments)
+    .set({ status: 'cancelled' })
+    .where(inArray(appointments.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次更新預約狀態
+export async function batchUpdateAppointmentStatus(ids: number[], status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(appointments)
+    .set({ status: status as any })
+    .where(inArray(appointments.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次刪除員工（軟刪除）
+export async function batchDeleteStaff(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(staff)
+    .set({ isActive: false })
+    .where(inArray(staff.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次更新員工狀態
+export async function batchUpdateStaffStatus(ids: number[], isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(staff)
+    .set({ isActive })
+    .where(inArray(staff.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次刪除訂單（軟刪除）
+export async function batchDeleteOrders(ids: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(orders)
+    .set({ status: 'cancelled' })
+    .where(inArray(orders.id, ids));
+  
+  return { affected: ids.length };
+}
+
+// 批次更新訂單狀態
+export async function batchUpdateOrderStatus(ids: number[], status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return { affected: 0 };
+  
+  await db.update(orders)
+    .set({ status: status as any })
+    .where(inArray(orders.id, ids));
+  
+  return { affected: ids.length };
+}
