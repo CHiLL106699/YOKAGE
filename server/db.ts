@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql, like, or, gte, lte, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, sql, like, or, gte, lte, isNull, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -4285,5 +4285,504 @@ export async function verifyLineChannelCredentials(channelId: string, channelSec
     }
   } catch (error: any) {
     return { success: false, error: error.message || 'Connection failed' };
+  }
+}
+
+
+// ============================================
+// Phase 62: 每日結帳系統強化
+// ============================================
+import { 
+  autoSettlementSettings, InsertAutoSettlementSetting,
+  settlementReports, InsertSettlementReport,
+  revenueTrendSnapshots, InsertRevenueTrendSnapshot,
+} from "../drizzle/schema";
+
+// 自動結帳設定 CRUD
+export async function getAutoSettlementSettings(organizationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(autoSettlementSettings)
+    .where(eq(autoSettlementSettings.organizationId, organizationId))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function upsertAutoSettlementSettings(organizationId: number, data: Partial<InsertAutoSettlementSetting>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getAutoSettlementSettings(organizationId);
+  if (existing) {
+    await db.update(autoSettlementSettings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(autoSettlementSettings.organizationId, organizationId));
+    return existing.id;
+  } else {
+    const result = await db.insert(autoSettlementSettings).values({
+      organizationId,
+      ...data,
+    });
+    return result[0].insertId;
+  }
+}
+
+// 結帳報表 CRUD
+export async function createSettlementReport(data: InsertSettlementReport) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(settlementReports).values(data);
+  return result[0].insertId;
+}
+
+export async function getSettlementReportById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(settlementReports).where(eq(settlementReports.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function updateSettlementReport(id: number, data: Partial<InsertSettlementReport>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(settlementReports).set(data).where(eq(settlementReports.id, id));
+}
+
+export async function listSettlementReports(organizationId: number, options?: {
+  reportType?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereClause: any = eq(settlementReports.organizationId, organizationId);
+  
+  if (options?.reportType) {
+    whereClause = and(whereClause, eq(settlementReports.reportType, options.reportType as any));
+  }
+  if (options?.startDate) {
+    whereClause = and(whereClause, gte(settlementReports.periodStart, new Date(options.startDate)));
+  }
+  if (options?.endDate) {
+    whereClause = and(whereClause, lte(settlementReports.periodEnd, new Date(options.endDate)));
+  }
+  
+  const data = await db.select().from(settlementReports)
+    .where(whereClause)
+    .orderBy(desc(settlementReports.createdAt))
+    .limit(limit)
+    .offset(offset);
+  
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(settlementReports).where(whereClause);
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 生成每日結帳報表
+export async function generateDailySettlementReport(settlementId: number, generatedByUserId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const settlement = await getDailySettlementById(settlementId);
+  if (!settlement) throw new Error("Settlement not found");
+  
+  const dateStr = settlement.settlementDate.toString().split('T')[0];
+  
+  // 建立報表記錄
+  const reportId = await createSettlementReport({
+    organizationId: settlement.organizationId,
+    settlementId,
+    reportType: 'daily',
+    periodStart: new Date(dateStr),
+    periodEnd: new Date(dateStr),
+    title: `每日結帳報表 - ${dateStr}`,
+    totalRevenue: settlement.totalRevenue || "0",
+    cashRevenue: settlement.cashRevenue || "0",
+    cardRevenue: settlement.cardRevenue || "0",
+    linePayRevenue: settlement.linePayRevenue || "0",
+    otherRevenue: settlement.otherRevenue || "0",
+    totalOrders: settlement.totalOrders || 0,
+    averageOrderValue: settlement.totalOrders && settlement.totalOrders > 0 
+      ? (Number(settlement.totalRevenue || 0) / settlement.totalOrders).toFixed(2)
+      : "0",
+    totalAppointments: settlement.totalAppointments || 0,
+    completedAppointments: settlement.completedAppointments || 0,
+    generatedBy: generatedByUserId ? 'manual' : 'auto',
+    generatedByUserId,
+    status: 'completed',
+    reportData: {
+      settlement,
+      generatedAt: new Date().toISOString(),
+    },
+  });
+  
+  // 同時建立營收快照
+  await createRevenueTrendSnapshot({
+    organizationId: settlement.organizationId,
+    snapshotDate: new Date(dateStr),
+    periodType: 'daily',
+    totalRevenue: settlement.totalRevenue || "0",
+    cashRevenue: settlement.cashRevenue || "0",
+    cardRevenue: settlement.cardRevenue || "0",
+    linePayRevenue: settlement.linePayRevenue || "0",
+    otherRevenue: settlement.otherRevenue || "0",
+    totalOrders: settlement.totalOrders || 0,
+    averageOrderValue: settlement.totalOrders && settlement.totalOrders > 0 
+      ? (Number(settlement.totalRevenue || 0) / settlement.totalOrders).toFixed(2)
+      : "0",
+    totalAppointments: settlement.totalAppointments || 0,
+    completedAppointments: settlement.completedAppointments || 0,
+  });
+  
+  return reportId;
+}
+
+// 營收趨勢快照 CRUD
+export async function createRevenueTrendSnapshot(data: InsertRevenueTrendSnapshot) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(revenueTrendSnapshots).values(data);
+  return result[0].insertId;
+}
+
+export async function getRevenueTrends(organizationId: number, options: {
+  periodType: 'daily' | 'weekly' | 'monthly';
+  startDate: string;
+  endDate: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(revenueTrendSnapshots)
+    .where(and(
+      eq(revenueTrendSnapshots.organizationId, organizationId),
+      eq(revenueTrendSnapshots.periodType, options.periodType),
+      gte(revenueTrendSnapshots.snapshotDate, new Date(options.startDate)),
+      lte(revenueTrendSnapshots.snapshotDate, new Date(options.endDate))
+    ))
+    .orderBy(revenueTrendSnapshots.snapshotDate);
+}
+
+// 獲取營收儀表板數據
+export async function getRevenueDashboardData(organizationId: number, options?: {
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return {
+    summary: { totalRevenue: 0, cashRevenue: 0, cardRevenue: 0, linePayRevenue: 0, otherRevenue: 0 },
+    dailyTrend: [],
+    weeklyTrend: [],
+    monthlyTrend: [],
+    paymentMethodBreakdown: [],
+    hourlyDistribution: [],
+  };
+  
+  const now = new Date();
+  const startDate = options?.startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const endDate = options?.endDate || now.toISOString().split('T')[0];
+  
+  // 獲取期間總營收
+  const summary = await getSettlementSummary(organizationId, { startDate, endDate });
+  
+  // 獲取每日趨勢（最近 30 天）
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const dailyTrend = await db.select({
+    date: dailySettlements.settlementDate,
+    totalRevenue: dailySettlements.totalRevenue,
+    cashRevenue: dailySettlements.cashRevenue,
+    cardRevenue: dailySettlements.cardRevenue,
+    linePayRevenue: dailySettlements.linePayRevenue,
+    totalOrders: dailySettlements.totalOrders,
+  })
+    .from(dailySettlements)
+    .where(and(
+      eq(dailySettlements.organizationId, organizationId),
+      gte(dailySettlements.settlementDate, thirtyDaysAgo),
+      eq(dailySettlements.status, 'closed')
+    ))
+    .orderBy(dailySettlements.settlementDate);
+  
+  // 計算每週趨勢（最近 12 週）
+  const weeklyTrend = await db.select({
+    week: sql<string>`YEARWEEK(${dailySettlements.settlementDate}, 1)`,
+    totalRevenue: sql<number>`SUM(${dailySettlements.totalRevenue})`,
+    totalOrders: sql<number>`SUM(${dailySettlements.totalOrders})`,
+  })
+    .from(dailySettlements)
+    .where(and(
+      eq(dailySettlements.organizationId, organizationId),
+      gte(dailySettlements.settlementDate, new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000)),
+      eq(dailySettlements.status, 'closed')
+    ))
+    .groupBy(sql`YEARWEEK(${dailySettlements.settlementDate}, 1)`)
+    .orderBy(sql`YEARWEEK(${dailySettlements.settlementDate}, 1)`);
+  
+  // 計算每月趨勢（最近 12 個月）
+  const monthlyTrend = await db.select({
+    month: sql<string>`DATE_FORMAT(${dailySettlements.settlementDate}, '%Y-%m')`,
+    totalRevenue: sql<number>`SUM(${dailySettlements.totalRevenue})`,
+    totalOrders: sql<number>`SUM(${dailySettlements.totalOrders})`,
+  })
+    .from(dailySettlements)
+    .where(and(
+      eq(dailySettlements.organizationId, organizationId),
+      gte(dailySettlements.settlementDate, new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)),
+      eq(dailySettlements.status, 'closed')
+    ))
+    .groupBy(sql`DATE_FORMAT(${dailySettlements.settlementDate}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${dailySettlements.settlementDate}, '%Y-%m')`);
+  
+  // 支付方式佔比
+  const paymentMethodBreakdown = [
+    { method: '現金', amount: summary.totalCash, percentage: summary.totalRevenue > 0 ? (summary.totalCash / summary.totalRevenue * 100).toFixed(1) : 0 },
+    { method: '信用卡', amount: summary.totalCard, percentage: summary.totalRevenue > 0 ? (summary.totalCard / summary.totalRevenue * 100).toFixed(1) : 0 },
+    { method: 'LINE Pay', amount: summary.totalLinePay, percentage: summary.totalRevenue > 0 ? (summary.totalLinePay / summary.totalRevenue * 100).toFixed(1) : 0 },
+    { method: '其他', amount: summary.totalRevenue - summary.totalCash - summary.totalCard - summary.totalLinePay, percentage: summary.totalRevenue > 0 ? ((summary.totalRevenue - summary.totalCash - summary.totalCard - summary.totalLinePay) / summary.totalRevenue * 100).toFixed(1) : 0 },
+  ].filter(item => item.amount > 0);
+  
+  return {
+    summary,
+    dailyTrend: dailyTrend.map(d => ({
+      date: d.date,
+      totalRevenue: Number(d.totalRevenue || 0),
+      cashRevenue: Number(d.cashRevenue || 0),
+      cardRevenue: Number(d.cardRevenue || 0),
+      linePayRevenue: Number(d.linePayRevenue || 0),
+      totalOrders: d.totalOrders || 0,
+    })),
+    weeklyTrend: weeklyTrend.map(w => ({
+      week: w.week,
+      totalRevenue: Number(w.totalRevenue || 0),
+      totalOrders: Number(w.totalOrders || 0),
+    })),
+    monthlyTrend: monthlyTrend.map(m => ({
+      month: m.month,
+      totalRevenue: Number(m.totalRevenue || 0),
+      totalOrders: Number(m.totalOrders || 0),
+    })),
+    paymentMethodBreakdown,
+    hourlyDistribution: [], // 需要更詳細的時段數據
+  };
+}
+
+// 進階篩選結帳歷史
+export async function listDailySettlementsAdvanced(organizationId: number, options: {
+  startDate?: string;
+  endDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  status?: string;
+  operatorId?: number;
+  sortBy?: 'date' | 'revenue' | 'orders' | 'cashDifference';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options.page || 1;
+  const limit = options.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereConditions: any[] = [eq(dailySettlements.organizationId, organizationId)];
+  
+  if (options.startDate) {
+    whereConditions.push(gte(dailySettlements.settlementDate, new Date(options.startDate)));
+  }
+  if (options.endDate) {
+    whereConditions.push(lte(dailySettlements.settlementDate, new Date(options.endDate)));
+  }
+  if (options.minAmount !== undefined) {
+    whereConditions.push(gte(dailySettlements.totalRevenue, options.minAmount.toString()));
+  }
+  if (options.maxAmount !== undefined) {
+    whereConditions.push(lte(dailySettlements.totalRevenue, options.maxAmount.toString()));
+  }
+  if (options.status) {
+    whereConditions.push(eq(dailySettlements.status, options.status as any));
+  }
+  if (options.operatorId) {
+    whereConditions.push(
+      or(
+        eq(dailySettlements.openedBy, options.operatorId),
+        eq(dailySettlements.closedBy, options.operatorId)
+      )
+    );
+  }
+  
+  const whereClause = and(...whereConditions);
+  
+  // 排序
+  let orderByClause: any;
+  const sortOrder = options.sortOrder === 'asc' ? asc : desc;
+  switch (options.sortBy) {
+    case 'revenue':
+      orderByClause = sortOrder(dailySettlements.totalRevenue);
+      break;
+    case 'orders':
+      orderByClause = sortOrder(dailySettlements.totalOrders);
+      break;
+    case 'cashDifference':
+      orderByClause = sortOrder(dailySettlements.cashDifference);
+      break;
+    case 'date':
+    default:
+      orderByClause = sortOrder(dailySettlements.settlementDate);
+  }
+  
+  const data = await db.select().from(dailySettlements)
+    .where(whereClause)
+    .orderBy(orderByClause)
+    .limit(limit)
+    .offset(offset);
+  
+  // 獲取操作者名稱
+  const dataWithOperators = await Promise.all(data.map(async (settlement) => {
+    let openedByName = null;
+    let closedByName = null;
+    
+    if (settlement.openedBy) {
+      const [opener] = await db.select({ name: users.name }).from(users).where(eq(users.id, settlement.openedBy)).limit(1);
+      openedByName = opener?.name || null;
+    }
+    if (settlement.closedBy) {
+      const [closer] = await db.select({ name: users.name }).from(users).where(eq(users.id, settlement.closedBy)).limit(1);
+      closedByName = closer?.name || null;
+    }
+    
+    return {
+      ...settlement,
+      openedByName,
+      closedByName,
+    };
+  }));
+  
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(dailySettlements).where(whereClause);
+  const total = countResult[0]?.count || 0;
+  
+  // 計算篩選結果的統計
+  const statsResult = await db.select({
+    totalRevenue: sql<number>`SUM(${dailySettlements.totalRevenue})`,
+    totalOrders: sql<number>`SUM(${dailySettlements.totalOrders})`,
+    avgRevenue: sql<number>`AVG(${dailySettlements.totalRevenue})`,
+    totalCashDifference: sql<number>`SUM(${dailySettlements.cashDifference})`,
+  }).from(dailySettlements).where(whereClause);
+  
+  const stats = {
+    totalRevenue: Number(statsResult[0]?.totalRevenue || 0),
+    totalOrders: Number(statsResult[0]?.totalOrders || 0),
+    avgRevenue: Number(statsResult[0]?.avgRevenue || 0),
+    totalCashDifference: Number(statsResult[0]?.totalCashDifference || 0),
+  };
+  
+  return { data: dataWithOperators, total, stats };
+}
+
+// 獲取所有操作者列表（用於篩選下拉選單）
+export async function getSettlementOperators(organizationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // 獲取所有曾經操作過結帳的用戶
+  const operators = await db.selectDistinct({
+    userId: dailySettlements.openedBy,
+  })
+    .from(dailySettlements)
+    .where(eq(dailySettlements.organizationId, organizationId));
+  
+  const closers = await db.selectDistinct({
+    userId: dailySettlements.closedBy,
+  })
+    .from(dailySettlements)
+    .where(eq(dailySettlements.organizationId, organizationId));
+  
+  const allUserIds = [
+    ...operators.map(o => o.userId).filter((id): id is number => id !== null),
+    ...closers.map(c => c.userId).filter((id): id is number => id !== null),
+  ];
+  const userIds = Array.from(new Set(allUserIds));
+  
+  if (userIds.length === 0) return [];
+  
+  const userList = await db.select({
+    id: users.id,
+    name: users.name,
+  })
+    .from(users)
+    .where(inArray(users.id, userIds as number[]));
+  
+  return userList;
+}
+
+// 執行自動結帳
+export async function executeAutoSettlement(organizationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const settings = await getAutoSettlementSettings(organizationId);
+  if (!settings || !settings.isEnabled) {
+    return { success: false, message: "Auto settlement is not enabled" };
+  }
+  
+  const today = new Date().toISOString().split('T')[0];
+  
+  // 檢查今日是否已有結帳記錄
+  const existing = await getDailySettlementByDate(organizationId, today);
+  if (!existing) {
+    return { success: false, message: "No settlement record found for today. Please open settlement first." };
+  }
+  
+  if (existing.status === 'closed') {
+    return { success: false, message: "Today's settlement is already closed" };
+  }
+  
+  try {
+    // 計算當日統計
+    const stats = await calculateDailyStats(organizationId, today);
+    
+    // 預估結帳現金（開帳現金 + 現金營收）
+    const expectedClosingCash = Number(existing.openingCash || 0) + stats.cashRevenue;
+    
+    // 執行結帳
+    await closeDailySettlement(existing.id, expectedClosingCash, 0, "自動結帳");
+    
+    // 生成報表
+    if (settings.autoGenerateReport) {
+      await generateDailySettlementReport(existing.id);
+    }
+    
+    // 更新最後執行時間
+    await upsertAutoSettlementSettings(organizationId, {
+      lastExecutedAt: new Date(),
+      lastExecutionStatus: 'success',
+    });
+    
+    return { success: true, settlementId: existing.id, stats };
+  } catch (error: any) {
+    // 記錄錯誤
+    await upsertAutoSettlementSettings(organizationId, {
+      lastExecutedAt: new Date(),
+      lastExecutionStatus: 'failed',
+      lastExecutionError: error.message,
+    });
+    
+    return { success: false, message: error.message };
   }
 }

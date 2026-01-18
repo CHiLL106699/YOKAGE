@@ -1565,3 +1565,115 @@ export const lineChannelConfigs = mysqlTable("lineChannelConfigs", {
 
 export type LineChannelConfig = typeof lineChannelConfigs.$inferSelect;
 export type InsertLineChannelConfig = typeof lineChannelConfigs.$inferInsert;
+
+
+// ============================================
+// Phase 62: 每日結帳系統強化
+// ============================================
+
+// 自動結帳設定表
+export const autoSettlementSettings = mysqlTable("autoSettlementSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull().unique(),
+  // 自動結帳開關
+  isEnabled: boolean("isEnabled").default(false),
+  // 自動結帳時間（24小時制，例如 "23:00"）
+  autoSettleTime: varchar("autoSettleTime", { length: 10 }).default("23:00"),
+  // 時區設定
+  timezone: varchar("timezone", { length: 50 }).default("Asia/Taipei"),
+  // 自動報表生成
+  autoGenerateReport: boolean("autoGenerateReport").default(true),
+  // 報表接收者（Email 列表）
+  reportRecipients: json("reportRecipients"),
+  // 報表格式
+  reportFormat: mysqlEnum("reportFormat", ["pdf", "excel", "both"]).default("pdf"),
+  // 是否發送 LINE 通知
+  sendLineNotification: boolean("sendLineNotification").default(false),
+  // LINE 通知接收者（用戶 ID 列表）
+  lineNotifyRecipients: json("lineNotifyRecipients"),
+  // 最後執行時間
+  lastExecutedAt: timestamp("lastExecutedAt"),
+  lastExecutionStatus: mysqlEnum("lastExecutionStatus", ["success", "failed", "skipped"]),
+  lastExecutionError: text("lastExecutionError"),
+  // 建立與更新時間
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AutoSettlementSetting = typeof autoSettlementSettings.$inferSelect;
+export type InsertAutoSettlementSetting = typeof autoSettlementSettings.$inferInsert;
+
+// 結帳報表表
+export const settlementReports = mysqlTable("settlementReports", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  settlementId: int("settlementId"),
+  // 報表類型
+  reportType: mysqlEnum("reportType", ["daily", "weekly", "monthly", "custom"]).default("daily"),
+  // 報表期間
+  periodStart: date("periodStart").notNull(),
+  periodEnd: date("periodEnd").notNull(),
+  // 報表標題
+  title: varchar("title", { length: 255 }).notNull(),
+  // 報表數據（JSON 格式儲存完整報表數據）
+  reportData: json("reportData"),
+  // 營收摘要
+  totalRevenue: decimal("totalRevenue", { precision: 14, scale: 2 }).default("0"),
+  cashRevenue: decimal("cashRevenue", { precision: 14, scale: 2 }).default("0"),
+  cardRevenue: decimal("cardRevenue", { precision: 14, scale: 2 }).default("0"),
+  linePayRevenue: decimal("linePayRevenue", { precision: 14, scale: 2 }).default("0"),
+  otherRevenue: decimal("otherRevenue", { precision: 14, scale: 2 }).default("0"),
+  // 訂單統計
+  totalOrders: int("totalOrders").default(0),
+  averageOrderValue: decimal("averageOrderValue", { precision: 10, scale: 2 }).default("0"),
+  // 預約統計
+  totalAppointments: int("totalAppointments").default(0),
+  completedAppointments: int("completedAppointments").default(0),
+  // 報表檔案
+  pdfUrl: text("pdfUrl"),
+  excelUrl: text("excelUrl"),
+  // 生成方式
+  generatedBy: mysqlEnum("generatedBy", ["auto", "manual"]).default("manual"),
+  generatedByUserId: int("generatedByUserId"),
+  // 狀態
+  status: mysqlEnum("status", ["generating", "completed", "failed"]).default("generating"),
+  errorMessage: text("errorMessage"),
+  // 建立時間
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SettlementReport = typeof settlementReports.$inferSelect;
+export type InsertSettlementReport = typeof settlementReports.$inferInsert;
+
+// 營收趨勢快照表（用於儀表板快速查詢）
+export const revenueTrendSnapshots = mysqlTable("revenueTrendSnapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  // 快照日期
+  snapshotDate: date("snapshotDate").notNull(),
+  // 週期類型
+  periodType: mysqlEnum("periodType", ["daily", "weekly", "monthly"]).default("daily"),
+  // 營收數據
+  totalRevenue: decimal("totalRevenue", { precision: 14, scale: 2 }).default("0"),
+  cashRevenue: decimal("cashRevenue", { precision: 14, scale: 2 }).default("0"),
+  cardRevenue: decimal("cardRevenue", { precision: 14, scale: 2 }).default("0"),
+  linePayRevenue: decimal("linePayRevenue", { precision: 14, scale: 2 }).default("0"),
+  otherRevenue: decimal("otherRevenue", { precision: 14, scale: 2 }).default("0"),
+  // 訂單數據
+  totalOrders: int("totalOrders").default(0),
+  averageOrderValue: decimal("averageOrderValue", { precision: 10, scale: 2 }).default("0"),
+  // 預約數據
+  totalAppointments: int("totalAppointments").default(0),
+  completedAppointments: int("completedAppointments").default(0),
+  // 客戶數據
+  newCustomers: int("newCustomers").default(0),
+  returningCustomers: int("returningCustomers").default(0),
+  // 時段分布（JSON 格式：{ "09:00": 1500, "10:00": 2300, ... }）
+  hourlyRevenue: json("hourlyRevenue"),
+  // 建立時間
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RevenueTrendSnapshot = typeof revenueTrendSnapshots.$inferSelect;
+export type InsertRevenueTrendSnapshot = typeof revenueTrendSnapshots.$inferInsert;

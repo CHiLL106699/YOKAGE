@@ -3413,6 +3413,118 @@ const settlementRouter = router({
       const { organizationId, ...options } = input;
       return await db.listPaymentRecords(organizationId, options);
     }),
+
+  // Phase 62: 自動結帳設定
+  getAutoSettings: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getAutoSettlementSettings(input.organizationId);
+    }),
+
+  updateAutoSettings: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      isEnabled: z.boolean().optional(),
+      autoSettleTime: z.string().optional(),
+      timezone: z.string().optional(),
+      autoGenerateReport: z.boolean().optional(),
+      reportRecipients: z.array(z.string()).optional(),
+      reportFormat: z.enum(["pdf", "excel", "both"]).optional(),
+      sendLineNotification: z.boolean().optional(),
+      lineNotifyRecipients: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { organizationId, ...data } = input;
+      const id = await db.upsertAutoSettlementSettings(organizationId, data);
+      return { id };
+    }),
+
+  // 執行自動結帳
+  executeAutoSettlement: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .mutation(async ({ input }) => {
+      return await db.executeAutoSettlement(input.organizationId);
+    }),
+
+  // 結帳報表
+  generateReport: protectedProcedure
+    .input(z.object({ settlementId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const reportId = await db.generateDailySettlementReport(input.settlementId, ctx.user.id);
+      return { reportId };
+    }),
+
+  listReports: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      reportType: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listSettlementReports(organizationId, options);
+    }),
+
+  getReport: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getSettlementReportById(input.id);
+    }),
+
+  // 營收儀表板
+  getDashboardData: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.getRevenueDashboardData(organizationId, options);
+    }),
+
+  // 營收趨勢
+  getRevenueTrends: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      periodType: z.enum(["daily", "weekly", "monthly"]),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.getRevenueTrends(organizationId, options);
+    }),
+
+  // 進階篩選結帳歷史
+  listAdvanced: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      minAmount: z.number().optional(),
+      maxAmount: z.number().optional(),
+      status: z.string().optional(),
+      operatorId: z.number().optional(),
+      sortBy: z.enum(["date", "revenue", "orders", "cashDifference"]).optional(),
+      sortOrder: z.enum(["asc", "desc"]).optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listDailySettlementsAdvanced(organizationId, options);
+    }),
+
+  // 獲取操作者列表
+  getOperators: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getSettlementOperators(input.organizationId);
+    }),
 });
 
 // ============================================
