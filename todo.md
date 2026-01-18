@@ -1108,3 +1108,70 @@
 - [x] 建立通知模板管理系統
 - [x] 實作多渠道通知發送
 - [x] 實作通知歷史記錄與統計
+
+## Phase 29: LINE 整合完整實裝
+- [ ] 診所端 LINE Channel 設定介面
+- [ ] LINE Channel 憑證驗證 API
+- [ ] 多診所 LINE 設定隔離
+- [ ] LINE 通知發送服務整合
+- [ ] LINE 設定狀態儀表板
+
+## Phase 30: 資料匯入功能
+- [ ] CSV 匯入介面（客戶、產品、員工）
+- [ ] Excel 匯入支援
+- [ ] 匯入資料預覽與驗證
+- [ ] 匯入錯誤處理與回報
+- [ ] 匯入歷史記錄
+
+## Phase 31: 支付整合架構預留
+- [ ] 支付服務抽象層設計
+- [ ] LemonSqueezy 整合預留
+- [ ] 綠界 ECPay 整合預留
+- [ ] 支付設定管理介面
+- [ ] 支付記錄與對帳功能
+
+
+---
+
+## Phase 29-31: LINE 整合完整實裝、資料匯入、支付整合
+
+### LINE 整合完整實裝
+- [x] 建立 lineChannelSettings 資料表（多診所 LINE 設定）
+- [x] 實作 LINE Channel 驗證 API
+- [x] 實作多診所 LINE 訊息發送服務
+- [x] 建立 LINE 設定 Router（lineSettingsRouter）
+- [x] 實作訊息配額查詢 API
+- [x] 實作預約提醒 Flex Message 模板
+- [x] 實作行銷訊息 Flex Message 模板
+- [x] 更新現有 LINE 設定頁面
+
+### 資料匯入功能
+- [x] 建立 importRecords 資料表（匯入記錄）
+- [x] 實作 CSV 解析工具
+- [x] 實作客戶資料匯入 API
+- [x] 實作產品資料匯入 API
+- [x] 實作員工資料匯入 API
+- [x] 實作欄位映射（中英文欄位對應）
+- [x] 實作資料驗證與錯誤報告
+- [x] 建立資料匯入 Router（dataImportRouter）
+- [x] 建立資料匯入前端頁面（DataImportPage）
+- [x] 實作匯入範本下載功能
+
+### 支付整合架構預留
+- [x] 建立支付服務抽象層（PaymentProvider 介面）
+- [x] 建立 paymentSettings 資料表（支付設定）
+- [x] 建立 paymentTransactions 資料表（交易記錄）
+- [x] 實作 LemonSqueezy 支付服務
+- [x] 實作綠界 ECPay 支付服務
+- [x] 預留 Stripe 支付服務介面
+- [x] 預留 LINE Pay 支付服務介面
+- [x] 預留街口支付服務介面
+- [x] 建立支付設定 Router（paymentRouter）
+- [x] 建立支付設定前端頁面（PaymentSettingsPage）
+- [x] 添加路由到 App.tsx
+
+### 通知系統
+- [x] 完善通知服務模組（Email、SMS、LINE 支援）
+- [x] 建立通知模板管理系統
+- [x] 實作多渠道通知發送
+- [x] 實作通知歷史記錄與統計

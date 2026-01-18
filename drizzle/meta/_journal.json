@@ -78,6 +78,13 @@
       "when": 1768701518027,
       "tag": "0010_greedy_human_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1768762703523,
+      "tag": "0011_round_the_stranger",
+      "breakpoints": true
     }
   ]
 }

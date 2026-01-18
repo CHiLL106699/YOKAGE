@@ -4,6 +4,9 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { lineSettingsRouter } from "./routers/lineSettingsRouter";
+import { dataImportRouter } from "./routers/dataImportRouter";
+import { paymentRouter } from "./routers/paymentRouter";
 import { TRPCError } from "@trpc/server";
 
 // ============================================
@@ -3812,6 +3815,10 @@ export const appRouter = router({
   voucher: voucherRouter,
   // Phase 61: 每日結帳系統
   settlement: settlementRouter,
+  // Phase 29-31: LINE 整合、資料匯入、支付整合
+  lineSettings: lineSettingsRouter,
+  dataImport: dataImportRouter,
+  payment: paymentRouter,
 });
 
 export type AppRouter = typeof appRouter;

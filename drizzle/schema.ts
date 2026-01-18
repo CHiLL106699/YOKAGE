@@ -1677,3 +1677,173 @@ export const revenueTrendSnapshots = mysqlTable("revenueTrendSnapshots", {
 
 export type RevenueTrendSnapshot = typeof revenueTrendSnapshots.$inferSelect;
 export type InsertRevenueTrendSnapshot = typeof revenueTrendSnapshots.$inferInsert;
+
+
+// ============================================
+// LINE 整合設定表 - 診所端自行設定
+// ============================================
+export const lineChannelSettings = mysqlTable("lineChannelSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull().unique(),
+  channelId: varchar("channelId", { length: 100 }),
+  channelSecret: varchar("channelSecret", { length: 100 }),
+  channelAccessToken: text("channelAccessToken"),
+  liffId: varchar("liffId", { length: 100 }),
+  webhookUrl: text("webhookUrl"),
+  isVerified: boolean("isVerified").default(false),
+  verifiedAt: timestamp("verifiedAt"),
+  botBasicId: varchar("botBasicId", { length: 100 }),
+  botDisplayName: varchar("botDisplayName", { length: 255 }),
+  botPictureUrl: text("botPictureUrl"),
+  richMenuId: varchar("richMenuId", { length: 100 }),
+  notificationEnabled: boolean("notificationEnabled").default(true),
+  appointmentReminderEnabled: boolean("appointmentReminderEnabled").default(true),
+  marketingMessageEnabled: boolean("marketingMessageEnabled").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LineChannelSetting = typeof lineChannelSettings.$inferSelect;
+export type InsertLineChannelSetting = typeof lineChannelSettings.$inferInsert;
+
+// ============================================
+// 資料匯入記錄表
+// ============================================
+export const importRecords = mysqlTable("importRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  userId: int("userId").notNull(),
+  importType: mysqlEnum("importType", ["customer", "product", "staff", "appointment", "order"]).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileUrl: text("fileUrl"),
+  totalRows: int("totalRows").default(0),
+  successRows: int("successRows").default(0),
+  failedRows: int("failedRows").default(0),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending"),
+  errorLog: json("errorLog"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ImportRecord = typeof importRecords.$inferSelect;
+export type InsertImportRecord = typeof importRecords.$inferInsert;
+
+// ============================================
+// 支付設定表 - 支援多支付服務商
+// ============================================
+export const paymentSettings = mysqlTable("paymentSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  provider: mysqlEnum("provider", ["lemonsqueezy", "ecpay", "stripe", "linepay", "jkopay"]).notNull(),
+  isEnabled: boolean("isEnabled").default(false),
+  isTestMode: boolean("isTestMode").default(true),
+  // LemonSqueezy 設定
+  lsApiKey: text("lsApiKey"),
+  lsStoreId: varchar("lsStoreId", { length: 100 }),
+  lsWebhookSecret: text("lsWebhookSecret"),
+  // 綠界 ECPay 設定
+  ecpayMerchantId: varchar("ecpayMerchantId", { length: 50 }),
+  ecpayHashKey: varchar("ecpayHashKey", { length: 100 }),
+  ecpayHashIv: varchar("ecpayHashIv", { length: 100 }),
+  // Stripe 設定
+  stripePublishableKey: text("stripePublishableKey"),
+  stripeSecretKey: text("stripeSecretKey"),
+  stripeWebhookSecret: text("stripeWebhookSecret"),
+  // LINE Pay 設定
+  linePayChannelId: varchar("linePayChannelId", { length: 100 }),
+  linePayChannelSecret: text("linePayChannelSecret"),
+  // 街口支付設定
+  jkopayMerchantId: varchar("jkopayMerchantId", { length: 100 }),
+  jkopayApiKey: text("jkopayApiKey"),
+  // 通用設定
+  defaultCurrency: varchar("defaultCurrency", { length: 10 }).default("TWD"),
+  webhookUrl: text("webhookUrl"),
+  returnUrl: text("returnUrl"),
+  cancelUrl: text("cancelUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentSetting = typeof paymentSettings.$inferSelect;
+export type InsertPaymentSetting = typeof paymentSettings.$inferInsert;
+
+// ============================================
+// 支付交易記錄表
+// ============================================
+export const paymentTransactions = mysqlTable("paymentTransactions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  orderId: int("orderId"),
+  customerId: int("customerId"),
+  provider: mysqlEnum("provider", ["lemonsqueezy", "ecpay", "stripe", "linepay", "jkopay", "cash", "transfer"]).notNull(),
+  transactionId: varchar("transactionId", { length: 255 }),
+  externalTransactionId: varchar("externalTransactionId", { length: 255 }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TWD"),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "refunded", "cancelled"]).default("pending"),
+  paymentMethod: varchar("paymentMethod", { length: 100 }),
+  cardLast4: varchar("cardLast4", { length: 4 }),
+  receiptUrl: text("receiptUrl"),
+  refundAmount: decimal("refundAmount", { precision: 12, scale: 2 }),
+  refundReason: text("refundReason"),
+  refundedAt: timestamp("refundedAt"),
+  metadata: json("metadata"),
+  errorMessage: text("errorMessage"),
+  paidAt: timestamp("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+export type InsertPaymentTransaction = typeof paymentTransactions.$inferInsert;
+
+// ============================================
+// 訂閱方案表 - LemonSqueezy 整合
+// ============================================
+export const subscriptionPlans = mysqlTable("subscriptionPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  provider: mysqlEnum("provider", ["lemonsqueezy", "stripe"]).default("lemonsqueezy"),
+  externalProductId: varchar("externalProductId", { length: 100 }),
+  externalVariantId: varchar("externalVariantId", { length: 100 }),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TWD"),
+  billingInterval: mysqlEnum("billingInterval", ["monthly", "quarterly", "yearly"]).default("monthly"),
+  features: json("features"),
+  maxUsers: int("maxUsers").default(5),
+  maxCustomers: int("maxCustomers").default(500),
+  maxAppointments: int("maxAppointments").default(1000),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+
+// ============================================
+// 組織訂閱記錄表
+// ============================================
+export const organizationSubscriptions = mysqlTable("organizationSubscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  planId: int("planId").notNull(),
+  provider: mysqlEnum("provider", ["lemonsqueezy", "stripe"]).default("lemonsqueezy"),
+  externalSubscriptionId: varchar("externalSubscriptionId", { length: 255 }),
+  externalCustomerId: varchar("externalCustomerId", { length: 255 }),
+  status: mysqlEnum("status", ["active", "past_due", "cancelled", "paused", "trialing"]).default("trialing"),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false),
+  cancelledAt: timestamp("cancelledAt"),
+  trialEndsAt: timestamp("trialEndsAt"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OrganizationSubscription = typeof organizationSubscriptions.$inferSelect;
+export type InsertOrganizationSubscription = typeof organizationSubscriptions.$inferInsert;

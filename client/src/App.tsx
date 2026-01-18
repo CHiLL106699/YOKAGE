@@ -101,6 +101,9 @@ import SuperAdminApiDocsPage from "@/pages/SuperAdminApiDocsPage";
 import SuperAdminWhiteLabelPage from "@/pages/SuperAdminWhiteLabelPage";
 // Phase 63: 客戶行銷自動化
 import CustomerMarketingPage from "@/pages/CustomerMarketingPage";
+// Phase 29-31: LINE 整合、資料匯入、支付整合
+import DataImportPage from "@/pages/DataImportPage";
+import PaymentSettingsPage from "@/pages/PaymentSettingsPage";
 
 function Router() {
   return (
@@ -138,6 +141,10 @@ function Router() {
       <Route path="/clinic/payment" component={PaymentPage} />
       <Route path="/clinic/settlement" component={SettlementPage} />
       <Route path="/clinic/marketing" component={CustomerMarketingPage} />
+      <Route path="/clinic/payment-settings" component={PaymentSettingsPage} />
+      
+      {/* 資料管理 */}
+      <Route path="/clinic/data-import" component={DataImportPage} />
       
       {/* LINE 生態整合 */}
       <Route path="/clinic/rich-menu" component={RichMenuPage} />
