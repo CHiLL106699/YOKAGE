@@ -313,6 +313,94 @@ const superAdminRouter = router({
     .mutation(async ({ input }) => {
       return await db.saveNotificationTemplate(input);
     }),
+
+  // LINE Channel 設定 API
+  listLineChannelConfigs: adminProcedure
+    .input(z.object({
+      organizationId: z.number().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      return await db.listLineChannelConfigs(input);
+    }),
+
+  getPlatformLineChannelConfig: adminProcedure.query(async () => {
+    return await db.getPlatformLineChannelConfig();
+  }),
+
+  createLineChannelConfig: adminProcedure
+    .input(z.object({
+      organizationId: z.number().optional(),
+      isPlatformLevel: z.boolean().optional(),
+      channelId: z.string(),
+      channelSecret: z.string(),
+      channelAccessToken: z.string(),
+      liffId: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      // 驗證憑證
+      const verification = await db.verifyLineChannelCredentials(
+        input.channelId,
+        input.channelSecret,
+        input.channelAccessToken
+      );
+      
+      if (!verification.success) {
+        throw new TRPCError({ 
+          code: "BAD_REQUEST", 
+          message: `LINE Channel 驗證失敗: ${verification.error}` 
+        });
+      }
+      
+      const id = await db.createLineChannelConfig({
+        ...input,
+        verificationStatus: 'verified',
+        lastVerifiedAt: new Date(),
+      });
+      
+      return { id, botInfo: verification.botInfo };
+    }),
+
+  updateLineChannelConfig: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      channelId: z.string().optional(),
+      channelSecret: z.string().optional(),
+      channelAccessToken: z.string().optional(),
+      liffId: z.string().optional(),
+      isActive: z.boolean().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateLineChannelConfig(id, data);
+      return { success: true };
+    }),
+
+  verifyLineChannelConfig: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const config = await db.getLineChannelConfigById(input.id);
+      if (!config) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "LINE Channel 設定不存在" });
+      }
+      
+      const verification = await db.verifyLineChannelCredentials(
+        config.channelId,
+        config.channelSecret,
+        config.channelAccessToken
+      );
+      
+      await db.updateLineChannelConfig(input.id, {
+        verificationStatus: verification.success ? 'verified' : 'failed',
+        lastVerifiedAt: new Date(),
+      });
+      
+      return { success: verification.success, error: verification.error, botInfo: verification.botInfo };
+    }),
+
 });
 
 // ============================================
@@ -3160,6 +3248,174 @@ const voucherRouter = router({
 });
 
 // ============================================
+// Phase 61: 每日結帳系統 Router
+// ============================================
+const settlementRouter = router({
+  // 開帳
+  open: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      date: z.string(),
+      openingCash: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const id = await db.openDailySettlement(
+        input.organizationId,
+        input.date,
+        input.openingCash,
+        ctx.user.id
+      );
+      return { id };
+    }),
+
+  // 結帳
+  close: protectedProcedure
+    .input(z.object({
+      settlementId: z.number(),
+      closingCash: z.number(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await db.closeDailySettlement(
+        input.settlementId,
+        input.closingCash,
+        ctx.user.id,
+        input.notes
+      );
+      return result;
+    }),
+
+  // 獲取當日結帳記錄
+  getByDate: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      date: z.string(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getDailySettlementByDate(input.organizationId, input.date);
+    }),
+
+  // 獲取結帳記錄
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getDailySettlementById(input.id);
+    }),
+
+  // 列出結帳記錄
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listDailySettlements(organizationId, options);
+    }),
+
+  // 獲取結帳明細
+  getItems: protectedProcedure
+    .input(z.object({
+      settlementId: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.listSettlementItems(input.settlementId, input);
+    }),
+
+  // 獲取收銀機記錄
+  getCashDrawerRecords: protectedProcedure
+    .input(z.object({ settlementId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.listCashDrawerRecords(input.settlementId);
+    }),
+
+  // 新增收銀機操作（存入/取出）
+  addCashOperation: protectedProcedure
+    .input(z.object({
+      settlementId: z.number(),
+      organizationId: z.number(),
+      operationType: z.enum(["deposit", "withdrawal"]),
+      amount: z.number(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const id = await db.createCashDrawerRecord({
+        settlementId: input.settlementId,
+        organizationId: input.organizationId,
+        operationType: input.operationType,
+        amount: input.amount.toString(),
+        operatedBy: ctx.user.id,
+        reason: input.reason,
+      });
+      return { id };
+    }),
+
+  // 獲取統計摘要
+  getSummary: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      return await db.getSettlementSummary(input.organizationId, input);
+    }),
+
+  // 計算當日統計
+  calculateDailyStats: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      date: z.string(),
+    }))
+    .query(async ({ input }) => {
+      return await db.calculateDailyStats(input.organizationId, input.date);
+    }),
+
+  // 付款記錄
+  createPayment: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      orderId: z.number().optional(),
+      appointmentId: z.number().optional(),
+      customerId: z.number().optional(),
+      paymentMethod: z.enum(["cash", "credit_card", "debit_card", "line_pay", "transfer", "other"]),
+      amount: z.number(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const id = await db.createPaymentRecord({
+        ...input,
+        amount: input.amount.toString(),
+        status: 'completed',
+        paidAt: new Date(),
+        processedBy: ctx.user.id,
+      });
+      return { id };
+    }),
+
+  listPayments: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      status: z.string().optional(),
+      paymentMethod: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { organizationId, ...options } = input;
+      return await db.listPaymentRecords(organizationId, options);
+    }),
+});
+
+// ============================================
 // Main App Router
 // ============================================
 export const appRouter = router({
@@ -3209,6 +3465,8 @@ export const appRouter = router({
   social: socialRouter,
   // Phase 56: 電子票券系統
   voucher: voucherRouter,
+  // Phase 61: 每日結帳系統
+  settlement: settlementRouter,
 });
 
 export type AppRouter = typeof appRouter;

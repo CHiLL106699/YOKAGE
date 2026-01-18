@@ -64,6 +64,13 @@
       "when": 1768678514283,
       "tag": "0008_bent_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1768695735153,
+      "tag": "0009_awesome_lilandra",
+      "breakpoints": true
     }
   ]
 }

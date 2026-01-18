@@ -1403,3 +1403,165 @@ export const voucherReminderLogs = mysqlTable("voucherReminderLogs", {
 
 export type VoucherReminderLog = typeof voucherReminderLogs.$inferSelect;
 export type InsertVoucherReminderLog = typeof voucherReminderLogs.$inferInsert;
+
+
+// ============================================
+// Phase 61: 每日結帳系統
+// ============================================
+
+// 每日結帳記錄主表
+export const dailySettlements = mysqlTable("dailySettlements", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  // 結帳日期
+  settlementDate: date("settlementDate").notNull(),
+  // 開帳資訊
+  openingCash: decimal("openingCash", { precision: 12, scale: 2 }).default("0"),
+  openedBy: int("openedBy"),
+  openedAt: timestamp("openedAt"),
+  // 結帳資訊
+  closingCash: decimal("closingCash", { precision: 12, scale: 2 }),
+  closedBy: int("closedBy"),
+  closedAt: timestamp("closedAt"),
+  // 營收統計
+  totalRevenue: decimal("totalRevenue", { precision: 12, scale: 2 }).default("0"),
+  cashRevenue: decimal("cashRevenue", { precision: 12, scale: 2 }).default("0"),
+  cardRevenue: decimal("cardRevenue", { precision: 12, scale: 2 }).default("0"),
+  linePayRevenue: decimal("linePayRevenue", { precision: 12, scale: 2 }).default("0"),
+  otherRevenue: decimal("otherRevenue", { precision: 12, scale: 2 }).default("0"),
+  // 訂單統計
+  totalOrders: int("totalOrders").default(0),
+  completedOrders: int("completedOrders").default(0),
+  cancelledOrders: int("cancelledOrders").default(0),
+  refundedOrders: int("refundedOrders").default(0),
+  // 預約統計
+  totalAppointments: int("totalAppointments").default(0),
+  completedAppointments: int("completedAppointments").default(0),
+  noShowAppointments: int("noShowAppointments").default(0),
+  // 現金差異
+  cashDifference: decimal("cashDifference", { precision: 12, scale: 2 }).default("0"),
+  cashDifferenceNote: text("cashDifferenceNote"),
+  // 狀態
+  status: mysqlEnum("status", ["open", "closed", "reconciled"]).default("open"),
+  // 備註
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DailySettlement = typeof dailySettlements.$inferSelect;
+export type InsertDailySettlement = typeof dailySettlements.$inferInsert;
+
+// 結帳明細表
+export const settlementItems = mysqlTable("settlementItems", {
+  id: int("id").autoincrement().primaryKey(),
+  settlementId: int("settlementId").notNull(),
+  // 關聯訂單或交易
+  orderId: int("orderId"),
+  appointmentId: int("appointmentId"),
+  // 交易類型
+  itemType: mysqlEnum("itemType", ["sale", "refund", "deposit", "withdrawal", "adjustment"]).notNull(),
+  // 付款方式
+  paymentMethod: mysqlEnum("paymentMethod", ["cash", "credit_card", "debit_card", "line_pay", "transfer", "other"]).notNull(),
+  // 金額
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  // 描述
+  description: text("description"),
+  // 客戶資訊
+  customerId: int("customerId"),
+  customerName: varchar("customerName", { length: 255 }),
+  // 操作者
+  staffId: int("staffId"),
+  staffName: varchar("staffName", { length: 255 }),
+  // 交易時間
+  transactionAt: timestamp("transactionAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SettlementItem = typeof settlementItems.$inferSelect;
+export type InsertSettlementItem = typeof settlementItems.$inferInsert;
+
+// 收銀機操作記錄
+export const cashDrawerRecords = mysqlTable("cashDrawerRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  settlementId: int("settlementId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  // 操作類型
+  operationType: mysqlEnum("operationType", ["open", "close", "deposit", "withdrawal", "count"]).notNull(),
+  // 金額
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  // 操作前後餘額
+  balanceBefore: decimal("balanceBefore", { precision: 12, scale: 2 }),
+  balanceAfter: decimal("balanceAfter", { precision: 12, scale: 2 }),
+  // 操作者
+  operatedBy: int("operatedBy").notNull(),
+  operatorName: varchar("operatorName", { length: 255 }),
+  // 原因/備註
+  reason: text("reason"),
+  // 操作時間
+  operatedAt: timestamp("operatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CashDrawerRecord = typeof cashDrawerRecords.$inferSelect;
+export type InsertCashDrawerRecord = typeof cashDrawerRecords.$inferInsert;
+
+// 付款記錄表（統一管理所有付款）
+export const paymentRecords = mysqlTable("paymentRecords", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  // 關聯
+  orderId: int("orderId"),
+  appointmentId: int("appointmentId"),
+  customerId: int("customerId"),
+  // 付款資訊
+  paymentMethod: mysqlEnum("paymentMethod", ["cash", "credit_card", "debit_card", "line_pay", "transfer", "other"]).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TWD"),
+  // 交易狀態
+  status: mysqlEnum("status", ["pending", "completed", "failed", "refunded", "cancelled"]).default("pending"),
+  // 交易參考
+  transactionId: varchar("transactionId", { length: 255 }),
+  referenceNumber: varchar("referenceNumber", { length: 100 }),
+  // 付款時間
+  paidAt: timestamp("paidAt"),
+  // 退款資訊
+  refundedAmount: decimal("refundedAmount", { precision: 12, scale: 2 }).default("0"),
+  refundedAt: timestamp("refundedAt"),
+  refundReason: text("refundReason"),
+  // 操作者
+  processedBy: int("processedBy"),
+  // 備註
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentRecord = typeof paymentRecords.$inferSelect;
+export type InsertPaymentRecord = typeof paymentRecords.$inferInsert;
+
+// LINE Channel 設定表（用於儲存 LINE 憑證）
+export const lineChannelConfigs = mysqlTable("lineChannelConfigs", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId"),
+  // 是否為平台級設定（null organizationId 表示平台級）
+  isPlatformLevel: boolean("isPlatformLevel").default(false),
+  // LINE Channel 資訊
+  channelId: varchar("channelId", { length: 100 }).notNull(),
+  channelSecret: text("channelSecret").notNull(),
+  channelAccessToken: text("channelAccessToken").notNull(),
+  // LIFF 設定
+  liffId: varchar("liffId", { length: 100 }),
+  // 狀態
+  isActive: boolean("isActive").default(true),
+  // 最後驗證時間
+  lastVerifiedAt: timestamp("lastVerifiedAt"),
+  verificationStatus: mysqlEnum("verificationStatus", ["pending", "verified", "failed"]).default("pending"),
+  // 備註
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LineChannelConfig = typeof lineChannelConfigs.$inferSelect;
+export type InsertLineChannelConfig = typeof lineChannelConfigs.$inferInsert;

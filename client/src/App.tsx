@@ -89,6 +89,8 @@ import VouchersPage from "@/pages/VouchersPage";
 import MyVouchersPage from "@/pages/liff/MyVouchersPage";
 import VoucherRedemptionPage from "@/pages/VoucherRedemptionPage";
 import VoucherReportsPage from "@/pages/VoucherReportsPage";
+// Phase 61: 每日結帳系統
+import SettlementPage from "@/pages/SettlementPage";
 import SuperAdminSettingsPage from "@/pages/SuperAdminSettingsPage";
 import SuperAdminVouchersPage from "@/pages/SuperAdminVouchersPage";
 import SuperAdminUsersPage from "@/pages/SuperAdminUsersPage";
@@ -132,6 +134,7 @@ function Router() {
       
       {/* 金流管理 */}
       <Route path="/clinic/payment" component={PaymentPage} />
+      <Route path="/clinic/settlement" component={SettlementPage} />
       
       {/* LINE 生態整合 */}
       <Route path="/clinic/rich-menu" component={RichMenuPage} />

@@ -21,6 +21,11 @@ import {
   activityLogs, InsertActivityLog,
   systemSettings, InsertSystemSetting,
   voucherReminderLogs, InsertVoucherReminderLog,
+  dailySettlements, InsertDailySettlement,
+  settlementItems, InsertSettlementItem,
+  cashDrawerRecords, InsertCashDrawerRecord,
+  paymentRecords, InsertPaymentRecord,
+  lineChannelConfigs, InsertLineChannelConfig,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -3705,4 +3710,580 @@ export async function saveNotificationTemplate(data: {
   // 儲存通知模板
   console.log("[Notification] Saving template:", data);
   return { success: true };
+}
+
+
+// ============================================
+// Phase 61: 每日結帳系統
+// ============================================
+
+// 建立每日結帳記錄
+export async function createDailySettlement(data: InsertDailySettlement) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(dailySettlements).values(data);
+  return result[0].insertId;
+}
+
+// 根據 ID 獲取結帳記錄
+export async function getDailySettlementById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(dailySettlements).where(eq(dailySettlements.id, id)).limit(1);
+  return result[0] || null;
+}
+
+// 根據日期獲取結帳記錄
+export async function getDailySettlementByDate(organizationId: number, date: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(dailySettlements)
+    .where(and(
+      eq(dailySettlements.organizationId, organizationId),
+      eq(dailySettlements.settlementDate, new Date(date))
+    ))
+    .limit(1);
+  return result[0] || null;
+}
+
+// 更新結帳記錄
+export async function updateDailySettlement(id: number, data: Partial<InsertDailySettlement>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(dailySettlements).set(data).where(eq(dailySettlements.id, id));
+}
+
+// 列出結帳記錄
+export async function listDailySettlements(organizationId: number, options?: { 
+  startDate?: string; 
+  endDate?: string; 
+  status?: string;
+  page?: number; 
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereClause: any = eq(dailySettlements.organizationId, organizationId);
+  
+  if (options?.startDate) {
+    whereClause = and(whereClause, gte(dailySettlements.settlementDate, new Date(options.startDate)));
+  }
+  if (options?.endDate) {
+    whereClause = and(whereClause, lte(dailySettlements.settlementDate, new Date(options.endDate)));
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(dailySettlements.status, options.status as any));
+  }
+  
+  const data = await db.select().from(dailySettlements)
+    .where(whereClause)
+    .orderBy(desc(dailySettlements.settlementDate))
+    .limit(limit)
+    .offset(offset);
+  
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(dailySettlements).where(whereClause);
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 開帳
+export async function openDailySettlement(organizationId: number, date: string, openingCash: number, openedBy: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // 檢查是否已有當日結帳記錄
+  const existing = await getDailySettlementByDate(organizationId, date);
+  if (existing) {
+    throw new Error("當日已開帳");
+  }
+  
+  const result = await db.insert(dailySettlements).values({
+    organizationId,
+    settlementDate: new Date(date),
+    openingCash: openingCash.toString(),
+    openedBy,
+    openedAt: new Date(),
+    status: 'open',
+  });
+  
+  // 建立開帳收銀機記錄
+  await createCashDrawerRecord({
+    settlementId: result[0].insertId,
+    organizationId,
+    operationType: 'open',
+    amount: openingCash.toString(),
+    balanceAfter: openingCash.toString(),
+    operatedBy: openedBy,
+  });
+  
+  return result[0].insertId;
+}
+
+// 結帳
+export async function closeDailySettlement(
+  settlementId: number, 
+  closingCash: number, 
+  closedBy: number,
+  notes?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const settlement = await getDailySettlementById(settlementId);
+  if (!settlement) throw new Error("結帳記錄不存在");
+  if (settlement.status !== 'open') throw new Error("此結帳記錄已關閉");
+  
+  // 計算當日營收統計
+  const stats = await calculateDailyStats(settlement.organizationId, settlement.settlementDate.toString().split('T')[0]);
+  
+  // 計算現金差異
+  const expectedCash = Number(settlement.openingCash || 0) + stats.cashRevenue;
+  const cashDifference = closingCash - expectedCash;
+  
+  await db.update(dailySettlements).set({
+    closingCash: closingCash.toString(),
+    closedBy,
+    closedAt: new Date(),
+    totalRevenue: stats.totalRevenue.toString(),
+    cashRevenue: stats.cashRevenue.toString(),
+    cardRevenue: stats.cardRevenue.toString(),
+    linePayRevenue: stats.linePayRevenue.toString(),
+    otherRevenue: stats.otherRevenue.toString(),
+    totalOrders: stats.totalOrders,
+    completedOrders: stats.completedOrders,
+    cancelledOrders: stats.cancelledOrders,
+    refundedOrders: stats.refundedOrders,
+    totalAppointments: stats.totalAppointments,
+    completedAppointments: stats.completedAppointments,
+    noShowAppointments: stats.noShowAppointments,
+    cashDifference: cashDifference.toString(),
+    status: 'closed',
+    notes,
+  }).where(eq(dailySettlements.id, settlementId));
+  
+  // 建立結帳收銀機記錄
+  await createCashDrawerRecord({
+    settlementId,
+    organizationId: settlement.organizationId,
+    operationType: 'close',
+    amount: closingCash.toString(),
+    balanceBefore: expectedCash.toString(),
+    balanceAfter: closingCash.toString(),
+    operatedBy: closedBy,
+    reason: cashDifference !== 0 ? `現金差異: ${cashDifference}` : undefined,
+  });
+  
+  return { cashDifference, stats };
+}
+
+// 計算當日統計
+export async function calculateDailyStats(organizationId: number, date: string) {
+  const db = await getDb();
+  if (!db) return {
+    totalRevenue: 0,
+    cashRevenue: 0,
+    cardRevenue: 0,
+    linePayRevenue: 0,
+    otherRevenue: 0,
+    totalOrders: 0,
+    completedOrders: 0,
+    cancelledOrders: 0,
+    refundedOrders: 0,
+    totalAppointments: 0,
+    completedAppointments: 0,
+    noShowAppointments: 0,
+  };
+  
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  
+  // 計算訂單統計
+  const orderStats = await db.select({
+    status: orders.status,
+    count: sql<number>`count(*)`,
+    total: sql<number>`sum(${orders.total})`,
+  })
+    .from(orders)
+    .where(and(
+      eq(orders.organizationId, organizationId),
+      gte(orders.createdAt, startOfDay),
+      lte(orders.createdAt, endOfDay)
+    ))
+    .groupBy(orders.status);
+  
+  let totalOrders = 0;
+  let completedOrders = 0;
+  let cancelledOrders = 0;
+  let refundedOrders = 0;
+  let totalRevenue = 0;
+  
+  for (const stat of orderStats) {
+    totalOrders += stat.count;
+    if (stat.status === 'completed' || stat.status === 'paid') {
+      completedOrders += stat.count;
+      totalRevenue += Number(stat.total || 0);
+    }
+    if (stat.status === 'cancelled') cancelledOrders = stat.count;
+    if (stat.status === 'refunded') refundedOrders = stat.count;
+  }
+  
+  // 計算付款方式統計
+  const paymentStats = await db.select({
+    paymentMethod: paymentRecords.paymentMethod,
+    total: sql<number>`sum(${paymentRecords.amount})`,
+  })
+    .from(paymentRecords)
+    .where(and(
+      eq(paymentRecords.organizationId, organizationId),
+      eq(paymentRecords.status, 'completed'),
+      gte(paymentRecords.paidAt, startOfDay),
+      lte(paymentRecords.paidAt, endOfDay)
+    ))
+    .groupBy(paymentRecords.paymentMethod);
+  
+  let cashRevenue = 0;
+  let cardRevenue = 0;
+  let linePayRevenue = 0;
+  let otherRevenue = 0;
+  
+  for (const stat of paymentStats) {
+    const amount = Number(stat.total || 0);
+    if (stat.paymentMethod === 'cash') cashRevenue = amount;
+    else if (stat.paymentMethod === 'credit_card' || stat.paymentMethod === 'debit_card') cardRevenue += amount;
+    else if (stat.paymentMethod === 'line_pay') linePayRevenue = amount;
+    else otherRevenue += amount;
+  }
+  
+  // 計算預約統計
+  const appointmentStats = await db.select({
+    status: appointments.status,
+    count: sql<number>`count(*)`,
+  })
+    .from(appointments)
+    .where(and(
+      eq(appointments.organizationId, organizationId),
+      eq(appointments.appointmentDate, new Date(date))
+    ))
+    .groupBy(appointments.status);
+  
+  let totalAppointments = 0;
+  let completedAppointments = 0;
+  let noShowAppointments = 0;
+  
+  for (const stat of appointmentStats) {
+    totalAppointments += stat.count;
+    if (stat.status === 'completed') completedAppointments = stat.count;
+    if (stat.status === 'no_show') noShowAppointments = stat.count;
+  }
+  
+  return {
+    totalRevenue,
+    cashRevenue,
+    cardRevenue,
+    linePayRevenue,
+    otherRevenue,
+    totalOrders,
+    completedOrders,
+    cancelledOrders,
+    refundedOrders,
+    totalAppointments,
+    completedAppointments,
+    noShowAppointments,
+  };
+}
+
+// 建立結帳明細
+export async function createSettlementItem(data: InsertSettlementItem) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(settlementItems).values(data);
+  return result[0].insertId;
+}
+
+// 列出結帳明細
+export async function listSettlementItems(settlementId: number, options?: { page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 50;
+  const offset = (page - 1) * limit;
+  
+  const data = await db.select().from(settlementItems)
+    .where(eq(settlementItems.settlementId, settlementId))
+    .orderBy(desc(settlementItems.transactionAt))
+    .limit(limit)
+    .offset(offset);
+  
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(settlementItems)
+    .where(eq(settlementItems.settlementId, settlementId));
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 建立收銀機記錄
+export async function createCashDrawerRecord(data: InsertCashDrawerRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(cashDrawerRecords).values(data);
+  return result[0].insertId;
+}
+
+// 列出收銀機記錄
+export async function listCashDrawerRecords(settlementId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(cashDrawerRecords)
+    .where(eq(cashDrawerRecords.settlementId, settlementId))
+    .orderBy(desc(cashDrawerRecords.operatedAt));
+}
+
+// 建立付款記錄
+export async function createPaymentRecord(data: InsertPaymentRecord) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(paymentRecords).values(data);
+  return result[0].insertId;
+}
+
+// 更新付款記錄
+export async function updatePaymentRecord(id: number, data: Partial<InsertPaymentRecord>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(paymentRecords).set(data).where(eq(paymentRecords.id, id));
+}
+
+// 根據 ID 獲取付款記錄
+export async function getPaymentRecordById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(paymentRecords).where(eq(paymentRecords.id, id)).limit(1);
+  return result[0] || null;
+}
+
+// 列出付款記錄
+export async function listPaymentRecords(organizationId: number, options?: {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  paymentMethod?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereClause: any = eq(paymentRecords.organizationId, organizationId);
+  
+  if (options?.startDate) {
+    whereClause = and(whereClause, gte(paymentRecords.createdAt, new Date(options.startDate)));
+  }
+  if (options?.endDate) {
+    whereClause = and(whereClause, lte(paymentRecords.createdAt, new Date(options.endDate)));
+  }
+  if (options?.status) {
+    whereClause = and(whereClause, eq(paymentRecords.status, options.status as any));
+  }
+  if (options?.paymentMethod) {
+    whereClause = and(whereClause, eq(paymentRecords.paymentMethod, options.paymentMethod as any));
+  }
+  
+  const data = await db.select().from(paymentRecords)
+    .where(whereClause)
+    .orderBy(desc(paymentRecords.createdAt))
+    .limit(limit)
+    .offset(offset);
+  
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(paymentRecords).where(whereClause);
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 獲取結帳統計摘要
+export async function getSettlementSummary(organizationId: number, options?: { startDate?: string; endDate?: string }) {
+  const db = await getDb();
+  if (!db) return {
+    totalRevenue: 0,
+    totalCash: 0,
+    totalCard: 0,
+    totalLinePay: 0,
+    totalOrders: 0,
+    avgOrderValue: 0,
+    cashDifferenceTotal: 0,
+    settlementCount: 0,
+  };
+  
+  let whereClause: any = eq(dailySettlements.organizationId, organizationId);
+  
+  if (options?.startDate) {
+    whereClause = and(whereClause, gte(dailySettlements.settlementDate, new Date(options.startDate)));
+  }
+  if (options?.endDate) {
+    whereClause = and(whereClause, lte(dailySettlements.settlementDate, new Date(options.endDate)));
+  }
+  
+  const summary = await db.select({
+    totalRevenue: sql<number>`sum(${dailySettlements.totalRevenue})`,
+    totalCash: sql<number>`sum(${dailySettlements.cashRevenue})`,
+    totalCard: sql<number>`sum(${dailySettlements.cardRevenue})`,
+    totalLinePay: sql<number>`sum(${dailySettlements.linePayRevenue})`,
+    totalOrders: sql<number>`sum(${dailySettlements.totalOrders})`,
+    cashDifferenceTotal: sql<number>`sum(${dailySettlements.cashDifference})`,
+    settlementCount: sql<number>`count(*)`,
+  })
+    .from(dailySettlements)
+    .where(whereClause);
+  
+  const result = summary[0];
+  const totalOrders = Number(result?.totalOrders || 0);
+  const totalRevenue = Number(result?.totalRevenue || 0);
+  
+  return {
+    totalRevenue,
+    totalCash: Number(result?.totalCash || 0),
+    totalCard: Number(result?.totalCard || 0),
+    totalLinePay: Number(result?.totalLinePay || 0),
+    totalOrders,
+    avgOrderValue: totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
+    cashDifferenceTotal: Number(result?.cashDifferenceTotal || 0),
+    settlementCount: Number(result?.settlementCount || 0),
+  };
+}
+
+// ============================================
+// LINE Channel 設定
+// ============================================
+
+// 建立 LINE Channel 設定
+export async function createLineChannelConfig(data: InsertLineChannelConfig) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(lineChannelConfigs).values(data);
+  return result[0].insertId;
+}
+
+// 更新 LINE Channel 設定
+export async function updateLineChannelConfig(id: number, data: Partial<InsertLineChannelConfig>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(lineChannelConfigs).set(data).where(eq(lineChannelConfigs.id, id));
+}
+
+// 根據 ID 獲取 LINE Channel 設定
+export async function getLineChannelConfigById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(lineChannelConfigs).where(eq(lineChannelConfigs.id, id)).limit(1);
+  return result[0] || null;
+}
+
+// 獲取平台級 LINE Channel 設定
+export async function getPlatformLineChannelConfig() {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(lineChannelConfigs)
+    .where(and(
+      eq(lineChannelConfigs.isPlatformLevel, true),
+      eq(lineChannelConfigs.isActive, true)
+    ))
+    .limit(1);
+  return result[0] || null;
+}
+
+// 獲取診所的 LINE Channel 設定
+export async function getOrganizationLineChannelConfig(organizationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(lineChannelConfigs)
+    .where(and(
+      eq(lineChannelConfigs.organizationId, organizationId),
+      eq(lineChannelConfigs.isActive, true)
+    ))
+    .limit(1);
+  
+  // 如果診所沒有設定，返回平台級設定
+  if (!result[0]) {
+    return await getPlatformLineChannelConfig();
+  }
+  
+  return result[0];
+}
+
+// 列出所有 LINE Channel 設定
+export async function listLineChannelConfigs(options?: { organizationId?: number; page?: number; limit?: number }) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0 };
+  
+  const page = options?.page || 1;
+  const limit = options?.limit || 20;
+  const offset = (page - 1) * limit;
+  
+  let whereClause: any = undefined;
+  if (options?.organizationId) {
+    whereClause = eq(lineChannelConfigs.organizationId, options.organizationId);
+  }
+  
+  const query = db.select().from(lineChannelConfigs);
+  const data = whereClause 
+    ? await query.where(whereClause).orderBy(desc(lineChannelConfigs.createdAt)).limit(limit).offset(offset)
+    : await query.orderBy(desc(lineChannelConfigs.createdAt)).limit(limit).offset(offset);
+  
+  const countQuery = db.select({ count: sql<number>`count(*)` }).from(lineChannelConfigs);
+  const countResult = whereClause 
+    ? await countQuery.where(whereClause)
+    : await countQuery;
+  const total = countResult[0]?.count || 0;
+  
+  return { data, total };
+}
+
+// 驗證 LINE Channel 憑證
+export async function verifyLineChannelCredentials(channelId: string, channelSecret: string, channelAccessToken: string) {
+  try {
+    // 呼叫 LINE API 驗證憑證
+    const response = await fetch('https://api.line.me/v2/bot/info', {
+      headers: {
+        'Authorization': `Bearer ${channelAccessToken}`,
+      },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return { success: true, botInfo: data };
+    } else {
+      const error = await response.json();
+      return { success: false, error: error.message || 'Invalid credentials' };
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Connection failed' };
+  }
 }
