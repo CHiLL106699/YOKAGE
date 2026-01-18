@@ -54,6 +54,7 @@ const clinicMenuItems = [
   { icon: Bell, label: "通知管理", path: "/clinic/notifications" },
   { icon: CreditCard, label: "金流管理", path: "/clinic/payment" },
   { icon: DollarSign, label: "每日結帳", path: "/clinic/settlement" },
+  { icon: Target, label: "客戶行銷", path: "/clinic/marketing" },
   // Phase 26-30 超越 SUPER8 與夾客的進階功能
   { icon: Bot, label: "AI 智能客服", path: "/clinic/ai-chatbot" },
   { icon: Inbox, label: "訊息中心", path: "/clinic/message-center" },

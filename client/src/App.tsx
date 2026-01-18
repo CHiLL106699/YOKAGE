@@ -99,6 +99,8 @@ import SuperAdminNotificationsPage from "@/pages/SuperAdminNotificationsPage";
 import SuperAdminBillingPage from "@/pages/SuperAdminBillingPage";
 import SuperAdminApiDocsPage from "@/pages/SuperAdminApiDocsPage";
 import SuperAdminWhiteLabelPage from "@/pages/SuperAdminWhiteLabelPage";
+// Phase 63: 客戶行銷自動化
+import CustomerMarketingPage from "@/pages/CustomerMarketingPage";
 
 function Router() {
   return (
@@ -135,6 +137,7 @@ function Router() {
       {/* 金流管理 */}
       <Route path="/clinic/payment" component={PaymentPage} />
       <Route path="/clinic/settlement" component={SettlementPage} />
+      <Route path="/clinic/marketing" component={CustomerMarketingPage} />
       
       {/* LINE 生態整合 */}
       <Route path="/clinic/rich-menu" component={RichMenuPage} />

@@ -1013,6 +1013,82 @@ const lineRouter = router({
       const id = await db.createLineChannel(input);
       return { id };
     }),
+
+  // 真實 LINE 推播 API
+  sendTextMessage: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      message: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { pushTextMessage } = await import('./services/lineMessaging');
+      return await pushTextMessage(input.userId, input.message);
+    }),
+
+  sendFlexMessage: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      altText: z.string(),
+      contents: z.any(),
+    }))
+    .mutation(async ({ input }) => {
+      const { pushFlexMessage } = await import('./services/lineMessaging');
+      return await pushFlexMessage(input.userId, input.altText, input.contents);
+    }),
+
+  // 療程到期提醒
+  sendTreatmentReminders: protectedProcedure
+    .input(z.object({
+      daysBeforeExpiry: z.number().optional(),
+      organizationId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { sendTreatmentExpiryReminders } = await import('./services/treatmentReminder');
+      return await sendTreatmentExpiryReminders(
+        input.daysBeforeExpiry || 3,
+        input.organizationId
+      );
+    }),
+
+  // 沉睡客戶喚醒
+  sendDormantReminders: protectedProcedure
+    .input(z.object({
+      minDays: z.number().optional(),
+      maxDays: z.number().optional(),
+      organizationId: z.number().optional(),
+      specialOffer: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { sendDormantCustomerReminders } = await import('./services/dormantCustomer');
+      return await sendDormantCustomerReminders(
+        input.minDays || 30,
+        input.maxDays || 180,
+        input.organizationId,
+        input.specialOffer
+      );
+    }),
+
+  // 沉睡客戶統計
+  getDormantStats: protectedProcedure
+    .input(z.object({ organizationId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const { getDormantCustomerStats } = await import('./services/dormantCustomer');
+      return await getDormantCustomerStats(input.organizationId);
+    }),
+
+  // 票券到期提醒
+  sendVoucherReminders: protectedProcedure
+    .input(z.object({
+      daysBeforeExpiry: z.number().optional(),
+      organizationId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { sendVoucherExpiryReminders } = await import('./services/lineMessaging');
+      return await sendVoucherExpiryReminders(
+        input.daysBeforeExpiry || 3,
+        input.organizationId
+      );
+    }),
 });
 
 // ============================================
@@ -1694,6 +1770,34 @@ const rfmRouter = router({
       });
       return scores.sort((a, b) => (b.churnRisk || 0) - (a.churnRisk || 0));
     }),
+
+  // 真實 RFM 分析 API
+  performAnalysis: protectedProcedure
+    .input(z.object({
+      organizationId: z.number().optional(),
+      lookbackDays: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { performRFMAnalysis } = await import('./services/rfmAnalysis');
+      return await performRFMAnalysis(input.organizationId, input.lookbackDays);
+    }),
+
+  getSummary: protectedProcedure
+    .input(z.object({ organizationId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const { getRFMSummary } = await import('./services/rfmAnalysis');
+      return await getRFMSummary(input.organizationId);
+    }),
+
+  getCustomersBySegment: protectedProcedure
+    .input(z.object({
+      segment: z.string(),
+      organizationId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { getCustomersBySegment } = await import('./services/rfmAnalysis');
+      return await getCustomersBySegment(input.segment as any, input.organizationId);
+    }),
 });
 
 // ============================================
@@ -1796,6 +1900,53 @@ const commissionRouter = router({
         new Date(input.startDate),
         new Date(input.endDate)
       );
+    }),
+
+  // 真實佣金計算 API
+  calculatePeriod: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      organizationId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { calculateCommissions } = await import('./services/commissionCalculator');
+      return await calculateCommissions(
+        new Date(input.startDate),
+        new Date(input.endDate),
+        input.organizationId
+      );
+    }),
+
+  calculateCurrentMonth: protectedProcedure
+    .input(z.object({ organizationId: z.number().optional() }))
+    .mutation(async ({ input }) => {
+      const { calculateCurrentMonthCommissions } = await import('./services/commissionCalculator');
+      return await calculateCurrentMonthCommissions(input.organizationId);
+    }),
+
+  getLeaderboard: protectedProcedure
+    .input(z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      organizationId: z.number().optional(),
+      limit: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { getCommissionLeaderboard } = await import('./services/commissionCalculator');
+      return await getCommissionLeaderboard(
+        new Date(input.startDate),
+        new Date(input.endDate),
+        input.organizationId,
+        input.limit
+      );
+    }),
+
+  getSummaryStats: protectedProcedure
+    .input(z.object({ organizationId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const { getCommissionSummary } = await import('./services/commissionCalculator');
+      return await getCommissionSummary(input.organizationId);
     }),
 });
 
