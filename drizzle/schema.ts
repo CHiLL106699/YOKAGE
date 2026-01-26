@@ -1969,3 +1969,63 @@ export const userPrizes = mysqlTable("userPrizes", {
 
 export type UserPrize = typeof userPrizes.$inferSelect;
 export type InsertUserPrize = typeof userPrizes.$inferInsert;
+
+// ============================================
+// 業績管理系統 - 業績記錄表
+// ============================================
+export const performanceRecords = mysqlTable("performanceRecords", {
+  id: varchar("id", { length: 191 }).primaryKey(),
+  clinicId: varchar("clinicId", { length: 191 }).notNull(),
+  staffId: varchar("staffId", { length: 191 }).notNull(),
+  recordDate: timestamp("recordDate").notNull(),
+  
+  // 業績金額（使用 DECIMAL 確保精確性）
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  
+  // 業績類型（appointment: 預約、treatment: 療程、product: 產品銷售、manual: 手動新增）
+  type: varchar("type", { length: 50 }).notNull(),
+  
+  // 關聯 ID（預約 ID、療程 ID、產品 ID 等）
+  relatedId: varchar("relatedId", { length: 191 }),
+  
+  // 備註
+  notes: text("notes"),
+  
+  // 建立時間與更新時間
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PerformanceRecord = typeof performanceRecords.$inferSelect;
+export type InsertPerformanceRecord = typeof performanceRecords.$inferInsert;
+
+// ============================================
+// 業績管理系統 - 業績目標表
+// ============================================
+export const performanceTargets = mysqlTable("performanceTargets", {
+  id: varchar("id", { length: 191 }).primaryKey(),
+  clinicId: varchar("clinicId", { length: 191 }).notNull(),
+  staffId: varchar("staffId", { length: 191 }).notNull(),
+  
+  // 目標期間類型（monthly: 月度、quarterly: 季度、yearly: 年度）
+  periodType: varchar("periodType", { length: 50 }).notNull(),
+  
+  // 目標年份
+  year: int("year").notNull(),
+  
+  // 目標月份或季度（月度：1-12，季度：1-4，年度：0）
+  period: int("period").notNull(),
+  
+  // 目標金額（使用 DECIMAL 確保精確性）
+  targetAmount: decimal("targetAmount", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  
+  // 備註
+  notes: text("notes"),
+  
+  // 建立時間與更新時間
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PerformanceTarget = typeof performanceTargets.$inferSelect;
+export type InsertPerformanceTarget = typeof performanceTargets.$inferInsert;

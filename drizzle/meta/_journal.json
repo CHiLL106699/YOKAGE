@@ -92,6 +92,13 @@
       "when": 1769412532732,
       "tag": "0012_lively_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1769441426075,
+      "tag": "0013_next_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

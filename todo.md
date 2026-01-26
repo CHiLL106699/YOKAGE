@@ -1351,3 +1351,36 @@
 - [ ] 實作 performanceRouter.ts (業績 CRUD、目標設定、達成率計算)
 - [ ] 實作 PerformanceDashboardPage.tsx (視覺化儀表板)
 - [ ] 建立單元測試
+
+
+---
+
+## Phase 41: 所有剩餘子任務並行實作
+
+### 業績管理系統實作
+- [x] 建立 performance schema
+- [x] 實作 performanceRouter.ts
+- [ ] 實作 PerformanceDashboardPage.tsx (視覺化儀表板)
+- [ ] 建立單元測試
+
+### 優惠券系統整合
+- [x] 整合優惠券 schema 到主專案 (並行處理完成)
+- [x] 整合 couponRouter 到主專案 (並行處理完成)
+- [x] 整合前端介面到主專案 (並行處理完成)
+- [ ] 更新路由與導航
+
+### 通知系統整合
+- [x] 整合通知 schema 到主專案 (並行處理完成)
+- [x] 整合 notificationRouter 到主專案 (並行處理完成)
+- [x] 整合前端介面到主專案 (並行處理完成)
+- [ ] 更新路由與導航
+
+### 前後端完整對接
+- [ ] 確保所有 tRPC Router 正確註冊
+- [ ] 確保所有前端頁面路由正確
+- [ ] 確保所有導航選單正確
+
+### 完整測試驗證
+- [ ] 執行所有單元測試
+- [ ] 執行端對端測試
+- [ ] 驗證所有功能正常運作
