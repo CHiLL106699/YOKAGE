@@ -1211,30 +1211,30 @@
 ## Phase 35: LINE Channel 整合與前端介面完整實作
 
 ### LINE Channel 配置
-- [ ] 配置 LINE Channel 環境變數
-- [ ] 測試 LINE Messaging API 連線
-- [ ] 配置 Webhook URL
+- [x] 配置 LINE Channel 環境變數
+- [x] 測試 LINE Messaging API 連線
+- [x] 配置 Webhook URL
 
 ### 前端介面並行實作
 - [x] 定位打卡介面 (AttendanceClockInPage)
-- [ ] 打卡設定介面 (AttendanceSettingsPage)
-- [ ] 打卡記錄地圖 (AttendanceMapView)
-- [ ] 遊戲管理後台 (GameManagementPage)
-- [ ] 一番賞遊戲介面 (IchibanKujiGame)
-- [ ] 拉霸遊戲介面 (SlotMachineGame)
-- [ ] 轉珠遊戲介面 (PachinkoGame)
-- [ ] 使用者獎品頁面 (UserPrizesPage)
-- [ ] 優惠券管理介面 (CouponManagementPage)
-- [ ] 資料匯入介面 (DataImportPage)
-- [ ] 支付設定介面 (PaymentSettingsPage)
-- [ ] LINE 設定介面 (LineSettingsPage)
+- [x] 打卡設定介面 (AttendanceSettingsPage)
+- [x] 打卡記錄地圖 (AttendanceMapView)
+- [x] 遊戲管理後台 (GameManagementPage)
+- [x] 一番賞遊戲介面 (IchibanKujiGame)
+- [x] 拉霸遊戲介面 (SlotMachineGame)
+- [x] 轉珠遊戲介面 (PachinkoGame)
+- [x] 使用者獎品頁面 (UserPrizesPage)
+- [x] 優惠券管理介面 (CouponManagementPage)
+- [x] 資料匯入介面 (DataImportPage)
+- [x] 支付設定介面 (PaymentSettingsPage)
+- [x] LINE 設定介面 (LineSettingsPage)
 
 ### 路由與導航整合
-- [ ] 更新 App.tsx 路由配置
-- [ ] 更新 DashboardLayout 導航選項
-- [ ] 整合所有 tRPC Router
+- [x] 更新 App.tsx 路由配置
+- [x] 更新 DashboardLayout 導航選項
+- [x] 整合所有 tRPC Router
 
 ### 測試驗證
-- [ ] 執行完整單元測試
+- [x] 執行完整單元測試 (301 個測試全數通過)
 - [ ] 執行端對端測試
 - [ ] 驗證所有功能正常運作

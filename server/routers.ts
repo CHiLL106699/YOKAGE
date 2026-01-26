@@ -7,6 +7,11 @@ import * as db from "./db";
 import { lineSettingsRouter } from "./routers/lineSettingsRouter";
 import { dataImportRouter } from "./routers/dataImportRouter";
 import { paymentRouter } from "./routers/paymentRouter";
+// Phase 35: 定位打卡與 LINE 遊戲模組
+import { attendanceSettingsRouter } from "./routers/attendanceSettingsRouter";
+import { gameRouter } from "./routers/gameRouter";
+import { prizeRouter } from "./routers/prizeRouter";
+import { couponRouter as couponManagementRouter } from "./routers/couponRouter";
 import { TRPCError } from "@trpc/server";
 
 // ============================================
@@ -3819,6 +3824,11 @@ export const appRouter = router({
   lineSettings: lineSettingsRouter,
   dataImport: dataImportRouter,
   payment: paymentRouter,
+  // Phase 35: 定位打卡與 LINE 遊戲模組
+  attendanceSettings: attendanceSettingsRouter,
+  game: gameRouter,
+  prize: prizeRouter,
+  couponManagement: couponManagementRouter,
 });
 
 export type AppRouter = typeof appRouter;

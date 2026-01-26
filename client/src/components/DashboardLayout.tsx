@@ -28,7 +28,8 @@ import {
   Building2, Globe, Key, Brain, Cog, Bot, Zap, Gamepad2, UserCircle, Inbox,
   Share2, Briefcase, Truck, Star, GitBranch, FileSignature, Camera, Sparkles, Target, Eye,
   Syringe, ClipboardList, PhoneCall, PieChart, DollarSign, ThumbsUp,
-  Crosshair, FileCheck, Pill, ScanFace, CreditCard as CreditCardIcon, Video, Gift, Globe2, Crown
+  Crosshair, FileCheck, Pill, ScanFace, CreditCard as CreditCardIcon, Video, Gift, Globe2, Crown,
+  Upload
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -45,6 +46,8 @@ const clinicMenuItems = [
   { icon: Users, label: "員工管理", path: "/clinic/staff" },
   { icon: Clock, label: "排班管理", path: "/clinic/schedule" },
   { icon: Clock, label: "打卡紀錄", path: "/clinic/attendance" },
+  { icon: Clock, label: "定位打卡", path: "/clinic/attendance-clock-in" },
+  { icon: Settings, label: "打卡設定", path: "/clinic/attendance-settings" },
   { icon: Heart, label: "術後關懷", path: "/clinic/aftercare" },
   { icon: Ticket, label: "優惠券", path: "/clinic/coupons" },
   { icon: ShoppingCart, label: "訂單管理", path: "/clinic/orders" },
@@ -53,6 +56,7 @@ const clinicMenuItems = [
   { icon: Brain, label: "AI 數據分析", path: "/clinic/analytics" },
   { icon: Bell, label: "通知管理", path: "/clinic/notifications" },
   { icon: CreditCard, label: "金流管理", path: "/clinic/payment" },
+  { icon: Upload, label: "資料匯入", path: "/clinic/data-import" },
   { icon: DollarSign, label: "每日結帳", path: "/clinic/settlement" },
   { icon: Target, label: "客戶行銷", path: "/clinic/marketing" },
   // Phase 26-30 超越 SUPER8 與夾客的進階功能
@@ -60,6 +64,9 @@ const clinicMenuItems = [
   { icon: Inbox, label: "訊息中心", path: "/clinic/message-center" },
   { icon: Zap, label: "行銷自動化", path: "/clinic/marketing-automation" },
   { icon: Gamepad2, label: "遊戲 & OMO", path: "/clinic/gamification" },
+  { icon: Gamepad2, label: "遊戲管理", path: "/clinic/game-management" },
+  { icon: Gift, label: "使用者獎品", path: "/clinic/user-prizes" },
+  { icon: Ticket, label: "優惠券管理", path: "/clinic/coupon-management" },
   // LINE 生態整合
   { icon: MessageSquare, label: "LINE 設定", path: "/clinic/line-settings" },
   { icon: MessageSquare, label: "LINE 整合", path: "/clinic/line-integration" },
