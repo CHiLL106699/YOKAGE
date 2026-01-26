@@ -1238,3 +1238,37 @@
 - [x] 執行完整單元測試 (301 個測試全數通過)
 - [ ] 執行端對端測試
 - [ ] 驗證所有功能正常運作
+
+
+---
+
+## Phase 36: 資料清理與新功能實作
+
+### 資料清理
+- [x] 刪除所有假資料（測試客戶、預約、產品等）
+- [x] 保留「伊美秘書」測試資料
+- [x] 清理測試遊戲與獎品資料
+- [x] 清理測試打卡記錄
+
+### 新功能 1: 自訂匯出報表
+- [x] 建立報表欄位設定介面 (ReportExportPage.tsx)
+- [x] 實作欄位選擇與排序功能 (react-dnd)
+- [x] 實作匯出格式選擇（CSV, Excel, PDF）
+- [x] 實作報表模板儲存功能 (reportTemplates 表)
+- [x] 實作報表預覽功能
+- [x] 建立 reportExportRouter.ts
+
+### 新功能 2: 手動補登/修改打卡記錄
+- [x] 建立管理者打卡記錄管理介面 (AttendanceManagementPage.tsx)
+- [x] 實作手動新增打卡記錄功能
+- [x] 實作修改打卡記錄功能
+- [x] 實作打卡記錄審核功能
+- [x] 實作打卡記錄歷史追蹤 (attendanceAuditLogs 表)
+- [x] 擴展 attendanceRouter.ts
+
+### 新功能 3: 一番賞社群分享
+- [x] 實作 LINE 分享按鈕 (LIFF SDK shareTargetPicker)
+- [x] 實作分享內容生成（Flex Message）
+- [x] 實作分享圖片生成 (html2canvas)
+- [x] 實作分享追蹤統計 (gameShareLogs 表)
+- [x] 擴展 gameRouter.ts
