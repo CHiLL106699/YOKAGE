@@ -1204,3 +1204,37 @@
 - [x] 提取可重用的元件與功能
 - [x] 整合優質 UI/UX 模式
 - [x] 整合進階功能模組
+
+
+---
+
+## Phase 35: LINE Channel 整合與前端介面完整實作
+
+### LINE Channel 配置
+- [ ] 配置 LINE Channel 環境變數
+- [ ] 測試 LINE Messaging API 連線
+- [ ] 配置 Webhook URL
+
+### 前端介面並行實作
+- [x] 定位打卡介面 (AttendanceClockInPage)
+- [ ] 打卡設定介面 (AttendanceSettingsPage)
+- [ ] 打卡記錄地圖 (AttendanceMapView)
+- [ ] 遊戲管理後台 (GameManagementPage)
+- [ ] 一番賞遊戲介面 (IchibanKujiGame)
+- [ ] 拉霸遊戲介面 (SlotMachineGame)
+- [ ] 轉珠遊戲介面 (PachinkoGame)
+- [ ] 使用者獎品頁面 (UserPrizesPage)
+- [ ] 優惠券管理介面 (CouponManagementPage)
+- [ ] 資料匯入介面 (DataImportPage)
+- [ ] 支付設定介面 (PaymentSettingsPage)
+- [ ] LINE 設定介面 (LineSettingsPage)
+
+### 路由與導航整合
+- [ ] 更新 App.tsx 路由配置
+- [ ] 更新 DashboardLayout 導航選項
+- [ ] 整合所有 tRPC Router
+
+### 測試驗證
+- [ ] 執行完整單元測試
+- [ ] 執行端對端測試
+- [ ] 驗證所有功能正常運作

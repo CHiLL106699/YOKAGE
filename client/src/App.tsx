@@ -104,6 +104,15 @@ import CustomerMarketingPage from "@/pages/CustomerMarketingPage";
 // Phase 29-31: LINE 整合、資料匯入、支付整合
 import DataImportPage from "@/pages/DataImportPage";
 import PaymentSettingsPage from "@/pages/PaymentSettingsPage";
+// Phase 35: 定位打卡與 LINE 遊戲模組
+import AttendanceClockInPage from "@/pages/AttendanceClockInPage";
+import AttendanceSettingsPage from "@/pages/AttendanceSettingsPage";
+import GameManagementPage from "@/pages/GameManagementPage";
+import IchibanKujiGame from "@/pages/IchibanKujiGame";
+import SlotMachineGame from "@/pages/SlotMachineGame";
+import PachinkoGame from "@/pages/PachinkoGame";
+import UserPrizesPage from "@/pages/UserPrizesPage";
+import CouponManagementPage from "@/pages/CouponManagementPage";
 
 function Router() {
   return (
@@ -186,10 +195,18 @@ function Router() {
       <Route path="/clinic/gamification" component={GamificationPage} />
       <Route path="/clinic/member-passport" component={MemberPassportPage} />
       <Route path="/clinic/message-center" component={MessageCenterPage} />
+          {/* Phase 63: 客戶行銷自動化 */}
+      <Route path="/clinic/customer-marketing" component={CustomerMarketingPage} />
       
-      {/* Phase 31-35 新增功能 */}
-      <Route path="/clinic/social-marketing" component={SocialMarketingPage} />
-      <Route path="/clinic/hr-management" component={HRManagementPage} />
+      {/* Phase 35: 定位打卡與 LINE 遊戲模組 */}
+      <Route path="/clinic/attendance-clock-in" component={AttendanceClockInPage} />
+      <Route path="/clinic/attendance-settings" component={AttendanceSettingsPage} />
+      <Route path="/clinic/game-management" component={GameManagementPage} />
+      <Route path="/clinic/games/ichiban-kuji" component={IchibanKujiGame} />
+      <Route path="/clinic/games/slot-machine" component={SlotMachineGame} />
+      <Route path="/clinic/games/pachinko" component={PachinkoGame} />
+      <Route path="/clinic/user-prizes" component={UserPrizesPage} />
+      <Route path="/clinic/coupon-management" component={CouponManagementPage} />     <Route path="/clinic/hr-management" component={HRManagementPage} />
       <Route path="/clinic/supplier-management" component={SupplierManagementPage} />
       <Route path="/clinic/review-management" component={ReviewManagementPage} />
       <Route path="/clinic/multi-branch" component={MultiBranchPage} />
