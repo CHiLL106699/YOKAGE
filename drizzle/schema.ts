@@ -257,6 +257,17 @@ export const attendanceRecords = mysqlTable("attendanceRecords", {
   clockOut: timestamp("clockOut"),
   clockInLocation: json("clockInLocation"),
   clockOutLocation: json("clockOutLocation"),
+  // 地理圍欄功能擴展
+  checkInLatitude: decimal("checkInLatitude", { precision: 10, scale: 7 }),
+  checkInLongitude: decimal("checkInLongitude", { precision: 10, scale: 7 }),
+  checkInAccuracy: decimal("checkInAccuracy", { precision: 8, scale: 2 }),
+  checkInAddress: text("checkInAddress"),
+  checkOutLatitude: decimal("checkOutLatitude", { precision: 10, scale: 7 }),
+  checkOutLongitude: decimal("checkOutLongitude", { precision: 10, scale: 7 }),
+  checkOutAccuracy: decimal("checkOutAccuracy", { precision: 8, scale: 2 }),
+  checkOutAddress: text("checkOutAddress"),
+  isWithinGeofence: boolean("isWithinGeofence").default(true),
+  distanceFromClinic: decimal("distanceFromClinic", { precision: 8, scale: 2 }),
   status: mysqlEnum("status", ["normal", "late", "early_leave", "absent", "leave"]).default("normal"),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1847,3 +1858,114 @@ export const organizationSubscriptions = mysqlTable("organizationSubscriptions",
 
 export type OrganizationSubscription = typeof organizationSubscriptions.$inferSelect;
 export type InsertOrganizationSubscription = typeof organizationSubscriptions.$inferInsert;
+
+
+// ============================================
+// 打卡設定表 - 地理圍欄設定
+// ============================================
+export const attendanceSettings = mysqlTable("attendanceSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull().unique(),
+  // 診所基準位置
+  clinicLatitude: decimal("clinicLatitude", { precision: 10, scale: 7 }),
+  clinicLongitude: decimal("clinicLongitude", { precision: 10, scale: 7 }),
+  clinicAddress: text("clinicAddress"),
+  // 地理圍欄設定
+  validDistance: int("validDistance").default(100), // 有效打卡距離 (米)
+  enableGeofence: boolean("enableGeofence").default(false), // 是否啟用地理圍欄驗證
+  // 降級機制設定
+  allowOfflineClockIn: boolean("allowOfflineClockIn").default(true), // 允許離線打卡
+  // 其他設定
+  autoClockOutHours: int("autoClockOutHours").default(12), // 自動下班打卡時數
+  requirePhoto: boolean("requirePhoto").default(false), // 是否需要拍照打卡
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AttendanceSettings = typeof attendanceSettings.$inferSelect;
+export type InsertAttendanceSettings = typeof attendanceSettings.$inferInsert;
+
+// ============================================
+// LINE 遊戲模組 - 遊戲設定表
+// ============================================
+export const games = mysqlTable("games", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(), // 遊戲內部名稱 (ichiban_kuji, slot_machine, pachinko)
+  title: varchar("title", { length: 255 }).notNull(), // 遊戲顯示標題
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  isActive: boolean("isActive").default(true),
+  maxPlaysPerDay: int("maxPlaysPerDay").default(-1), // -1 表示無限制
+  settings: json("settings"), // 遊戲特定設定
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Game = typeof games.$inferSelect;
+export type InsertGame = typeof games.$inferInsert;
+
+// ============================================
+// LINE 遊戲模組 - 獎品資料表
+// ============================================
+export const prizes = mysqlTable("prizes", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("gameId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  type: mysqlEnum("type", ["coupon", "gift", "points", "service"]).default("gift"),
+  value: decimal("value", { precision: 10, scale: 2 }), // 獎品價值
+  quantity: int("quantity").default(-1), // -1 表示無限
+  remainingQuantity: int("remainingQuantity").default(-1),
+  probability: decimal("probability", { precision: 5, scale: 4 }).notNull(), // 0.0000 to 1.0000
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  metadata: json("metadata"), // 額外資訊 (如優惠券代碼等)
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Prize = typeof prizes.$inferSelect;
+export type InsertPrize = typeof prizes.$inferInsert;
+
+// ============================================
+// LINE 遊戲模組 - 遊玩記錄表
+// ============================================
+export const gamePlays = mysqlTable("gamePlays", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("gameId").notNull(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  playedAt: timestamp("playedAt").defaultNow().notNull(),
+  result: mysqlEnum("result", ["win", "lose"]).notNull(),
+  prizeId: int("prizeId"), // NULL 表示未中獎
+  metadata: json("metadata"), // 遊戲過程資訊
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GamePlay = typeof gamePlays.$inferSelect;
+export type InsertGamePlay = typeof gamePlays.$inferInsert;
+
+// ============================================
+// LINE 遊戲模組 - 使用者中獎記錄表
+// ============================================
+export const userPrizes = mysqlTable("userPrizes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  prizeId: int("prizeId").notNull(),
+  gamePlayId: int("gamePlayId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  wonAt: timestamp("wonAt").defaultNow().notNull(),
+  isRedeemed: boolean("isRedeemed").default(false),
+  redeemedAt: timestamp("redeemedAt"),
+  redeemedBy: int("redeemedBy"), // 兌換操作員 ID
+  expiresAt: timestamp("expiresAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserPrize = typeof userPrizes.$inferSelect;
+export type InsertUserPrize = typeof userPrizes.$inferInsert;
