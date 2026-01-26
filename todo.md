@@ -1327,3 +1327,27 @@
 ### 測試階段
 - [ ] 執行後台功能測試
 - [ ] 執行前後端整合測試
+
+
+---
+
+## Phase 40: 優惠券系統、通知系統、業績管理系統實作
+
+### 優惠券系統
+- [ ] 建立優惠券資料表 (coupons, coupon_usage)
+- [ ] 實作 couponRouter.ts (優惠券 CRUD、折扣碼兌換、使用記錄)
+- [ ] 實作 CouponManagementPage.tsx (優惠券管理介面)
+- [ ] 實作 CouponRedeemPage.tsx (折扣碼兌換介面)
+- [ ] 建立單元測試
+
+### 通知系統整合
+- [ ] 擴展通知資料表 (notification_templates)
+- [ ] 實作 notificationRouter.ts (通知模板 CRUD、LINE 推播)
+- [ ] 實作 NotificationTemplatePage.tsx (LINE 推播模板自訂介面)
+- [ ] 建立單元測試
+
+### 業績管理系統
+- [ ] 建立業績資料表 (performance_records, performance_targets)
+- [ ] 實作 performanceRouter.ts (業績 CRUD、目標設定、達成率計算)
+- [ ] 實作 PerformanceDashboardPage.tsx (視覺化儀表板)
+- [ ] 建立單元測試
