@@ -1409,3 +1409,15 @@
 - [ ] 測試 SSO 登入流程
 - [ ] 測試資料同步功能
 - [ ] 測試 API 整合穩定性
+
+
+---
+
+## Phase 43: LINE API 與 LIFF 真實串接
+- [ ] 配置 LINE Channel Access Token 到環境變數
+- [ ] 實作 Flex Message 發送 API
+- [ ] 實作 Webhook 事件處理
+- [ ] 實作 LIFF SDK 初始化
+- [ ] 實作 LIFF 登入流程
+- [ ] 測試真實 LINE 訊息發送
+- [ ] 測試 LIFF 應用開啟
