@@ -10,4 +10,6 @@ export const ENV = {
   // LINE 整合
   lineChannelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? "",
   lineUserId: process.env.LINE_USER_ID ?? "",
+  // LemonSqueezy 金流整合
+  lemonsqueezyApiKey: process.env.LEMONSQUEEZY_API_KEY ?? "",
 };

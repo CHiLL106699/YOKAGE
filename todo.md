@@ -1431,3 +1431,18 @@
 - [ ] 實作 LINE LIFF 預約完整流程
 - [ ] 實作 LINE Webhook 監控儀表板
 - [ ] 金流支付功能預留空間（待審核通過後串接）
+
+
+---
+
+## Phase 68: LemonSqueezy 金流支付整合
+
+- [x] 設定 LemonSqueezy API Key 環境變數
+- [x] 測試 LemonSqueezy API 連線
+- [x] 實作 LemonSqueezy 訂閱管理（建立、更新、取消）
+- [x] 實作 LemonSqueezy 一次性付款
+- [x] 實作 LemonSqueezy Webhook 處理（付款成功、失敗、訂閱更新）
+- [x] 實作 LemonSqueezy 退款功能
+- [x] 實作 LemonSqueezy 發票生成與發送
+- [x] 撰寫 LemonSqueezy 整合測試
+- [x] 更新支付方式管理頁面（啟用 LemonSqueezy）
