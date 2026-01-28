@@ -1462,3 +1462,60 @@
 - [x] 建立用戶個人中心頁面（訂閱取消功能）
 - [x] 撰寫訂閱方案管理測試
 - [x] 撰寫用戶個人中心測試
+
+
+---
+
+## Phase 70: MCP 多子任務處理 - 完成所有藍圖待辦項目
+
+### 第一批次：核心功能與票券系統（50 個項目）
+- [ ] 建立 voucherTemplates 資料表（票券模板）
+- [ ] 建立 voucherInstances 資料表（已發送票券）
+- [ ] 建立 voucherRedemptions 資料表（核銷記錄）
+- [ ] 票券模板 CRUD（建立、編輯、刪除、列表）
+- [ ] 票券發送 API（單一發送、批量發送）
+- [ ] 票券核銷 API（QR Code 驗證、手動核銷）
+- [ ] 票券查詢 API（客戶票券列表、票券詳情）
+- [ ] 票券模板管理頁面
+- [ ] AftercarePage 套用通用元件
+- [ ] CouponsPage 套用通用元件
+- [ ] ConsultationsPage 套用通用元件
+- [ ] RFMAnalysisPage 套用通用元件
+- [ ] 建立優惠券資料表 (coupons, coupon_usage)
+- [ ] 實作 couponRouter.ts (優惠券 CRUD、折扣碼兌換、使用記錄)
+- [ ] 實作 CouponManagementPage.tsx (優惠券管理介面)
+- [ ] 實作 CouponRedeemPage.tsx (折扣碼兌換介面)
+- [ ] 建立單元測試（優惠券）
+- [ ] 擴展通知資料表 (notification_templates)
+- [ ] 實作 notificationRouter.ts (通知模板 CRUD、LINE 推播)
+- [ ] 實作 NotificationTemplatePage.tsx (LINE 推播模板自訂介面)
+- [ ] 建立單元測試（通知系統）
+- [ ] 建立業績資料表 (performance_records, performance_targets)
+- [ ] 實作 performanceRouter.ts (業績 CRUD、目標設定、達成率計算)
+- [ ] 實作 PerformanceDashboardPage.tsx (視覺化儀表板)
+- [ ] 建立單元測試（業績儀表板）
+- [ ] 確保所有 tRPC Router 正確註冊
+- [ ] 確保所有前端頁面路由正確
+- [ ] 確保所有導航選單正確
+- [ ] CSV 匯入介面（客戶、產品、員工）
+- [ ] Excel 匯入支援
+- [ ] 匯入資料預覽與驗證
+- [ ] 匯入錯誤處理與回報
+- [ ] 匯入歷史記錄
+- [ ] 新增鍵盤快捷鍵支援
+- [ ] 優化大量資料的查詢效能
+- [ ] 實作資料快取機制
+- [ ] 優化圖片載入（懶載入、壓縮）
+- [ ] 強化輸入驗證與 XSS 防護
+- [ ] 實作敏感操作的二次確認
+- [ ] 新增操作日誌審計功能
+- [ ] 完善通知系統（支援 Email、SMS）
+- [ ] 完善權限系統（細粒度權限控制）
+- [ ] 完善多語系支援（完整翻譯）
+- [ ] 端對端整合測試
+- [ ] 使用者操作手冊
+- [ ] API 整合文檔
+- [ ] 部署指南
+- [ ] 系統架構文檔
+- [ ] 票券發送介面（選擇客戶、選擇票券）
+- [ ] 票券統計報表
