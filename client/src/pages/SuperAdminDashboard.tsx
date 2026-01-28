@@ -84,6 +84,144 @@ export default function SuperAdminDashboard() {
           ))}
         </div>
 
+        {/* Feature Modules Grid */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900">功能模組快速導航</h2>
+          
+          {/* Super Admin 功能 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>👑 Super Admin 功能</CardTitle>
+              <CardDescription>超級管理員功能模組</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/super-admin/dashboard"><Button variant="outline" className="w-full justify-start">儀表板</Button></Link>
+              <Link href="/super-admin/users"><Button variant="outline" className="w-full justify-start">使用者管理</Button></Link>
+              <Link href="/super-admin/organizations"><Button variant="outline" className="w-full justify-start">診所管理</Button></Link>
+              <Link href="/super-admin/vouchers"><Button variant="outline" className="w-full justify-start">票券管理</Button></Link>
+              <Link href="/super-admin/billing"><Button variant="outline" className="w-full justify-start">帳單管理</Button></Link>
+              <Link href="/super-admin/monitor"><Button variant="outline" className="w-full justify-start">系統監控</Button></Link>
+              <Link href="/super-admin/api-docs"><Button variant="outline" className="w-full justify-start">API 文檔</Button></Link>
+              <Link href="/super-admin/whitelabel"><Button variant="outline" className="w-full justify-start">白標方案</Button></Link>
+              <Link href="/super-admin/settings"><Button variant="outline" className="w-full justify-start">系統設定</Button></Link>
+              <Link href="/super-admin/notifications"><Button variant="outline" className="w-full justify-start">通知管理</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* 診所管理 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🏪 診所管理</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/clinic/dashboard"><Button variant="outline" className="w-full justify-start">診所儀表板</Button></Link>
+              <Link href="/multi-branch"><Button variant="outline" className="w-full justify-start">多分店管理</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* 客戶管理 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>👥 客戶管理</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/customers"><Button variant="outline" className="w-full justify-start">客戶列表</Button></Link>
+              <Link href="/customer-360"><Button variant="outline" className="w-full justify-start">客戶 360</Button></Link>
+              <Link href="/customer-packages"><Button variant="outline" className="w-full justify-start">療程包</Button></Link>
+              <Link href="/customer-marketing"><Button variant="outline" className="w-full justify-start">客戶行銷</Button></Link>
+              <Link href="/customer-source-roi"><Button variant="outline" className="w-full justify-start">ROI 分析</Button></Link>
+              <Link href="/rfm-analysis"><Button variant="outline" className="w-full justify-start">RFM 分析</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* 預約管理 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>📅 預約管理</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/appointments"><Button variant="outline" className="w-full justify-start">預約管理</Button></Link>
+              <Link href="/schedule"><Button variant="outline" className="w-full justify-start">排程管理</Button></Link>
+              <Link href="/smart-scheduling"><Button variant="outline" className="w-full justify-start">智能排班</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* 員工管理 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>👨‍💼 員工管理</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/staff"><Button variant="outline" className="w-full justify-start">員工管理</Button></Link>
+              <Link href="/hr-management"><Button variant="outline" className="w-full justify-start">人資管理</Button></Link>
+              <Link href="/attendance"><Button variant="outline" className="w-full justify-start">出勤管理</Button></Link>
+              <Link href="/attendance-clock-in"><Button variant="outline" className="w-full justify-start">打卡頁面</Button></Link>
+              <Link href="/attendance-tracking"><Button variant="outline" className="w-full justify-start">出勤追蹤</Button></Link>
+              <Link href="/attendance-settings"><Button variant="outline" className="w-full justify-start">出勤設定</Button></Link>
+              <Link href="/contract-management"><Button variant="outline" className="w-full justify-start">合約管理</Button></Link>
+              <Link href="/commission-management"><Button variant="outline" className="w-full justify-start">業績分配</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* LINE 整合 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>📱 LINE 整合</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/line-integration"><Button variant="outline" className="w-full justify-start">LINE 整合</Button></Link>
+              <Link href="/line-settings"><Button variant="outline" className="w-full justify-start">LINE 設定</Button></Link>
+              <Link href="/flex-message"><Button variant="outline" className="w-full justify-start">Flex Message</Button></Link>
+              <Link href="/rich-menu"><Button variant="outline" className="w-full justify-start">Rich Menu</Button></Link>
+              <Link href="/message-center"><Button variant="outline" className="w-full justify-start">訊息中心</Button></Link>
+              <Link href="/webhook"><Button variant="outline" className="w-full justify-start">Webhook</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* LINE 小遊戲 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🎮 LINE 小遊戲</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/game-management"><Button variant="outline" className="w-full justify-start">遊戲管理</Button></Link>
+              <Link href="/ichiban-kuji"><Button variant="outline" className="w-full justify-start">一番賞</Button></Link>
+              <Link href="/slot-machine"><Button variant="outline" className="w-full justify-start">拉霸遊戲</Button></Link>
+              <Link href="/pachinko"><Button variant="outline" className="w-full justify-start">轉珠遊戲</Button></Link>
+              <Link href="/user-prizes"><Button variant="outline" className="w-full justify-start">獎品記錄</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* 訂閱與支付 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>💳 訂閱與支付</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/subscription"><Button variant="outline" className="w-full justify-start">訂閱管理</Button></Link>
+              <Link href="/payment"><Button variant="outline" className="w-full justify-start">支付頁面</Button></Link>
+              <Link href="/payment-settings"><Button variant="outline" className="w-full justify-start">支付設定</Button></Link>
+            </CardContent>
+          </Card>
+
+          {/* 其他功能 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>🛠️ 其他功能</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Link href="/vouchers"><Button variant="outline" className="w-full justify-start">票券管理</Button></Link>
+              <Link href="/coupons"><Button variant="outline" className="w-full justify-start">優惠券</Button></Link>
+              <Link href="/notifications"><Button variant="outline" className="w-full justify-start">通知中心</Button></Link>
+              <Link href="/analytics"><Button variant="outline" className="w-full justify-start">數據分析</Button></Link>
+              <Link href="/reports"><Button variant="outline" className="w-full justify-start">報表中心</Button></Link>
+              <Link href="/ai-chatbot"><Button variant="outline" className="w-full justify-start">AI 聊天</Button></Link>
+              <Link href="/data-import"><Button variant="outline" className="w-full justify-start">數據匯入</Button></Link>
+              <Link href="/settings"><Button variant="outline" className="w-full justify-start">系統設定</Button></Link>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
