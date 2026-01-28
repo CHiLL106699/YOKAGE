@@ -95,14 +95,14 @@ export default function SuperAdminDashboard() {
               <CardDescription>超級管理員功能模組</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/super-admin/dashboard"><Button variant="outline" className="w-full justify-start">儀表板</Button></Link>
+              <Link href="/super-admin"><Button variant="outline" className="w-full justify-start">儀表板</Button></Link>
               <Link href="/super-admin/users"><Button variant="outline" className="w-full justify-start">使用者管理</Button></Link>
-              <Link href="/super-admin/organizations"><Button variant="outline" className="w-full justify-start">診所管理</Button></Link>
+              <Link href="/super-admin/clinics"><Button variant="outline" className="w-full justify-start">診所管理</Button></Link>
               <Link href="/super-admin/vouchers"><Button variant="outline" className="w-full justify-start">票券管理</Button></Link>
               <Link href="/super-admin/billing"><Button variant="outline" className="w-full justify-start">帳單管理</Button></Link>
               <Link href="/super-admin/monitor"><Button variant="outline" className="w-full justify-start">系統監控</Button></Link>
               <Link href="/super-admin/api-docs"><Button variant="outline" className="w-full justify-start">API 文檔</Button></Link>
-              <Link href="/super-admin/whitelabel"><Button variant="outline" className="w-full justify-start">白標方案</Button></Link>
+              <Link href="/super-admin/white-label"><Button variant="outline" className="w-full justify-start">白標方案</Button></Link>
               <Link href="/super-admin/settings"><Button variant="outline" className="w-full justify-start">系統設定</Button></Link>
               <Link href="/super-admin/notifications"><Button variant="outline" className="w-full justify-start">通知管理</Button></Link>
             </CardContent>
@@ -114,7 +114,7 @@ export default function SuperAdminDashboard() {
               <CardTitle>🏪 診所管理</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/clinic/dashboard"><Button variant="outline" className="w-full justify-start">診所儀表板</Button></Link>
+              <Link href="/clinic"><Button variant="outline" className="w-full justify-start">診所儀表板</Button></Link>
               <Link href="/multi-branch"><Button variant="outline" className="w-full justify-start">多分店管理</Button></Link>
             </CardContent>
           </Card>
@@ -125,7 +125,7 @@ export default function SuperAdminDashboard() {
               <CardTitle>👥 客戶管理</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/customers"><Button variant="outline" className="w-full justify-start">客戶列表</Button></Link>
+              <Link href="/clinic/customers"><Button variant="outline" className="w-full justify-start">客戶列表</Button></Link>
               <Link href="/customer-360"><Button variant="outline" className="w-full justify-start">客戶 360</Button></Link>
               <Link href="/customer-packages"><Button variant="outline" className="w-full justify-start">療程包</Button></Link>
               <Link href="/customer-marketing"><Button variant="outline" className="w-full justify-start">客戶行銷</Button></Link>
@@ -140,7 +140,7 @@ export default function SuperAdminDashboard() {
               <CardTitle>📅 預約管理</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/appointments"><Button variant="outline" className="w-full justify-start">預約管理</Button></Link>
+              <Link href="/clinic/appointments"><Button variant="outline" className="w-full justify-start">預約管理</Button></Link>
               <Link href="/schedule"><Button variant="outline" className="w-full justify-start">排程管理</Button></Link>
               <Link href="/smart-scheduling"><Button variant="outline" className="w-full justify-start">智能排班</Button></Link>
             </CardContent>
@@ -152,7 +152,7 @@ export default function SuperAdminDashboard() {
               <CardTitle>👨‍💼 員工管理</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/staff"><Button variant="outline" className="w-full justify-start">員工管理</Button></Link>
+              <Link href="/clinic/staff"><Button variant="outline" className="w-full justify-start">員工管理</Button></Link>
               <Link href="/hr-management"><Button variant="outline" className="w-full justify-start">人資管理</Button></Link>
               <Link href="/attendance"><Button variant="outline" className="w-full justify-start">出勤管理</Button></Link>
               <Link href="/attendance-clock-in"><Button variant="outline" className="w-full justify-start">打卡頁面</Button></Link>
@@ -184,11 +184,11 @@ export default function SuperAdminDashboard() {
               <CardTitle>🎮 LINE 小遊戲</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/game-management"><Button variant="outline" className="w-full justify-start">遊戲管理</Button></Link>
-              <Link href="/ichiban-kuji"><Button variant="outline" className="w-full justify-start">一番賞</Button></Link>
-              <Link href="/slot-machine"><Button variant="outline" className="w-full justify-start">拉霸遊戲</Button></Link>
-              <Link href="/pachinko"><Button variant="outline" className="w-full justify-start">轉珠遊戲</Button></Link>
-              <Link href="/user-prizes"><Button variant="outline" className="w-full justify-start">獎品記錄</Button></Link>
+              <Link href="/clinic/game-management"><Button variant="outline" className="w-full justify-start">遊戲管理</Button></Link>
+              <Link href="/clinic/games/ichiban-kuji"><Button variant="outline" className="w-full justify-start">一番賞</Button></Link>
+              <Link href="/clinic/games/slot-machine"><Button variant="outline" className="w-full justify-start">拉霸遊戲</Button></Link>
+              <Link href="/clinic/games/pachinko"><Button variant="outline" className="w-full justify-start">轉珠遊戲</Button></Link>
+              <Link href="/clinic/user-prizes"><Button variant="outline" className="w-full justify-start">獎品記錄</Button></Link>
             </CardContent>
           </Card>
 
@@ -198,9 +198,9 @@ export default function SuperAdminDashboard() {
               <CardTitle>💳 訂閱與支付</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/subscription"><Button variant="outline" className="w-full justify-start">訂閱管理</Button></Link>
-              <Link href="/payment"><Button variant="outline" className="w-full justify-start">支付頁面</Button></Link>
-              <Link href="/payment-settings"><Button variant="outline" className="w-full justify-start">支付設定</Button></Link>
+              <Link href="/clinic/subscription"><Button variant="outline" className="w-full justify-start">訂閱方案</Button></Link>
+              <Link href="/clinic/my-subscription"><Button variant="outline" className="w-full justify-start">我的訂閱</Button></Link>
+              <Link href="/clinic/payment"><Button variant="outline" className="w-full justify-start">付款記錄</Button></Link>
             </CardContent>
           </Card>
 
