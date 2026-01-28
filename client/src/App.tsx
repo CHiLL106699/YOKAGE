@@ -32,6 +32,7 @@ import LineIntegrationPage from "@/pages/LineIntegrationPage";
 import PaymentPage from "@/pages/PaymentPage";
 import RichMenuPage from "@/pages/RichMenuPage";
 import FlexMessagePage from "@/pages/FlexMessagePage";
+import LineRichMenuManagementPage from "@/pages/LineRichMenuManagementPage";
 import WebhookPage from "@/pages/WebhookPage";
 // LIFF 顧客端商城
 import LiffShopPage from "@/pages/LiffShopPage";
@@ -157,6 +158,7 @@ function Router() {
       
       {/* LINE 生態整合 */}
       <Route path="/clinic/rich-menu" component={RichMenuPage} />
+      <Route path="/clinic/line-rich-menu" component={LineRichMenuManagementPage} />
       <Route path="/clinic/flex-message" component={FlexMessagePage} />
       <Route path="/clinic/webhook" component={WebhookPage} />
       

@@ -12,6 +12,7 @@ import { attendanceSettingsRouter } from "./routers/attendanceSettingsRouter";
 import { gameRouter } from "./routers/gameRouter";
 import { prizeRouter } from "./routers/prizeRouter";
 import { couponRouter as couponManagementRouter } from "./routers/couponRouter";
+import { lineRichMenuRouter } from "./routers/lineRichMenu";
 import { TRPCError } from "@trpc/server";
 
 // ============================================
@@ -3829,6 +3830,7 @@ export const appRouter = router({
   game: gameRouter,
   prize: prizeRouter,
   couponManagement: couponManagementRouter,
+  lineRichMenu: lineRichMenuRouter,
 });
 
 export type AppRouter = typeof appRouter;

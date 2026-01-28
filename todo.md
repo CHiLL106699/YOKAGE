@@ -1604,3 +1604,16 @@
 - [x] 修正 SuperAdminDashboard 中所有錯誤的連結路徑
 - [x] 並行處理所有缺失的頁面實作
 - [x] 執行完整測試驗證所有功能連結
+
+
+---
+
+## Phase 78: 修復客戶行銷頁面、建立「伊美秘書」測試診所初始資料、設計 LINE 圖文選單
+
+- [x] 修復客戶行銷頁面 `/clinic/customer-marketing`（已存在完整實作，無需修復）
+- [x] 設計 LINE 圖文選單（設計方案已完成，推薦夢幻夜空風格 6宮格圖文選單）
+- [x] 建立「伊美秘書」測試診所初始資料（腳本已完成並修正 Drizzle ORM 語法）
+- [x] 實作 LINE 圖文選單後端 API（server/routers/lineRichMenu.ts）
+- [x] 實作 LINE 圖文選單前端管理頁面（client/src/pages/LineRichMenuManagementPage.tsx）
+- [x] 撰寫 LINE 圖文選單單元測試（server/line-rich-menu.test.ts，11 個測試全數通過）
+- [x] 執行完整測試驗證所有功能
