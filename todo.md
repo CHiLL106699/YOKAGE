@@ -1768,3 +1768,11 @@
 - [ ] 測試儀表板即時更新
 - [ ] 測試管理審核介面權限控制
 - [ ] 撰寫單元測試（server/attendance.test.ts）
+
+## Phase 81: 員工出勤記錄備註功能
+- [x] 擴展 attendance_records 表，新增 staffNote 欄位（員工備註）
+- [x] 在 attendance router 新增 addStaffNote API（員工可自行新增/編輯備註）
+- [x] 在 AttendanceRecordsListPage 新增備註編輯功能（點擊記錄可編輯備註）
+- [x] 在 AttendanceApprovalPage 顯示員工備註（審核時可參考）
+- [x] 測試備註功能（新增、編輯、顯示）
+- [x] 撰寫單元測試（server/attendance.addStaffNote.test.ts）

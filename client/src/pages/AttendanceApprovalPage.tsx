@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertCircle, Clock, MapPin, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Clock, MapPin, Calendar, MessageSquare } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
@@ -177,6 +177,7 @@ export default function AttendanceApprovalPage() {
                     <TableHead className="text-muted-foreground">上班時間</TableHead>
                     <TableHead className="text-muted-foreground">下班時間</TableHead>
                     <TableHead className="text-muted-foreground">補登原因</TableHead>
+                    <TableHead className="text-muted-foreground">員工備註</TableHead>
                     <TableHead className="text-muted-foreground">狀態</TableHead>
                     <TableHead className="text-muted-foreground">操作</TableHead>
                   </TableRow>
@@ -219,6 +220,18 @@ export default function AttendanceApprovalPage() {
                         <p className="text-sm max-w-[200px] truncate">
                           {record.manualReason || '--'}
                         </p>
+                      </TableCell>
+                      <TableCell className="text-foreground">
+                        {record.staffNote ? (
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm max-w-[200px] truncate" title={record.staffNote}>
+                              {record.staffNote}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">–</span>
+                        )}
                       </TableCell>
                       <TableCell>{getApprovalStatusBadge(record.approvalStatus || 'pending')}</TableCell>
                       <TableCell>

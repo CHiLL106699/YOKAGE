@@ -291,6 +291,7 @@ export const attendanceRecords = mysqlTable("attendanceRecords", {
   approvedBy: int("approvedBy"), // 審核人員 ID
   approvedAt: timestamp("approvedAt"), // 審核時間
   approvalStatus: mysqlEnum("approvalStatus", ["pending", "approved", "rejected"]).default("approved"), // 審核狀態
+  staffNote: text("staffNote"), // 員工備註（用於解釋異常打卡情況）
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -12,6 +12,38 @@ import { attendanceRecords, staff } from '../../drizzle/schema';
 
 export const attendanceRouter = router({
   /**
+   * 員工新增/編輯出勤記錄備註
+   */
+  addStaffNote: protectedProcedure
+    .input(z.object({
+      recordId: z.number(),
+      staffNote: z.string().min(1, '備註不能為空'),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '資料庫連接失敗' });
+
+      // 查詢記錄是否存在
+      const record = await db
+        .select()
+        .from(attendanceRecords)
+        .where(eq(attendanceRecords.id, input.recordId))
+        .limit(1);
+
+      if (record.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: '找不到該出勤記錄' });
+      }
+
+      // 更新備註
+      await db
+        .update(attendanceRecords)
+        .set({ staffNote: input.staffNote })
+        .where(eq(attendanceRecords.id, input.recordId));
+
+      return { success: true, message: '備註已更新' };
+    }),
+
+  /**
    * 上班打卡
    */
   clockIn: protectedProcedure

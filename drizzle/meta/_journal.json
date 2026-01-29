@@ -134,6 +134,13 @@
       "when": 1769660115052,
       "tag": "0018_fair_ironclad",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1769664826584,
+      "tag": "0019_sturdy_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

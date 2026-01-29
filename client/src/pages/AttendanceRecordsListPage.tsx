@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Download, Calendar, Clock, MapPin } from 'lucide-react';
+import { Download, Calendar, Clock, MapPin, MessageSquare, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 /**
  * 出勤記錄列表頁面
@@ -20,14 +22,47 @@ export default function AttendanceRecordsListPage() {
     new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
+  const [staffNote, setStaffNote] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // 查詢出勤記錄
-  const { data: records, isLoading } = trpc.attendance.listRecords.useQuery({
+  const { data: records, isLoading, refetch } = trpc.attendance.listRecords.useQuery({
     organizationId,
     staffId,
     startDate,
     endDate,
   });
+
+  // 新增/編輯備註
+  const addStaffNoteMutation = trpc.attendance.addStaffNote.useMutation({
+    onSuccess: () => {
+      toast.success('備註已更新');
+      setIsDialogOpen(false);
+      setEditingRecordId(null);
+      setStaffNote('');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`備註更新失敗: ${error.message}`);
+    },
+  });
+
+  // 開啟備註編輯 Dialog
+  const handleEditNote = (recordId: number, currentNote: string | null) => {
+    setEditingRecordId(recordId);
+    setStaffNote(currentNote || '');
+    setIsDialogOpen(true);
+  };
+
+  // 儲存備註
+  const handleSaveNote = () => {
+    if (!editingRecordId) return;
+    addStaffNoteMutation.mutate({
+      recordId: editingRecordId,
+      staffNote,
+    });
+  };
 
   // 匯出 CSV
   const handleExportCSV = () => {
@@ -145,6 +180,8 @@ export default function AttendanceRecordsListPage() {
                     <TableHead className="text-muted-foreground">下班地點</TableHead>
                     <TableHead className="text-muted-foreground">狀態</TableHead>
                     <TableHead className="text-muted-foreground">補登</TableHead>
+                    <TableHead className="text-muted-foreground">備註</TableHead>
+                    <TableHead className="text-muted-foreground">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,8 +238,29 @@ export default function AttendanceRecordsListPage() {
                             補登
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground text-sm">--</span>
+                          <span className="text-muted-foreground">–</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-foreground">
+                        {record.staffNote ? (
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm truncate max-w-[150px]" title={record.staffNote}>
+                              {record.staffNote}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">–</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditNote(record.id, record.staffNote)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -217,6 +275,42 @@ export default function AttendanceRecordsListPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 備註編輯 Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-card text-card-foreground border-border">
+          <DialogHeader>
+            <DialogTitle>編輯出勤記錄備註</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              請輸入備註說明，方便對異常打卡情況進行解釋。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="staffNote" className="text-card-foreground">備註內容</Label>
+              <Textarea
+                id="staffNote"
+                value={staffNote}
+                onChange={(e) => setStaffNote(e.target.value)}
+                placeholder="例：交通延誤、臨時外勤、其他原因..."
+                rows={4}
+                className="bg-background text-foreground border-border"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              取消
+            </Button>
+            <Button
+              onClick={handleSaveNote}
+              disabled={!staffNote.trim() || addStaffNoteMutation.isPending}
+            >
+              {addStaffNoteMutation.isPending ? '儲存中...' : '儲存'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
