@@ -1617,3 +1617,61 @@
 - [x] 實作 LINE 圖文選單前端管理頁面（client/src/pages/LineRichMenuManagementPage.tsx）
 - [x] 撰寫 LINE 圖文選單單元測試（server/line-rich-menu.test.ts，11 個測試全數通過）
 - [x] 執行完整測試驗證所有功能
+
+
+---
+
+## Phase 79: 整合 FLOS 員工管理系統核心功能
+
+### Phase 79-A: 請假管理系統
+- [ ] 建立 `leave_requests` 資料表（請假申請記錄）
+- [ ] 建立請假管理後端 API（server/routers/leaveManagement.ts）
+- [ ] 實作請假申請表單頁面（client/src/pages/LeaveRequestPage.tsx）
+- [ ] 實作請假審核介面頁面（client/src/pages/LeaveApprovalPage.tsx）
+- [ ] 整合 LINE 通知（請假申請/審核通知）
+- [ ] 撰寫請假管理單元測試（server/leave-management.test.ts）
+
+### Phase 79-B: 智慧打卡系統
+- [ ] 擴展 `attendance_records` 資料表（新增 GPS 欄位、手動補登欄位）
+- [ ] 實作智慧打卡後端 API（擴展 server/routers/attendance.ts）
+- [ ] 實作智慧打卡介面頁面（client/src/pages/SmartAttendancePage.tsx）
+- [ ] 實作打卡補登功能（管理者專用）
+- [ ] 實作打卡規則設定頁面（client/src/pages/AttendanceSettingsPage.tsx）
+- [ ] 撰寫智慧打卡單元測試（server/smart-attendance.test.ts）
+
+### Phase 79-C: 員工休假日曆
+- [ ] 擴展 `schedules` 資料表（新增休假類型欄位）
+- [ ] 實作員工休假日曆後端 API（擴展 server/routers/schedules.ts）
+- [ ] 實作員工休假日曆頁面（client/src/pages/StaffLeaveCalendarPage.tsx）
+- [ ] 實作休假狀態快速切換功能
+- [ ] 實作員工休假統計儀表板
+- [ ] 撰寫員工休假日曆單元測試（server/staff-leave-calendar.test.ts）
+
+### Phase 79-D: 員工薪資總覽
+- [ ] 擴展 `staff_commission` 資料表（新增操作費明細欄位）
+- [ ] 實作員工薪資總覽後端 API（擴展 server/routers/staffCommission.ts）
+- [ ] 實作員工薪資總覽頁面（client/src/pages/StaffSalaryOverviewPage.tsx）
+- [ ] 實作操作費記錄明細表
+- [ ] 實作薪資統計儀表板
+- [ ] 實作 Excel 匯出功能
+- [ ] 撰寫員工薪資總覽單元測試（server/staff-salary-overview.test.ts）
+
+
+---
+
+## Phase 78: 修復客戶行銷頁面、建立「伊美秘書」測試診所初始資料、設計 LINE 圖文選單
+
+- [x] 修復客戶行銷頁面 `/clinic/customer-marketing`（已存在完整實作，無需修復）
+- [x] 設計 LINE 圖文選單（設計方案已完成，推薦夢幻夜空風格 6宮格圖文選單）
+- [x] 建立「伊美秘書」測試診所初始資料（腳本已完成並修正 Drizzle ORM 語法）
+- [x] 實作 LINE 圖文選單後端 API（server/routers/lineRichMenu.ts）
+- [x] 實作 LINE 圖文選單前端管理頁面（client/src/pages/LineRichMenuManagementPage.tsx）
+- [x] 撰寫 LINE 圖文選單單元測試（server/line-rich-menu.test.ts，11 個測試全數通過）
+- [x] 執行完整測試驗證所有功能
+
+## Phase 79: 整合 FLOS 員工管理系統核心功能
+
+- [x] Phase 79-A：請假管理系統（資料表 + 後端 API + 前端頁面 + 單元測試，13 個測試全數通過）
+- [x] Phase 79-B：智慧打卡系統（GPS 定位 + 打卡補登 + 打卡規則，並行任務已完成）
+- [x] Phase 79-C：員工休假日曆（月曆視圖 + 狀態切換 + 統計，並行任務已完成）
+- [x] Phase 79-D：員工薪資總覽（操作費明細 + 統計儀表板 + Excel 匯出，並行任務已完成）

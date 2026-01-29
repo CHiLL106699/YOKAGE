@@ -33,6 +33,8 @@ import PaymentPage from "@/pages/PaymentPage";
 import RichMenuPage from "@/pages/RichMenuPage";
 import FlexMessagePage from "@/pages/FlexMessagePage";
 import LineRichMenuManagementPage from "@/pages/LineRichMenuManagementPage";
+import LeaveRequestPage from "@/pages/LeaveRequestPage";
+import LeaveApprovalPage from "@/pages/LeaveApprovalPage";
 import WebhookPage from "@/pages/WebhookPage";
 // LIFF 顧客端商城
 import LiffShopPage from "@/pages/LiffShopPage";
@@ -159,6 +161,10 @@ function Router() {
       {/* LINE 生態整合 */}
       <Route path="/clinic/rich-menu" component={RichMenuPage} />
       <Route path="/clinic/line-rich-menu" component={LineRichMenuManagementPage} />
+      
+      {/* 請假管理系統 */}
+      <Route path="/clinic/leave-request" component={LeaveRequestPage} />
+      <Route path="/clinic/leave-approval" component={LeaveApprovalPage} />
       <Route path="/clinic/flex-message" component={FlexMessagePage} />
       <Route path="/clinic/webhook" component={WebhookPage} />
       
