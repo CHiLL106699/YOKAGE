@@ -14,6 +14,7 @@ import { prizeRouter } from "./routers/prizeRouter";
 import { couponRouter as couponManagementRouter } from "./routers/couponRouter";
 import { lineRichMenuRouter } from "./routers/lineRichMenu";
 import { leaveManagementRouter } from "./routers/leaveManagement";
+import { attendanceRouter as smartAttendanceRouter } from "./routers/attendance";
 import { TRPCError } from "@trpc/server";
 
 // ============================================
@@ -3791,7 +3792,7 @@ export const appRouter = router({
   staff: staffRouter,
   appointment: appointmentRouter,
   schedule: scheduleRouter,
-  attendance: attendanceRouter,
+  attendance: smartAttendanceRouter, // 智慧打卡系統（Phase 79-B）
   order: orderRouter,
   coupon: couponRouter,
   aftercare: aftercareRouter,

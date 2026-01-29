@@ -120,6 +120,20 @@
       "when": 1769648385832,
       "tag": "0016_tiresome_sue_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1769659846585,
+      "tag": "0017_glamorous_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1769660115052,
+      "tag": "0018_fair_ironclad",
+      "breakpoints": true
     }
   ]
 }

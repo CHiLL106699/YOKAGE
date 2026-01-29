@@ -257,6 +257,62 @@ export const lineRichMenuRouter = router({
     }),
 
   /**
+   * 上傳圖文選單圖片
+   */
+  uploadImage: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      richMenuId: z.number(),
+      imageBase64: z.string(), // Base64 編碼的圖片資料
+      mimeType: z.string().default('image/png'),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: '資料庫連接失敗' });
+
+      // 檢查圖文選單是否存在
+      const menu = await db
+        .select()
+        .from(lineRichMenus)
+        .where(
+          and(
+            eq(lineRichMenus.id, input.richMenuId),
+            eq(lineRichMenus.organizationId, input.organizationId)
+          )
+        )
+        .limit(1);
+
+      if (!menu || menu.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: '找不到該圖文選單' });
+      }
+
+      // 將 Base64 轉換為 Buffer
+      const base64Data = input.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      // 上傳到 S3
+      const { storagePut } = await import('../storage');
+      const fileKey = `line-rich-menu/${input.organizationId}/${input.richMenuId}-${Date.now()}.png`;
+      const { key, url } = await storagePut(fileKey, buffer, input.mimeType);
+
+      // 更新資料庫
+      await db
+        .update(lineRichMenus)
+        .set({
+          imageUrl: url,
+          imageKey: key,
+          updatedAt: new Date(),
+        })
+        .where(eq(lineRichMenus.id, input.richMenuId));
+
+      return {
+        success: true,
+        imageUrl: url,
+        imageKey: key,
+      };
+    }),
+
+  /**
    * 取得圖文選單統計資料
    */
   getRichMenuStats: protectedProcedure

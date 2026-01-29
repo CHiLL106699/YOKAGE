@@ -285,6 +285,12 @@ export const attendanceRecords = mysqlTable("attendanceRecords", {
   distanceFromClinic: decimal("distanceFromClinic", { precision: 8, scale: 2 }),
   status: mysqlEnum("status", ["normal", "late", "early_leave", "absent", "leave"]).default("normal"),
   notes: text("notes"),
+  // 補登相關欄位
+  isManualEntry: boolean("isManualEntry").default(false), // 是否為補登
+  manualReason: text("manualReason"), // 補登原因
+  approvedBy: int("approvedBy"), // 審核人員 ID
+  approvedAt: timestamp("approvedAt"), // 審核時間
+  approvalStatus: mysqlEnum("approvalStatus", ["pending", "approved", "rejected"]).default("approved"), // 審核狀態
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -1675,3 +1675,51 @@
 - [x] Phase 79-B：智慧打卡系統（GPS 定位 + 打卡補登 + 打卡規則，並行任務已完成）
 - [x] Phase 79-C：員工休假日曆（月曆視圖 + 狀態切換 + 統計，並行任務已完成）
 - [x] Phase 79-D：員工薪資總覽（操作費明細 + 統計儀表板 + Excel 匯出，並行任務已完成）
+
+
+---
+
+## Phase 80: 執行測試診所腳本、LINE 圖文選單圖片上傳、整合 Phase 79 並行任務
+
+- [ ] 執行「伊美秘書」測試診所初始資料腳本並驗證資料庫
+- [ ] 為 LINE 圖文選單管理頁面增加圖片上傳功能（整合 S3 + 高質感 UI）
+- [ ] 將 Phase 79-B（智慧打卡系統）並行任務程式碼整合進主專案（改用 Drizzle ORM）
+- [ ] 將 Phase 79-C（員工休假日曆）並行任務程式碼整合進主專案（改用 Drizzle ORM）
+- [ ] 將 Phase 79-D（員工薪資總覽）並行任務程式碼整合進主專案（改用 Drizzle ORM）
+- [ ] 撰寫單元測試並執行完整測試
+- [ ] 儲存檢查點並交付成果
+
+## Phase 78: LINE 圖文選單管理系統
+- [x] LINE 圖文選單資料表 schema
+- [x] LINE 圖文選單後端 API（7 個端點）
+- [x] LINE 圖文選單前端管理頁面
+- [x] LINE 圖文選單單元測試（11 個測試）
+- [x] 「伊美秘書」測試診所初始資料腳本
+- [x] LINE 圖文選單圖片上傳功能（S3 整合）
+- [x] RichMenuImageUploader 組件
+
+## Phase 79: FLOS 員工管理系統整合
+### Phase 79-A: 請假管理系統
+- [x] leave_requests 資料表 schema
+- [x] 請假管理後端 API（5 個端點）
+- [x] 員工請假申請頁面
+- [x] 主管請假審核頁面
+- [x] 請假管理單元測試（13 個測試）
+
+### Phase 79-B: 智慧打卡系統
+- [x] attendanceRecords 表擴展（GPS + 補登欄位）
+- [x] 智慧打卡後端 API（6 個端點：clockIn, clockOut, requestCorrection, approveCorrection, listRecords, getTodayStatus）
+- [ ] 智慧打卡前端頁面（AttendancePage.tsx）
+- [ ] 智慧打卡單元測試
+
+### Phase 79-C: 員工休假日曆
+- [ ] schedules 表擴展（休假類型欄位）
+- [ ] 員工休假日曆後端 API（4 個端點）
+- [ ] 員工休假日曆前端頁面（ScheduleCalendarPage.tsx）
+- [ ] 員工休假日曆單元測試
+
+### Phase 79-D: 員工薪資總覽
+- [ ] staff_commission 表擴展（操作費明細欄位）
+- [ ] 員工薪資總覽後端 API（4 個端點）
+- [ ] 員工薪資總覽前端頁面（StaffSalaryPage.tsx）
+- [ ] 員工薪資總覽單元測試

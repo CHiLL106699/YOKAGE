@@ -11,6 +11,7 @@ export const lineRichMenus = mysqlTable('line_rich_menus', {
   name: varchar('name', { length: 255 }).notNull(), // 圖文選單名稱
   chatBarText: varchar('chat_bar_text', { length: 14 }).notNull(), // 選單列文字（最多 14 字元）
   imageUrl: text('image_url').notNull(), // 圖片 URL
+  imageKey: text('image_key'), // S3 圖片 Key（用於刪除或更新）
   size: json('size').notNull().$type<{ width: number; height: number }>(), // 圖片尺寸
   areas: json('areas').notNull().$type<Array<{
     bounds: { x: number; y: number; width: number; height: number };

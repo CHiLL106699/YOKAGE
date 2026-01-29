@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Trash2, Star, Plus, BarChart3 } from 'lucide-react';
+import { RichMenuImageUploader } from '@/components/RichMenuImageUploader';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 /**
@@ -210,6 +211,7 @@ function CreateRichMenuForm({
     chatBarText: '',
     imageUrl: '',
   });
+  const [tempRichMenuId, setTempRichMenuId] = useState<number | null>(null);
 
   const createMenu = trpc.lineRichMenu.createRichMenu.useMutation({
     onSuccess: () => {
@@ -223,6 +225,11 @@ function CreateRichMenuForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.imageUrl) {
+      toast.error('請上傳圖文選單圖片');
+      return;
+    }
 
     // 使用夢幻夜空風格的預設配置
     createMenu.mutate({
