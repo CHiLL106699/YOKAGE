@@ -1776,3 +1776,11 @@
 - [x] 在 AttendanceApprovalPage 顯示員工備註（審核時可參考）
 - [x] 測試備註功能（新增、編輯、顯示）
 - [x] 撰寫單元測試（server/attendance.addStaffNote.test.ts）
+
+## Phase 82: 技術文件與簡報製作
+- [x] 繪製 Haversine 公式計算距離流程圖（Mermaid + PNG）
+- [x] 生成簡報演講稿（封面 + 系統核心價值）
+- [x] 準備剩餘 10 張簡報內容檔案（architecture, tech_stack, gps_flow, approval_flow, staff_note, dashboard, contrast, testing, roadmap, summary）
+- [x] 生成投影片 3：功能架構（四大模組）
+- [ ] 生成投影片 4-12（剩餘 9 張投影片）
+- [ ] 呈現完整簡報（12 張投影片）
