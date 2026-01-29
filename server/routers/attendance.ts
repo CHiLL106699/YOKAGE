@@ -187,7 +187,23 @@ export const attendanceRouter = router({
         status: 'normal',
       });
 
-      return { success: true, message: '補登申請已提交，等待主管審核' };
+      // 查詢剛建立的記錄（使用 ORDER BY id DESC 確保取得最新記錄）
+      const newRecord = await db
+        .select({ id: attendanceRecords.id })
+        .from(attendanceRecords)
+        .where(
+          and(
+            eq(attendanceRecords.organizationId, input.organizationId),
+            eq(attendanceRecords.staffId, input.staffId),
+            sql`DATE(${attendanceRecords.recordDate}) = ${input.recordDate}`
+          )
+        )
+        .orderBy(sql`${attendanceRecords.id} DESC`)
+        .limit(1);
+
+      const recordId = newRecord[0]?.id;
+
+      return { success: true, message: '補登申請已提交，等待主管審核', recordId };
     }),
 
   /**

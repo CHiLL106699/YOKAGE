@@ -17,7 +17,10 @@ import StaffPage from "./pages/StaffPage";
 import AftercarePage from "./pages/AftercarePage";
 import LineSettingsPage from "@/pages/LineSettingsPage";
 import SchedulePage from "@/pages/SchedulePage";
-import AttendancePage from "@/pages/AttendancePage";
+import AttendanceClockPage from "@/pages/AttendanceClockPage";
+import AttendanceRecordsListPage from "@/pages/AttendanceRecordsListPage";
+import AttendanceDashboardPage from "@/pages/AttendanceDashboardPage";
+import AttendanceApprovalPage from "@/pages/AttendanceApprovalPage";
 import CouponsPage from "@/pages/CouponsPage";
 import OrdersPage from "@/pages/OrdersPage";
 import LiffBookingPage from "@/pages/LiffBookingPage";
@@ -108,7 +111,7 @@ import CustomerMarketingPage from "@/pages/CustomerMarketingPage";
 import DataImportPage from "@/pages/DataImportPage";
 import PaymentSettingsPage from "@/pages/PaymentSettingsPage";
 // Phase 35: 定位打卡與 LINE 遊戲模組
-import AttendanceClockInPage from "@/pages/AttendanceClockInPage";
+// Removed: AttendanceClockInPage (replaced by AttendanceClockPage)
 import AttendanceSettingsPage from "@/pages/AttendanceSettingsPage";
 import GameManagementPage from "@/pages/GameManagementPage";
 import IchibanKujiGame from "@/pages/IchibanKujiGame";
@@ -141,7 +144,10 @@ function Router() {
       <Route path={"/clinic/aftercare"} component={AftercarePage} />
       <Route path="/clinic/line-settings" component={LineSettingsPage} />
       <Route path="/clinic/schedule" component={SchedulePage} />
-      <Route path="/clinic/attendance" component={AttendancePage} />
+      <Route path="/clinic/attendance" component={AttendanceClockPage} />
+      <Route path="/clinic/attendance/records" component={AttendanceRecordsListPage} />
+      <Route path="/clinic/attendance/dashboard" component={AttendanceDashboardPage} />
+      <Route path="/clinic/attendance/approval" component={AttendanceApprovalPage} />
       <Route path="/clinic/coupons" component={CouponsPage} />
       <Route path="/clinic/orders" component={OrdersPage} />
       <Route path="/clinic/reports" component={ReportsPage} />
@@ -207,7 +213,7 @@ function Router() {
       <Route path="/clinic/customer-marketing" component={CustomerMarketingPage} />
       
       {/* Phase 35: 定位打卡與 LINE 遊戲模組 */}
-      <Route path="/clinic/attendance-clock-in" component={AttendanceClockInPage} />
+      {/* Removed: /clinic/attendance-clock-in (replaced by /clinic/attendance) */}
       <Route path="/clinic/attendance-settings" component={AttendanceSettingsPage} />
       <Route path="/clinic/game-management" component={GameManagementPage} />
       <Route path="/clinic/games/ichiban-kuji" component={IchibanKujiGame} />

@@ -1723,3 +1723,48 @@
 - [ ] 員工薪資總覽後端 API（4 個端點）
 - [ ] 員工薪資總覽前端頁面（StaffSalaryPage.tsx）
 - [ ] 員工薪資總覽單元測試
+
+## Phase 80: 全域文字對比度修正與智慧打卡系統前端完整實作
+### Phase 80-A: 全域文字對比度檢查與修正
+- [x] 掃描所有前端頁面，檢查深色背景 + 淺色文字對比度
+- [x] 掃描所有前端頁面，檢查淺色背景 + 深色文字對比度
+- [x] 修正不符合 WCAG 對比度標準的文字顏色
+- [x] 更新 Tailwind CSS 配置，確保全域顏色變數符合對比度標準
+
+### Phase 80-B: GPS 定位打卡頁面（整合 LINE LIFF）
+- [x] 建立 AttendanceClockPage.tsx（GPS 定位打卡頁面）
+- [x] 整合 LINE LIFF SDK（取得 GPS 定位）
+- [x] 實作上班打卡按鈕（呼叫 attendance.clockIn API）
+- [x] 實作下班打卡按鈕（呼叫 attendance.clockOut API）
+- [x] 顯示今日打卡狀態（已打卡/未打卡）
+- [x] 顯示 GPS 定位資訊（經緯度、地址）
+- [x] 實作補登申請表單（呼叫 attendance.requestCorrection API）
+
+### Phase 80-C: 出勤記錄列表頁面
+- [x] 建立 AttendanceRecordsListPage.tsx（出勤記錄列表頁面）
+- [x] 實作日期範圍篩選器
+- [x] 實作出勤記錄表格（日期、上班時間、下班時間、地點、狀態）
+- [x] 實作分頁功能
+- [x] 實作匯出 CSV 功能
+
+### Phase 80-D: 出勤儀表板（團隊狀態視覺化）
+- [x] 建立 AttendanceDashboardPage.tsx（出勤儀表板頁面）
+- [x] 實作今日出勤統計卡片（已打卡人數、遲到人數、缺勤人數）
+- [x] 實作團隊成員出勤狀態列表（即時顯示誰已打卡、誰未打卡）
+- [x] 實作出勤趨勢圖表（使用 recharts，顯示過去 7 天出勤率）
+- [x] 實作異常打卡提醒（距離過遠、時間異常）
+
+### Phase 80-E: 管理人員審核介面
+- [x] 建立 AttendanceApprovalPage.tsx（管理人員審核頁面）
+- [x] 實作補登申請列表（待審核、已核准、已拒絕）
+- [x] 實作審核按鈕（核准/拒絕，呼叫 attendance.approveCorrection API）
+- [x] 實作異常打卡記錄列表（距離過遠、時間異常、補登記錄）
+- [x] 實作快速審核功能（批次核准/拒絕）
+
+### Phase 80-F: 功能測試與驗證
+- [x] 測試 GPS 定位功能（實際裝置測試）
+- [x] 測試打卡流程（上班 → 下班 → 記錄顯示）
+- [ ] 測試補登申請流程（申請 → 審核 → 狀態更新）
+- [ ] 測試儀表板即時更新
+- [ ] 測試管理審核介面權限控制
+- [ ] 撰寫單元測試（server/attendance.test.ts）
