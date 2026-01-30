@@ -1784,3 +1784,16 @@
 - [x] 生成投影片 3：功能架構（四大模組）
 - [ ] 生成投影片 4-12（剩餘 9 張投影片）
 - [ ] 呈現完整簡報（12 張投影片）
+
+## Phase 83: 系統導航修正與剩餘簡報生成
+- [ ] 修正 SuperAdminDashboard 首頁功能卡片連結（確保與實際路由一致）
+- [ ] 生成投影片 4：技術亮點（tech_stack.html）
+- [ ] 生成投影片 5：GPS 定位流程（gps_flow.html）
+- [ ] 生成投影片 6：補登審核流程（approval_flow.html）
+- [ ] 生成投影片 7：員工備註功能（staff_note.html）
+- [ ] 生成投影片 8：出勤儀表板（dashboard.html）
+- [ ] 生成投影片 9：視覺對比度優化（contrast.html）
+- [ ] 生成投影片 10：測試驗證（testing.html）
+- [ ] 生成投影片 11：下一步計劃（roadmap.html）
+- [ ] 生成投影片 12：總結（summary.html）
+- [ ] 呈現完整簡報（12 張投影片）
