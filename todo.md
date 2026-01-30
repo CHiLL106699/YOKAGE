@@ -1797,3 +1797,9 @@
 - [ ] 生成投影片 11：下一步計劃（roadmap.html）
 - [ ] 生成投影片 12：總結（summary.html）
 - [ ] 呈現完整簡報（12 張投影片）
+
+
+## Phase 83: 系統導航修正與剩餘簡報生成
+- [x] 修正 SuperAdminDashboard 功能卡片連結（確保與實際路由一致）
+- [x] 完成剩餘 9 張簡報投影片生成（tech_stack, gps_flow, approval_flow, staff_note, dashboard, contrast, testing, roadmap, summary）
+- [x] 呈現完整簡報（12 張投影片）
