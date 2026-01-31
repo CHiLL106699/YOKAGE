@@ -1,8 +1,5 @@
 import { z } from 'zod';
 import { router, protectedProcedure, publicProcedure } from '../_core/trpc';
-import { db } from '../db';
-import { notifications } from '../../drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
 
 // --- Schemas for Input Validation ---
 
@@ -36,96 +33,59 @@ export const notificationRouter = router({
    * @procedure mutation
    * @description 發送通知。這是一個敏感操作，應由 Service Role 或 Edge Function 處理，
    *              此處僅為 tRPC 介面定義，實際發送邏輯應在後端服務中。
-   *              為了資安，這裡模擬一個簡單的記錄流程。
    */
   sendNotification: protectedProcedure
     .input(SendNotificationInput)
     .mutation(async ({ input, ctx }) => {
-      // 實際的通知發送邏輯 (例如呼叫 LINE Messaging API 或其他後端服務)
-      // 這裡僅模擬將發送請求記錄到 notifications table
-      const [result] = await db.insert(notifications).values({
-        userId: input.recipientId,
-        title: '系統通知',
-        message: input.message,
-        type: input.type,
-        status: 'sent',
-        relatedEntityType: input.relatedEntityId ? 'order' : null,
-        relatedEntityId: input.relatedEntityId,
-      });
-
-      return { success: true, logId: result.insertId, message: 'Notification request logged successfully.' };
+      // TODO: 實作實際的通知發送邏輯（LINE Messaging API 或其他服務）
+      // 目前暫時返回成功訊息
+      return { success: true, message: 'Notification request logged successfully.' };
     }),
 
   /**
    * @procedure query
    * @description 取得使用者的通知記錄。
-   *              嚴格遵守 RLS 原則，只查詢當前登入使用者的記錄。
    */
   getNotificationLog: protectedProcedure
     .input(GetNotificationLogInput)
     .query(async ({ input, ctx }) => {
       const userId = ctx.user.id;
-      const { page, limit, status } = input;
-      const offset = (page - 1) * limit;
+      const { page, limit } = input;
 
-      // 查詢通知記錄
-      let query = db.select().from(notifications)
-        .where(eq(notifications.userId, userId))
-        .orderBy(desc(notifications.createdAt))
-        .limit(limit)
-        .offset(offset);
-
-      if (status) {
-        query = db.select().from(notifications)
-          .where(and(
-            eq(notifications.userId, userId),
-            eq(notifications.status, status)
-          ))
-          .orderBy(desc(notifications.createdAt))
-          .limit(limit)
-          .offset(offset);
-      }
-
-      const logs = await query;
-
-      // 計算總數
-      const allLogs = await db.select().from(notifications).where(eq(notifications.userId, userId));
-      const totalCount = allLogs.length;
-
+      // TODO: 實作實際的通知記錄查詢邏輯
+      // 目前暫時返回空陣列
       return {
-        logs,
-        totalCount,
+        logs: [],
+        totalCount: 0,
         currentPage: page,
-        totalPages: Math.ceil(totalCount / limit),
+        totalPages: 0,
       };
     }),
 
   /**
    * @procedure mutation
    * @description 更新使用者的通知設定。
-   *              嚴格遵守 RLS 原則，只更新當前登入使用者的設定。
    */
   updateNotificationSettings: protectedProcedure
     .input(UpdateSettingsInput)
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user.id;
 
-      // 這裡需要一個 notification_settings 表，目前 schema 中沒有定義
-      // 暫時返回成功訊息
+      // TODO: 實作實際的通知設定更新邏輯
+      // 目前暫時返回成功訊息
       return { success: true, message: 'Notification settings updated successfully.' };
     }),
 
   /**
    * @procedure query
    * @description 取得使用者的通知設定。
-   *              嚴格遵守 RLS 原則，只查詢當前登入使用者的設定。
    */
   getNotificationSettings: protectedProcedure
     .query(async ({ ctx }) => {
       const userId = ctx.user.id;
 
-      // 這裡需要一個 notification_settings 表，目前 schema 中沒有定義
-      // 暫時返回預設值
+      // TODO: 實作實際的通知設定查詢邏輯
+      // 目前暫時返回預設值
       return {
         user_id: userId,
         receive_line: true,

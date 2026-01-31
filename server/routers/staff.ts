@@ -54,6 +54,7 @@ export const staffRouter = router({
    * @security 必須是已登入使用者 (protectedProcedure)
    */
   list: protectedProcedure
+    .input(z.object({}).optional())
     .query(async () => {
       const staffList = await db.select().from(staff);
       return staffList;

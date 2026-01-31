@@ -10,7 +10,7 @@ import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 基礎�
 const ReportConfigSchema = z.object({
   reportName: z.string().min(1, '報表名稱不可為空'),
   description: z.string().optional(),
-  parameters: z.record(z.any()).optional().describe('報表生成所需的參數，例如日期範圍、篩選條件'),
+  parameters: z.record(z.string(), z.any()).optional().describe('報表生成所需的參數，例如日期範圍、篩選條件'),
   schedule: z.string().optional().describe('排程設定，例如 cron 表達式'),
   isActive: z.boolean().default(true),
 });

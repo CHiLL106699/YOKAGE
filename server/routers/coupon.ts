@@ -6,10 +6,7 @@ import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 設定�
 // 優惠券基本結構 (用於建立和更新)
 const CouponInputSchema = z.object({
   code: z.string().min(3, "優惠券代碼至少需要 3 個字元"),
-  discount_type: z.enum(['percentage', 'fixed'], {
-    required_error: "必須指定折扣類型",
-    invalid_type_error: "折扣類型必須是 'percentage' 或 'fixed'",
-  }),
+  discount_type: z.enum(['percentage', 'fixed']),
   discount_value: z.number().positive("折扣值必須為正數"),
   expires_at: z.string().datetime().optional().nullable(), // 使用 string 處理日期，後端再轉換
   is_active: z.boolean().default(true),

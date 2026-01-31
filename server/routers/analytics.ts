@@ -16,7 +16,7 @@ const AnalyticsDataInput = z.object({
   metric: z.string(),       // 指標名稱 (例如: 'page_views', 'active_users')
   value: z.number(),        // 指標數值
   timestamp: z.string().optional(), // 時間戳
-  context: z.record(z.any()).optional(), // 額外上下文資訊
+  context: z.record(z.string(), z.any()).optional(), // 額外上下文資訊
 });
 
 // 2. 建立 Router
