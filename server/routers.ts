@@ -31,6 +31,8 @@ import { aiChatRouter } from "./routers/aiChat";
 import { dataImportRouter as newDataImportRouter } from "./routers/dataImport";
 import { settingsRouter } from "./routers/settings";
 import { TRPCError } from "@trpc/server";
+// Phase 86: 系統 B 整合 - 6 大核心模組
+import { dashboardSystemBRouter } from "./routers/dashboardSystemB";
 
 // ============================================
 // Super Admin Router
@@ -3849,6 +3851,8 @@ export const appRouter = router({
   couponManagement: couponManagementRouter,
   lineRichMenu: lineRichMenuRouter,
   leaveManagement: leaveManagementRouter,
+  // Phase 86: 系統 B 整合 - 6 大核心模組
+  dashboardB: dashboardSystemBRouter,
 });
 
 export type AppRouter = typeof appRouter;

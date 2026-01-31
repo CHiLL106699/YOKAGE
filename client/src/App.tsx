@@ -122,12 +122,30 @@ import SlotMachineGame from "@/pages/SlotMachineGame";
 import PachinkoGame from "@/pages/PachinkoGame";
 import UserPrizesPage from "@/pages/UserPrizesPage";
 import CouponManagementPage from "@/pages/CouponManagementPage";
+// Phase 86: 系統 B 整合 - 6 大核心模組 Dashboard
+import DashboardLayout from "@/pages/dashboard/DashboardLayout";
+import DashboardHome from "@/pages/dashboard/DashboardHome";
+import InventoryDashboard from "@/pages/dashboard/InventoryDashboard";
+import LineCrmDashboard from "@/pages/dashboard/LineCrmDashboard";
+import BiDashboard from "@/pages/dashboard/BiDashboard";
+import GamificationDashboard from "@/pages/dashboard/GamificationDashboard";
+import HrDashboard from "@/pages/dashboard/HrDashboard";
+import MultiBranchDashboard from "@/pages/dashboard/MultiBranchDashboard";
 
 function Router() {
   return (
     <Switch>
       {/* Public */}
       <Route path={"/"} component={Home} />
+      
+      {/* Phase 86: 系統 B Dashboard 路由 */}
+      <Route path={"/dashboard"} component={DashboardHome} />
+      <Route path={"/dashboard/inventory"} component={InventoryDashboard} />
+      <Route path={"/dashboard/crm"} component={LineCrmDashboard} />
+      <Route path={"/dashboard/bi"} component={BiDashboard} />
+      <Route path={"/dashboard/gamification"} component={GamificationDashboard} />
+      <Route path={"/dashboard/hr"} component={HrDashboard} />
+      <Route path={"/dashboard/multi-branch"} component={MultiBranchDashboard} />
       
       {/* Super Admin Routes */}
       <Route path={"/super-admin"} component={SuperAdminDashboard} />

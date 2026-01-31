@@ -2051,3 +2051,147 @@ export const performanceTargets = mysqlTable("performanceTargets", {
 
 export type PerformanceTarget = typeof performanceTargets.$inferSelect;
 export type InsertPerformanceTarget = typeof performanceTargets.$inferInsert;
+
+
+// ============================================
+// 系統 B 整合：6 大核心模組資料表
+// 整合日期：2026-01-31
+// 來源：yochill-landing (PostgreSQL -> MySQL 轉換)
+// ============================================
+
+// ============================================
+// 庫存管理表 (System B Integration)
+// ============================================
+export const inventorySystemB = mysqlTable("inventory_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  productId: int("product_id").notNull(),
+  batchNumber: varchar("batch_number", { length: 100 }),
+  quantity: int("quantity").notNull().default(0),
+  minStock: int("min_stock").default(10),
+  expiryDate: date("expiry_date"),
+  location: varchar("location", { length: 100 }),
+  supplier: varchar("supplier", { length: 255 }),
+  status: mysqlEnum("inventory_status_b", ["in_stock", "low_stock", "expired"]).default("in_stock"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type InventorySystemB = typeof inventorySystemB.$inferSelect;
+export type InsertInventorySystemB = typeof inventorySystemB.$inferInsert;
+
+// ============================================
+// CRM 標籤表 (System B Integration)
+// ============================================
+export const crmTagsSystemB = mysqlTable("crm_tags_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  name: varchar("name", { length: 50 }).notNull(),
+  color: varchar("color", { length: 20 }).default("#000000"),
+  category: varchar("category", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CrmTagSystemB = typeof crmTagsSystemB.$inferSelect;
+export type InsertCrmTagSystemB = typeof crmTagsSystemB.$inferInsert;
+
+export const customerTagsSystemB = mysqlTable("customer_tags_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  customerId: int("customer_id").notNull(),
+  tagId: int("tag_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type CustomerTagSystemB = typeof customerTagsSystemB.$inferSelect;
+export type InsertCustomerTagSystemB = typeof customerTagsSystemB.$inferInsert;
+
+// ============================================
+// 遊戲化行銷表 (System B Integration)
+// ============================================
+export const gamesSystemB = mysqlTable("games_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: mysqlEnum("game_type_b", ["ichiban_kuji", "slot_machine", "wheel"]).notNull(),
+  status: mysqlEnum("game_status_b", ["draft", "active", "paused", "ended"]).default("draft"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  description: text("description"),
+  rules: json("rules"),
+  imageUrl: text("image_url"),
+  costPoints: int("cost_points").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GameSystemB = typeof gamesSystemB.$inferSelect;
+export type InsertGameSystemB = typeof gamesSystemB.$inferInsert;
+
+export const prizesSystemB = mysqlTable("prizes_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("game_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: mysqlEnum("prize_type_b", ["physical", "coupon", "points"]).default("physical"),
+  quantity: int("quantity").notNull().default(0),
+  remainingQuantity: int("remaining_quantity").notNull().default(0),
+  probability: decimal("probability", { precision: 5, scale: 2 }).default("0"),
+  imageUrl: text("image_url"),
+  value: decimal("value", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PrizeSystemB = typeof prizesSystemB.$inferSelect;
+export type InsertPrizeSystemB = typeof prizesSystemB.$inferInsert;
+
+export const gameParticipationsSystemB = mysqlTable("game_participations_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("game_id").notNull(),
+  customerId: int("customer_id").notNull(),
+  prizeId: int("prize_id"),
+  playedAt: timestamp("played_at").defaultNow().notNull(),
+  isClaimed: boolean("is_claimed").default(false),
+  claimedAt: timestamp("claimed_at"),
+});
+
+export type GameParticipationSystemB = typeof gameParticipationsSystemB.$inferSelect;
+export type InsertGameParticipationSystemB = typeof gameParticipationsSystemB.$inferInsert;
+
+// ============================================
+// 人資薪酬表 (System B Integration)
+// 注意：系統 A 已有 staffCommissions，這裡使用 staffCommissionsSystemB
+// ============================================
+export const staffCommissionsSystemB = mysqlTable("staff_commissions_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  staffId: int("staff_id").notNull(),
+  period: varchar("period", { length: 7 }).notNull(), // YYYY-MM
+  totalSales: decimal("total_sales", { precision: 12, scale: 2 }).default("0"),
+  commissionAmount: decimal("commission_amount", { precision: 10, scale: 2 }).default("0"),
+  status: mysqlEnum("commission_status_b", ["calculated", "approved", "paid"]).default("calculated"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StaffCommissionSystemB = typeof staffCommissionsSystemB.$inferSelect;
+export type InsertStaffCommissionSystemB = typeof staffCommissionsSystemB.$inferInsert;
+
+// ============================================
+// 多店調撥表 (System B Integration)
+// ============================================
+export const inventoryTransfersSystemB = mysqlTable("inventory_transfers_system_b", {
+  id: int("id").autoincrement().primaryKey(),
+  fromOrgId: int("from_org_id").notNull(),
+  toOrgId: int("to_org_id").notNull(),
+  productId: int("product_id").notNull(),
+  quantity: int("quantity").notNull(),
+  status: mysqlEnum("transfer_status_b", ["pending", "approved", "shipped", "received", "cancelled"]).default("pending"),
+  requestedBy: int("requested_by"),
+  approvedBy: int("approved_by"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type InventoryTransferSystemB = typeof inventoryTransfersSystemB.$inferSelect;
+export type InsertInventoryTransferSystemB = typeof inventoryTransfersSystemB.$inferInsert;
