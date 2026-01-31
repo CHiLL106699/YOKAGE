@@ -1846,3 +1846,24 @@
 - [ ] 實作客戶總數統計 API
 - [ ] 實作預約總數統計 API
 - [ ] 更新 DashboardHome 頁面串接真實 API
+
+
+---
+
+## Phase 92: 營運分析模組匯出報表功能
+
+### 後端 API
+- [x] 實作 CSV 匯出 API（營收數據、預約數據、客戶數據）
+- [x] 實作 PDF 匯出 API（包含視覺化圖表）
+- [x] 新增 exportBiReport mutation（支援 format: 'csv' | 'pdf'）
+
+### 前端 UI
+- [x] 在 BiDashboard.tsx 新增「匯出報表」按鈕
+- [x] 實作下載功能（使用 blob 下載）
+- [x] 新增匯出格式選擇 Dialog（CSV / PDF）
+- [x] 新增載入動畫與成功/失敗 Toast 通知
+
+### 測試
+- [x] 測試 CSV 匯出功能（數據正確性）
+- [ ] 測試 PDF 匯出功能（圖表顯示正確）
+- [x] 測試下載功能（檔案名稱、格式正確）

@@ -1,7 +1,76 @@
-import React from 'react';
-import { BarChart3, TrendingUp, Users, DollarSign, Calendar, PieChart } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, TrendingUp, Users, DollarSign, Calendar, PieChart, Download } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const BiDashboard: React.FC = () => {
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+  const exportCsvMutation = trpc.biExport.exportCsv.useMutation();
+  const exportPdfMutation = trpc.biExport.exportPdf.useMutation();
+
+  const handleExportCsv = async (dataType: 'revenue' | 'appointments' | 'customers') => {
+    setIsExporting(true);
+    try {
+      const result = await exportCsvMutation.mutateAsync({
+        organizationId: 1, // TODO: 從 context 取得
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        dataType,
+      });
+
+      // 建立 Blob 並下載
+      const blob = new Blob([result.data], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = result.filename;
+      link.click();
+
+      toast({
+        title: '匯出成功',
+        description: `已成功匯出 ${result.filename}`,
+      });
+      setIsExportDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: '匯出失敗',
+        description: '請稍後再試',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportPdfMutation.mutateAsync({
+        organizationId: 1, // TODO: 從 context 取得
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+      });
+
+      // TODO: 使用 jsPDF 生成 PDF
+      toast({
+        title: 'PDF 匯出功能開發中',
+        description: '此功能即將推出',
+      });
+      setIsExportDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: '匯出失敗',
+        description: '請稍後再試',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       {/* Header */}
@@ -18,6 +87,58 @@ const BiDashboard: React.FC = () => {
             <option>本季</option>
             <option>今年</option>
           </select>
+          <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center space-x-2">
+                <Download className="h-4 w-4" />
+                <span>匯出報表</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>匯出報表</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">CSV 格式</h4>
+                  <div className="flex flex-col space-y-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleExportCsv('revenue')}
+                      disabled={isExporting}
+                    >
+                      匯出營收數據
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleExportCsv('appointments')}
+                      disabled={isExporting}
+                    >
+                      匯出預約數據
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleExportCsv('customers')}
+                      disabled={isExporting}
+                    >
+                      匯出客戶數據
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">PDF 格式</h4>
+                  <Button
+                    variant="outline"
+                    onClick={handleExportPdf}
+                    disabled={isExporting}
+                    className="w-full"
+                  >
+                    匯出完整報表（含圖表）
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

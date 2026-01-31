@@ -33,6 +33,8 @@ import { settingsRouter } from "./routers/settings";
 import { TRPCError } from "@trpc/server";
 // Phase 86: 系統 B 整合 - 6 大核心模組
 import { dashboardSystemBRouter } from "./routers/dashboardSystemB";
+// Phase 92: 營運分析模組匯出報表功能
+import { biExportRouter } from "./routers/biExport";
 
 // ============================================
 // Super Admin Router
@@ -3853,6 +3855,8 @@ export const appRouter = router({
   leaveManagement: leaveManagementRouter,
   // Phase 86: 系統 B 整合 - 6 大核心模組
   dashboardB: dashboardSystemBRouter,
+  // Phase 92: 營運分析模組匯出報表功能
+  biExport: biExportRouter,
 });
 
 export type AppRouter = typeof appRouter;
