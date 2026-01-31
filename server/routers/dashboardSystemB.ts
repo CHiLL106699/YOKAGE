@@ -60,7 +60,7 @@ export const inventoryRouter = router({
       productId: z.number(),
       quantity: z.number(),
       batchNumber: z.string().optional(),
-      expiryDate: z.string().optional(),
+      expiryDate: z.date().optional(),
       location: z.string().optional(),
       supplier: z.string().optional(),
       minStock: z.number().optional(),
@@ -161,8 +161,8 @@ export const biRouter = router({
   revenueTrend: protectedProcedure
     .input(z.object({
       organizationId: z.number().optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
+      startDate: z.date().optional(),
+      endDate: z.date().optional(),
     }).optional())
     .query(async ({ input }) => {
       // TODO: 實作營收趨勢查詢
@@ -228,8 +228,8 @@ export const gamificationRouter = router({
       name: z.string(),
       type: z.enum(['ichiban_kuji', 'slot_machine', 'wheel']),
       description: z.string().optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
+      startDate: z.date().optional(),
+      endDate: z.date().optional(),
       costPoints: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
