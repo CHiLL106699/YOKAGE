@@ -1803,3 +1803,9 @@
 - [x] 修正 SuperAdminDashboard 功能卡片連結（確保與實際路由一致）
 - [x] 完成剩餘 9 張簡報投影片生成（tech_stack, gps_flow, approval_flow, staff_note, dashboard, contrast, testing, roadmap, summary）
 - [x] 呈現完整簡報（12 張投影片）
+
+## Phase 84: 修正所有 404 頁面問題
+- [ ] 檢查所有 404 頁面路由
+- [ ] 批次建立缺失的後端 Router（superAdminRouter, organizationRouter, customerRouter, appointmentRouter, staffRouter, lineRouter, gameRouter, subscriptionRouter, ticketRouter, couponRouter, notificationRouter, analyticsRouter, reportRouter, aiChatRouter, dataImportRouter, settingsRouter）
+- [ ] 批次建立缺失的前端頁面（對應所有功能卡片連結）
+- [ ] 逐一測試確認所有連結可正常運作

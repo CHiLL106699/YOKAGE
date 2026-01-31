@@ -15,6 +15,21 @@ import { couponRouter as couponManagementRouter } from "./routers/couponRouter";
 import { lineRichMenuRouter } from "./routers/lineRichMenu";
 import { leaveManagementRouter } from "./routers/leaveManagement";
 import { attendanceRouter as smartAttendanceRouter } from "./routers/attendance";
+// Phase 84: 新建立的 Router
+import { organizationRouter as newOrganizationRouter } from "./routers/organization";
+import { customerRouter as newCustomerRouter } from "./routers/customer";
+import { appointmentRouter as newAppointmentRouter } from "./routers/appointment";
+import { staffRouter as newStaffRouter } from "./routers/staff";
+import { gameRouter as newGameRouter } from "./routers/game";
+import { subscriptionRouter as newSubscriptionRouter } from "./routers/subscription";
+import { voucherRouter as newVoucherRouter } from "./routers/voucher";
+import { couponRouter as newCouponRouter } from "./routers/coupon";
+import { notificationRouter } from "./routers/notification";
+import { analyticsRouter } from "./routers/analytics";
+import { reportRouter as newReportRouter } from "./routers/report";
+import { aiChatRouter } from "./routers/aiChat";
+import { dataImportRouter as newDataImportRouter } from "./routers/dataImport";
+import { settingsRouter } from "./routers/settings";
 import { TRPCError } from "@trpc/server";
 
 // ============================================
