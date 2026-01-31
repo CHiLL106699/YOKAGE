@@ -1818,3 +1818,31 @@
 - [ ] 測試所有功能連結確保不再出現 404 錯誤
 - [ ] 完整系統整合測試
 - [ ] 確認系統完美無誤可上線操作
+
+
+---
+
+## Phase 91: Dashboard 最終優化與完整測試
+
+### tRPC 類型推斷問題修正
+- [ ] 修正 InventoryDashboard.tsx 的 tRPC 類型錯誤
+- [ ] 修正 BiDashboard.tsx 的 tRPC 類型錯誤
+- [ ] 修正 IntelligentSchedulingPage.tsx 的 useQuery 參數問題
+- [ ] 修正 Home.tsx 的 JSX 結構錯誤
+
+### Dashboard CRUD 功能測試
+- [ ] 測試庫存管理 CRUD（新增、編輯、刪除）
+- [ ] 測試 CRM 標籤 CRUD（新增、編輯、刪除）
+- [ ] 測試遊戲化活動 CRUD（新增、編輯、刪除）
+- [ ] 測試多店調撥 CRUD（新增、編輯、審核、刪除）
+- [ ] 驗證 Toast 通知正常顯示
+- [ ] 驗證 Optimistic Updates 正常運作
+
+### Dashboard 數據統計 API
+- [ ] 實作今日營收統計 API
+- [ ] 實作今日預約數統計 API
+- [ ] 實作候診人數統計 API
+- [ ] 實作本月營收統計 API
+- [ ] 實作客戶總數統計 API
+- [ ] 實作預約總數統計 API
+- [ ] 更新 DashboardHome 頁面串接真實 API
