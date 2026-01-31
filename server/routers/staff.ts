@@ -6,26 +6,40 @@ import { eq } from 'drizzle-orm';
 
 // --- Zod Schemas for Input Validation ---
 
-// 員工基本資料建立
+// 員工基本資料建立（符合 schema.ts 的 staff 表結構）
 const StaffCreateSchema = z.object({
   name: z.string().min(1, "員工姓名不能為空"),
+  organizationId: z.number(),
+  userId: z.number().optional(),
+  employeeId: z.string().optional(),
   email: z.string().email("請輸入有效的電子郵件地址").optional(),
   phone: z.string().optional(),
-  clinicId: z.number(),
   position: z.string().optional(),
-  salary: z.number().optional(),
+  department: z.string().optional(),
+  hireDate: z.date().optional(),
+  salary: z.string().optional(), // decimal 欄位使用 string
+  salaryType: z.enum(['monthly', 'hourly', 'commission']).optional(),
+  avatar: z.string().optional(),
+  skills: z.any().optional(),
+  isActive: z.boolean().optional(),
 });
 
 // 員工資料更新
 const StaffUpdateSchema = z.object({
   id: z.number(),
   name: z.string().min(1, "員工姓名不能為空").optional(),
+  userId: z.number().optional(),
+  employeeId: z.string().optional(),
   email: z.string().email("請輸入有效的電子郵件地址").optional(),
   phone: z.string().optional(),
   position: z.string().optional(),
-  salary: z.number().optional(),
-}).refine(data => data.name || data.email || data.phone || data.position || data.salary, {
-  message: "至少需要提供一個更新欄位",
+  department: z.string().optional(),
+  hireDate: z.date().optional(),
+  salary: z.string().optional(), // decimal 欄位使用 string
+  salaryType: z.enum(['monthly', 'hourly', 'commission']).optional(),
+  avatar: z.string().optional(),
+  skills: z.any().optional(),
+  isActive: z.boolean().optional(),
 });
 
 // --- Staff Router ---
@@ -66,7 +80,10 @@ export const staffRouter = router({
   create: protectedProcedure
     .input(StaffCreateSchema)
     .mutation(async ({ input }) => {
-      const [newStaff] = await db.insert(staff).values(input).returning();
+      // MySQL 的 insert 操作不支援 .returning()，需先插入後再查詢
+      const [result] = await db.insert(staff).values(input);
+      // 取得最後插入的 ID（Drizzle ORM 的 MySQL 語法）
+      const [newStaff] = await db.select().from(staff).where(eq(staff.id, result.insertId));
       return newStaff;
     }),
 
@@ -78,10 +95,11 @@ export const staffRouter = router({
     .input(StaffUpdateSchema)
     .mutation(async ({ input }) => {
       const { id, ...updates } = input;
-      const [updatedStaff] = await db.update(staff)
+      // MySQL 的 update 操作不支援 .returning()，需先更新後再查詢
+      await db.update(staff)
         .set(updates)
-        .where(eq(staff.id, id))
-        .returning();
+        .where(eq(staff.id, id));
+      const [updatedStaff] = await db.select().from(staff).where(eq(staff.id, id));
       return updatedStaff;
     }),
 

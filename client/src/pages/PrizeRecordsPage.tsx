@@ -113,7 +113,7 @@ const PrizeRecordsPage: React.FC = () => {
       description="查看您的所有尊爵獎勵領取狀態與歷史紀錄。" // 3. 包含描述
       isLoading={isLoading} // 3. 載入動畫
       isError={isError} // 3. 錯誤提示
-      loadingContent={LoadingContent}
+      children={LoadingContent}
       errorContent={ErrorContent}
       // 5. 應用尊爵燙金深藍主題
       className={themeStyles.pageBg}

@@ -27,11 +27,14 @@ export const subscriptionRouter = router({
       features: z.array(z.string()),
     }))
     .mutation(async ({ input }) => {
-      const [newPlan] = await db.insert(subscriptionPlans).values({
+      // MySQL 的 insert 操作不支援 .returning()，需先插入後再查詢
+      const [result] = await db.insert(subscriptionPlans).values({
         name: input.name,
         price: input.price.toString(),
         features: input.features,
-      }).returning();
+      });
+      const insertId = result.insertId;
+      const [newPlan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, insertId));
       return newPlan;
     }),
 
@@ -45,13 +48,13 @@ export const subscriptionRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, price, ...updateData } = input;
-      const [updatedPlan] = await db.update(subscriptionPlans)
+      await db.update(subscriptionPlans)
         .set({
           ...updateData,
           ...(price !== undefined && { price: price.toString() }),
         })
-        .where(eq(subscriptionPlans.id, id))
-        .returning();
+        .where(eq(subscriptionPlans.id, id));
+      const [updatedPlan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
       return updatedPlan;
     }),
 
