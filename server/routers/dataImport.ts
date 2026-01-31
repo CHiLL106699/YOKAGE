@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 // 1. Define the input schemas for the procedures
@@ -28,7 +28,7 @@ const ImportRecordOutput = z.object({
 });
 
 // 3. Create the router
-export const dataImportRouter = createTRPCRouter({
+export const dataImportRouter = router({
   // Mutation: 處理檔案上傳的元數據，並建立匯入記錄
   uploadFile: protectedProcedure
     .input(UploadFileInput)

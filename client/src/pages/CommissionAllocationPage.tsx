@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PageTemplate from '@/components/PageTemplate';
+import { PageTemplate } from '@/components/PageTemplate';
 
 // 假設 trpc 實例和 hook 已經定義
 // 實際專案中，這裡會是從 trpc 客戶端匯入

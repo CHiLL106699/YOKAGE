@@ -1,5 +1,5 @@
 import React from 'react';
-import PageTemplate from '@/components/PageTemplate';
+import { PageTemplate } from '@/components/PageTemplate';
 import { useQuery } from '@tanstack/react-query'; // 模擬 tRPC useQuery
 
 // 模擬 tRPC 類型和 hook

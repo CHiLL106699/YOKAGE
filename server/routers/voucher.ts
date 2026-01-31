@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../_core/trpc"; // 假設 trpc.ts 在上一層目錄
+import { router, protectedProcedure } from "../_core/trpc"; // 假設 trpc.ts 在上一層目錄
 
 // --- Zod Schemas for Input Validation ---
 
@@ -37,7 +37,7 @@ const listVoucherInput = z.object({
 
 // --- Router Implementation ---
 
-export const voucherRouter = createTRPCRouter({
+export const voucherRouter = router({
   // 1. 建立票券 (Create)
   create: protectedProcedure
     .input(createVoucherInput)
@@ -79,7 +79,7 @@ export const voucherRouter = createTRPCRouter({
       // TODO: 實作 Supabase 更新邏輯
       console.log("Updating voucher with input:", input);
       // 範例: const { data, error } = await ctx.supabase.from('voucher').update(input).eq('id', input.id).select().single();
-      return { id: input.id, ...input, message: "Voucher updated successfully (MOCK)" };
+      return { voucherId: input.id, ...input, message: "Voucher updated successfully (MOCK)" };
     }),
 
   // 5. 刪除票券 (Delete)

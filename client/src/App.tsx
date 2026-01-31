@@ -76,6 +76,9 @@ import CustomerPackagesPage from "@/pages/CustomerPackagesPage";
 import ConsultationManagementPage from "@/pages/ConsultationManagementPage";
 import RFMAnalysisPage from "@/pages/RFMAnalysisPage";
 import CommissionManagementPage from "@/pages/CommissionManagementPage";
+import CommissionAllocationPage from "@/pages/CommissionAllocationPage";
+import IntelligentSchedulingPage from "@/pages/IntelligentSchedulingPage";
+import PrizeRecordsPage from "@/pages/PrizeRecordsPage";
 import SatisfactionSurveyPage from "@/pages/SatisfactionSurveyPage";
 import AttendanceTrackingPage from "@/pages/AttendanceTrackingPage";
 import InventoryCostPage from "@/pages/InventoryCostPage";
@@ -236,6 +239,9 @@ function Router() {
       <Route path="/clinic/consultation" component={ConsultationManagementPage} />
       <Route path="/clinic/rfm-analysis" component={RFMAnalysisPage} />
       <Route path="/clinic/commission" component={CommissionManagementPage} />
+      <Route path="/clinic/commission-allocation" component={CommissionAllocationPage} />
+      <Route path="/clinic/intelligent-scheduling" component={IntelligentSchedulingPage} />
+      <Route path="/clinic/prize-records" component={PrizeRecordsPage} />
       <Route path="/clinic/satisfaction" component={SatisfactionSurveyPage} />
       <Route path="/clinic/attendance-tracking" component={AttendanceTrackingPage} />
       <Route path="/clinic/inventory-cost" component={InventoryCostPage} />

@@ -1,8 +1,8 @@
 import React from 'react';
 // 假設 PageTemplate 位於正確的路徑
-import PageTemplate from '@/components/PageTemplate'; 
+import { PageTemplate } from '@/components/PageTemplate'; 
 // 假設 trpc 已經配置好，並有一個 intelligentScheduling.getData 的 procedure
-import { trpc } from '@/utils/trpc'; 
+import { trpc } from '@/lib/trpc'; 
 
 /**
  * IntelligentSchedulingPage 組件
