@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc'; // 假設 trpc 核心設定在上一層
+import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 核心設定在上一層
 
 /**
  * 遊戲管理 (Game Management) Router

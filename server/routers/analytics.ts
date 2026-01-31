@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc'; // 假設 trpc 設定在 '../trpc'
+import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 設定在 '../trpc'
 
 // 1. 定義輸入資料的 Zod Schema
 // 數據查詢、圖表資料、統計報表 的通用查詢輸入

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { t } from '../trpc'; // 假設 trpc 實例從 '../trpc' 導入
+import { t } from '../_core/trpc'; // 假設 trpc 實例從 '../trpc' 導入
 import { supabase } from '../../utils/supabaseClient'; // 假設 Supabase 客戶端從 '../../utils/supabaseClient' 導入
 
 // --- Schemas for Input Validation ---

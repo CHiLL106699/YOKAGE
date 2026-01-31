@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc'; // 假設 trpc 設定在上一層
+import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 設定在上一層
 
 // --- Schemas for Input Validation ---
 

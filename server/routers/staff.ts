@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { protectedProcedure, publicProcedure, router } from '../trpc'; // 假設 trpc 實例在 ../trpc
+import { protectedProcedure, publicProcedure, router } from '../_core/trpc'; // 假設 trpc 實例在 ../trpc
 
 // --- Zod Schemas for Input Validation ---
 

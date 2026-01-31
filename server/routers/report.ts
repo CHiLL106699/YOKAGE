@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc'; // 假設 trpc 基礎結構已定義
+import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 基礎結構已定義
 
 /**
  * 報表相關的輸入/輸出 Schema 定義

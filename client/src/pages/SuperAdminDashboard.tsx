@@ -65,7 +65,7 @@ export default function SuperAdminDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((stat) => (
-            <Card key={stat.title} className="hover:shadow-lg transition-shadow">
+            <Card key={stat.title} className="hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600">
                   {stat.title}
@@ -95,9 +95,9 @@ export default function SuperAdminDashboard() {
               <CardDescription>超級管理員功能模組</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/super-admin"><Button variant="outline" className="w-full justify-start">儀表板</Button></Link>
-              <Link href="/super-admin/users"><Button variant="outline" className="w-full justify-start">使用者管理</Button></Link>
-              <Link href="/super-admin/organizations"><Button variant="outline" className="w-full justify-start">診所管理</Button></Link>
+              <Link href="/super-admin"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">儀表板</Button></Link>
+              <Link href="/super-admin/users"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">使用者管理</Button></Link>
+              <Link href="/super-admin/organizations"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">診所管理</Button></Link>
               <Link href="/super-admin/vouchers"><Button variant="outline" className="w-full justify-start">票券管理</Button></Link>
               <Link href="/super-admin/billing"><Button variant="outline" className="w-full justify-start">帳單管理</Button></Link>
               <Link href="/super-admin/monitor"><Button variant="outline" className="w-full justify-start">系統監控</Button></Link>

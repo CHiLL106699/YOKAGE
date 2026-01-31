@@ -1,7 +1,7 @@
 import { z } from 'zod';
 // 假設 trpc.ts 位於 server/trpc.ts 或 server/utils/trpc.ts，並導出 router, publicProcedure, protectedProcedure
 // 由於專案結構未知，我們假設它在相對路徑 ../trpc
-import { router, publicProcedure, protectedProcedure } from '../trpc';
+import { router, publicProcedure, protectedProcedure } from '../_core/trpc';
 
 // =================================================================
 // 服務層抽象 (Service Layer Abstraction)

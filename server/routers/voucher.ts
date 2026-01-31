@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc"; // 假設 trpc.ts 在上一層目錄
+import { createTRPCRouter, protectedProcedure } from "../_core/trpc"; // 假設 trpc.ts 在上一層目錄
 
 // --- Zod Schemas for Input Validation ---
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { protectedProcedure, publicProcedure, router } from '../trpc'; // 假設 trpc context 定義在上一層
+import { protectedProcedure, publicProcedure, router } from '../_core/trpc'; // 假設 trpc context 定義在上一層
 
 // 1. 定義資料結構 (Schema)
 // 這是預約資料的基礎結構，用於輸入驗證

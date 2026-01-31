@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc'; // 假設 trpc context setup 位於此路徑
+import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc context setup 位於此路徑
 
 // --- Schemas ---
 

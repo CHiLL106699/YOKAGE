@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc'; // 假設 trpc context 在上一層
+import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc context 在上一層
 
 // --- Zod Schema for Settings ---
 // 為了符合資安要求，所有輸入都必須經過嚴格驗證

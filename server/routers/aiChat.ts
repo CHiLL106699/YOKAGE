@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../trpc';
+import { publicProcedure, router } from '../_core/trpc';
 
 // ----------------------------------------------------------------
 // Zod Schemas for Input/Output Validation

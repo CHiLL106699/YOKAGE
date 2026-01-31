@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 // 1. Define the input schemas for the procedures

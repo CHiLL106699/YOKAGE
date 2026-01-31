@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { supabase } from "../../utils/supabaseClient"; // 假設 Supabase 客戶端路徑
 
 // --- Schemas for Input Validation (Zod) ---
