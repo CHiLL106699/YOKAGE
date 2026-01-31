@@ -1,21 +1,21 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../_core/trpc';
 import { db } from '../db';
-import { subscriptions } from '../../drizzle/schema';
+import { subscriptionPlans } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export const subscriptionRouter = router({
   // 取得所有訂閱方案
   list: protectedProcedure.query(async () => {
-    const plans = await db.select().from(subscriptions);
+    const plans = await db.select().from(subscriptionPlans);
     return plans;
   }),
 
   // 取得單一訂閱方案
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      const [plan] = await db.select().from(subscriptions).where(eq(subscriptions.id, input.id));
+      const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, input.id));
       return plan;
     }),
 
@@ -27,10 +27,9 @@ export const subscriptionRouter = router({
       features: z.array(z.string()),
     }))
     .mutation(async ({ input }) => {
-      const [newPlan] = await db.insert(subscriptions).values({
-        id: `plan_${Date.now()}`,
+      const [newPlan] = await db.insert(subscriptionPlans).values({
         name: input.name,
-        price: input.price,
+        price: input.price.toString(),
         features: input.features,
       }).returning();
       return newPlan;
@@ -39,25 +38,28 @@ export const subscriptionRouter = router({
   // 更新訂閱方案
   update: protectedProcedure
     .input(z.object({
-      id: z.string(),
+      id: z.number(),
       name: z.string().optional(),
       price: z.number().optional(),
       features: z.array(z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
-      const { id, ...updateData } = input;
-      const [updatedPlan] = await db.update(subscriptions)
-        .set(updateData)
-        .where(eq(subscriptions.id, id))
+      const { id, price, ...updateData } = input;
+      const [updatedPlan] = await db.update(subscriptionPlans)
+        .set({
+          ...updateData,
+          ...(price !== undefined && { price: price.toString() }),
+        })
+        .where(eq(subscriptionPlans.id, id))
         .returning();
       return updatedPlan;
     }),
 
   // 刪除訂閱方案
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      await db.delete(subscriptions).where(eq(subscriptions.id, input.id));
+      await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, input.id));
       return { success: true };
     }),
 });

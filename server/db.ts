@@ -43,6 +43,10 @@ export async function getDb() {
   return _db;
 }
 
+// Export db instance for direct use in routers
+export const db = drizzle(process.env.DATABASE_URL || '');
+
+
 // ============================================
 // User Queries
 // ============================================
