@@ -58,7 +58,7 @@ export const notificationRouter = t.router({
    */
   sendNotification: t.procedure
     .input(SendNotificationInput)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx }: { input: any; ctx: any }) => {
       // 確保只有授權使用者可以呼叫
       if (!ctx.session?.user?.id) {
         throw new Error('Unauthorized');
@@ -93,7 +93,7 @@ export const notificationRouter = t.router({
    */
   getNotificationLog: t.procedure
     .input(GetNotificationLogInput)
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input, ctx }: { input: any; ctx: any }) => {
       const userId = ctx.session?.user?.id;
       if (!userId) {
         throw new Error('Unauthorized');
@@ -135,7 +135,7 @@ export const notificationRouter = t.router({
    */
   updateNotificationSettings: t.procedure
     .input(UpdateSettingsInput)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx }: { input: any; ctx: any }) => {
       const userId = ctx.session?.user?.id;
       if (!userId) {
         throw new Error('Unauthorized');
@@ -170,7 +170,7 @@ export const notificationRouter = t.router({
    *              嚴格遵守 RLS 原則，只查詢當前登入使用者的設定。
    */
   getNotificationSettings: t.procedure
-    .query(async ({ ctx }) => {
+    .query(async ({ ctx }: { ctx: any }) => {
       const userId = ctx.session?.user?.id;
       if (!userId) {
         throw new Error('Unauthorized');

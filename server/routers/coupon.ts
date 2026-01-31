@@ -71,7 +71,7 @@ export const couponRouter = router({
     .query(async ({ input }) => {
       console.log('Fetching coupons for organization:', input.organization_id);
       // 模擬從 Supabase 查詢列表
-      const mockCoupons = [
+      const mockCoupons: any[] = [
         // ... 模擬資料
       ];
       return { coupons: mockCoupons, total: 50 };

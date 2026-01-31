@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { supabase } from "../../utils/supabaseClient"; // 假設 Supabase 客戶端路徑
+; // 假設 Supabase 客戶端路徑
 
 // --- Schemas for Input Validation (Zod) ---
 
@@ -34,7 +34,7 @@ export const organizationRouter = router({
       console.log("Creating organization with data:", input);
       
       // 實際實作: 呼叫 Supabase 進行新增
-      // const { data, error } = await supabase.from('organizations').insert([{ ...input, owner_user_id: ctx.session.user.id }]).select().single();
+      // const { data, error } = await supabase.from('organizations').insert([{ ...input, owner_user_id: ctx.user.user.id }]).select().single();
       
       // if (error) throw new Error(error.message);
       
@@ -99,10 +99,10 @@ export const organizationRouter = router({
     .query(async ({ ctx }) => {
       // 邏輯驗證: 獲取與當前使用者相關聯的所有診所
       // 資安檢查: RLS 必須確保只返回使用者有權限的列表
-      console.log("Listing all organizations for user:", ctx.session.user.id);
+      console.log("Listing all organizations for user:", ctx.user.user.id);
       
       // 實際實作: 呼叫 Supabase 查詢
-      // const { data, error } = await supabase.from('organizations').select('*').filter('owner_user_id', 'eq', ctx.session.user.id);
+      // const { data, error } = await supabase.from('organizations').select('*').filter('owner_user_id', 'eq', ctx.user.user.id);
       
       // if (error) throw new Error(error.message);
       

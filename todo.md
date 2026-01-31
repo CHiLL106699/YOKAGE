@@ -1809,3 +1809,12 @@
 - [ ] 批次建立缺失的後端 Router（superAdminRouter, organizationRouter, customerRouter, appointmentRouter, staffRouter, lineRouter, gameRouter, subscriptionRouter, ticketRouter, couponRouter, notificationRouter, analyticsRouter, reportRouter, aiChatRouter, dataImportRouter, settingsRouter）
 - [ ] 批次建立缺失的前端頁面（對應所有功能卡片連結）
 - [ ] 逐一測試確認所有連結可正常運作
+
+## Phase 85: 使用技能與連結器修正所有錯誤並完成系統
+- [ ] 使用 github-gem-seeker 技能搜尋 TypeScript 錯誤解決方案
+- [ ] 並行修正所有 32 個 TypeScript 編譯錯誤
+- [ ] 參考 https://yochillsaas.com/ 的價格方案同步到系統中
+- [ ] 並行實作所有缺失的後端 API 功能
+- [ ] 測試所有功能連結確保不再出現 404 錯誤
+- [ ] 完整系統整合測試
+- [ ] 確認系統完美無誤可上線操作

@@ -117,7 +117,6 @@ const PrizeRecordsPage: React.FC = () => {
       errorContent={ErrorContent}
       // 5. 應用尊爵燙金深藍主題
       className={themeStyles.pageBg}
-      contentClassName="max-w-4xl mx-auto"
     >
       {MainContent}
     </PageTemplate>
