@@ -118,12 +118,12 @@ const InventoryDashboard: React.FC = () => {
                   </tr>
                 ) : inventoryItems?.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.id.substring(0, 8)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Product {item.productId.substring(0, 8)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{String(item.id).substring(0, 8)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Product {String(item.productId).substring(0, 8)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.location || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.minStock}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.expiryDate || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(item.quantity, item.minStock || 10)}`}>
                         {getStatusText(item.quantity, item.minStock || 10)}

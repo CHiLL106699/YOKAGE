@@ -157,10 +157,9 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => {
-            const CardWrapper = feature.link ? Link : 'div';
-            const cardProps = feature.link ? { href: feature.link } : {};
-            return (
-              <CardWrapper key={index} {...cardProps}>
+            if (feature.link) {
+              return (
+                <Link key={index} href={feature.link}>
                 <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
                   <CardHeader>
                     <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-4">
@@ -174,8 +173,25 @@ export default function Home() {
                     </CardDescription>
                   </CardContent>
                 </Card>
-              </CardWrapper>
-            );
+                </Link>
+              );
+            } else {
+              return (
+                <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardHeader>
+                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-4">
+                      <feature.icon className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <CardTitle className="text-lg">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-gray-600">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              );
+            }
           })}
         </div>
       </section>

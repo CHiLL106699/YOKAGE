@@ -1,0 +1,66 @@
+{
+  "query": "SELECT * FROM inventory_system_b LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2v5iTujRSfvcRKU.56d39c80eada --database fFbhtkm95dX7aZUie4ZnaL --execute SELECT * FROM inventory_system_b LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "organization_id": "1",
+      "product_id": "1",
+      "batch_number": "BATCH-20231001",
+      "quantity": "150",
+      "min_stock": "20",
+      "expiry_date": "2025-10-01",
+      "location": "A區冷藏櫃",
+      "supplier": "台灣醫美供應商",
+      "inventory_status_b": "in_stock",
+      "created_at": "2026-01-31 18:31:08",
+      "updated_at": "2026-01-31 18:31:08"
+    },
+    {
+      "id": "2",
+      "organization_id": "1",
+      "product_id": "2",
+      "batch_number": "BATCH-20231115",
+      "quantity": "8",
+      "min_stock": "10",
+      "expiry_date": "2024-11-15",
+      "location": "A區冷藏櫃",
+      "supplier": "台灣醫美供應商",
+      "inventory_status_b": "low_stock",
+      "created_at": "2026-01-31 18:31:08",
+      "updated_at": "2026-01-31 18:31:08"
+    },
+    {
+      "id": "3",
+      "organization_id": "1",
+      "product_id": "1",
+      "batch_number": "BATCH-20231001",
+      "quantity": "150",
+      "min_stock": "20",
+      "expiry_date": "2025-09-30",
+      "location": "A區冷藏櫃",
+      "supplier": "台灣醫美供應商",
+      "inventory_status_b": "in_stock",
+      "created_at": "2026-01-31 18:31:40",
+      "updated_at": "2026-01-31 18:31:40"
+    },
+    {
+      "id": "4",
+      "organization_id": "1",
+      "product_id": "2",
+      "batch_number": "BATCH-20231115",
+      "quantity": "8",
+      "min_stock": "10",
+      "expiry_date": "2024-11-14",
+      "location": "A區冷藏櫃",
+      "supplier": "台灣醫美供應商",
+      "inventory_status_b": "low_stock",
+      "created_at": "2026-01-31 18:31:40",
+      "updated_at": "2026-01-31 18:31:40"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\torganization_id\tproduct_id\tbatch_number\tquantity\tmin_stock\texpiry_date\tlocation\tsupplier\tinventory_status_b\tcreated_at\tupdated_at\n1\t1\t1\tBATCH-20231001\t150\t20\t2025-10-01\tA區冷藏櫃\t台灣醫美供應商\tin_stock\t2026-01-31 18:31:08\t2026-01-31 18:31:08\n2\t1\t2\tBATCH-20231115\t8\t10\t2024-11-15\tA區冷藏櫃\t台灣醫美供應商\tlow_stock\t2026-01-31 18:31:08\t2026-01-31 18:31:08\n3\t1\t1\tBATCH-20231001\t150\t20\t2025-09-30\tA區冷藏櫃\t台灣醫美供應商\tin_stock\t2026-01-31 18:31:40\t2026-01-31 18:31:40\n4\t1\t2\tBATCH-20231115\t8\t10\t2024-11-14\tA區冷藏櫃\t台灣醫美供應商\tlow_stock\t2026-01-31 18:31:40\t2026-01-31 18:31:40\n",
+  "stderr": "",
+  "execution_time_ms": 1514
+}

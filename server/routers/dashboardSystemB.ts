@@ -37,7 +37,7 @@ export const inventoryRouter = router({
   /**
    * 取得庫存列表
    */
-  list: protectedProcedure
+  list: publicProcedure
     .input(z.object({
       organizationId: z.number().optional(),
     }).optional())
