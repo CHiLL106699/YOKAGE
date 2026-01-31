@@ -35,7 +35,7 @@ export const dataImportRouter = router({
     .mutation(async ({ ctx, input }) => {
       // **資安優先**: 檔案上傳的實際處理邏輯 (如 Supabase Storage) 必須在後端使用 Service Role 權限進行。
       // 前端只傳遞元數據，後端返回一個預簽名 URL 或上傳憑證。
-      console.log(`User ${ctx.user.user.id} is uploading file: ${input.fileName}`);
+      console.log(`User ${ctx.user.id} is uploading file: ${input.fileName}`);
 
       // Placeholder for Supabase DB operation: Create a new import_records entry
       // const { data, error } = await ctx.supabase.from('import_records').insert({...}).select().single();
@@ -89,7 +89,7 @@ export const dataImportRouter = router({
   getRecords: protectedProcedure
     .query(async ({ ctx }) => {
       // **資安優先**: 必須強制加入 user_id 篩選條件，確保用戶只能看到自己的記錄。
-      // const { data, error } = await ctx.supabase.from('import_records').select('*').eq('user_id', ctx.user.user.id);
+      // const { data, error } = await ctx.supabase.from('import_records').select('*').eq('user_id', ctx.user.id);
 
       // Mock data
       const mockRecords = [
@@ -105,7 +105,7 @@ export const dataImportRouter = router({
     .input(RecordIdInput)
     .query(async ({ ctx, input }) => {
       // **資安優先**: 必須檢查 record_id 是否屬於當前用戶。
-      // const { data, error } = await ctx.supabase.from('import_records').select('*').eq('id', input.recordId).eq('user_id', ctx.user.user.id).single();
+      // const { data, error } = await ctx.supabase.from('import_records').select('*').eq('id', input.recordId).eq('user_id', ctx.user.id).single();
 
       // Mock data
       const mockDetail = {
