@@ -1,6 +1,11 @@
-import React from 'react';
-import { MessageSquare, Users, Tag, Send, Settings, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { MessageSquare, Users, Tag, Send, Settings, Search, Plus, X } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Customer {
   id: string;
@@ -53,6 +58,59 @@ const mockCustomers: Customer[] = [
 
 const LineCrmDashboard: React.FC = () => {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer>(mockCustomers[0]);
+  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  
+  // 查詢所有標籤
+  const { data: allTags = [] } = trpc.crmTags.list.useQuery();
+  
+  // 查詢當前客戶的標籤
+  const { data: customerTags = [], refetch: refetchCustomerTags } = trpc.crmTags.getCustomerTags.useQuery(
+    { customerId: parseInt(selectedCustomer.id.replace('C', '')) },
+    { enabled: !!selectedCustomer }
+  );
+  
+  // 分配標籤 mutation
+  const assignTag = trpc.crmTags.assignToCustomer.useMutation({
+    onSuccess: () => {
+      toast({ title: '標籤已新增' });
+      refetchCustomerTags();
+      setIsTagDialogOpen(false);
+    },
+    onError: () => {
+      toast({ title: '新增標籤失敗', variant: 'destructive' });
+    }
+  });
+  
+  // 移除標籤 mutation
+  const removeTag = trpc.crmTags.removeFromCustomer.useMutation({
+    onSuccess: () => {
+      toast({ title: '標籤已移除' });
+      refetchCustomerTags();
+    },
+    onError: () => {
+      toast({ title: '移除標籤失敗', variant: 'destructive' });
+    }
+  });
+  
+  const handleAssignTag = () => {
+    if (selectedTagIds.length === 0) return;
+    selectedTagIds.forEach(tagId => {
+      assignTag.mutate({
+        customerId: parseInt(selectedCustomer.id.replace('C', '')),
+        tagId
+      });
+    });
+  };
+  
+  const handleRemoveTag = (tagId: number) => {
+    removeTag.mutate({
+      customerId: parseInt(selectedCustomer.id.replace('C', '')),
+      tagId
+    });
+  };
   return (
     <div className="min-h-screen bg-slate-50 p-6 flex flex-col h-screen">
       {/* Header */}
@@ -84,7 +142,7 @@ const LineCrmDashboard: React.FC = () => {
       <div className="flex flex-1 overflow-hidden bg-white shadow rounded-lg border border-gray-200">
         {/* Sidebar: Customer List */}
         <div className="w-1/3 border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 space-y-3">
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -97,11 +155,31 @@ const LineCrmDashboard: React.FC = () => {
                 placeholder="搜尋客戶..."
               />
             </div>
+            <Select onValueChange={(value) => setSelectedTagIds(value === 'all' ? [] : [parseInt(value)])}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="按標籤篩選" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部客戶</SelectItem>
+                {allTags.map(tag => (
+                  <SelectItem key={tag.id} value={tag.id.toString()}>
+                    <span className="inline-flex items-center">
+                      <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
+                      {tag.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex-1 overflow-y-auto">
             <ul className="divide-y divide-gray-200">
               {mockCustomers.map((customer) => (
-                <li key={customer.id} className="hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out">
+                <li 
+                  key={customer.id} 
+                  className="hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out"
+                  onClick={() => setSelectedCustomer(customer)}
+                >
                   <div className="px-4 py-4 flex items-center sm:px-6">
                     <div className="min-w-0 flex-1 flex items-center">
                       <div className="flex-shrink-0">
@@ -138,17 +216,31 @@ const LineCrmDashboard: React.FC = () => {
           {/* Chat Header */}
           <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
             <div className="flex items-center">
-              <img className="h-10 w-10 rounded-full" src={mockCustomers[0].avatar} alt="" />
+              <img className="h-10 w-10 rounded-full" src={selectedCustomer.avatar} alt="" />
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">{mockCustomers[0].name}</p>
-                <div className="flex space-x-1 mt-1">
-                  {mockCustomers[0].tags.map(tag => (
-                    <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                      {tag}
+                <p className="text-sm font-medium text-gray-900">{selectedCustomer.name}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {customerTags.map(tag => (
+                    <span 
+                      key={tag.id} 
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                      style={{ backgroundColor: (tag.color || '#3B82F6') + '20', color: tag.color || '#3B82F6' }}
+                    >
+                      {tag.name}
+                      <button 
+                        onClick={() => handleRemoveTag(tag.id)}
+                        className="ml-1 hover:text-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </span>
                   ))}
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <PlusTagIcon className="h-4 w-4" />
+                  <button 
+                    onClick={() => setIsTagDialogOpen(true)}
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    新增標籤
                   </button>
                 </div>
               </div>
@@ -189,6 +281,40 @@ const LineCrmDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* 新增標籤 Dialog */}
+      <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>為 {selectedCustomer.name} 新增標籤</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select onValueChange={(value) => setSelectedTagIds([parseInt(value)])}>
+              <SelectTrigger>
+                <SelectValue placeholder="選擇標籤" />
+              </SelectTrigger>
+              <SelectContent>
+                {allTags
+                  .filter(tag => !customerTags.some(ct => ct.id === tag.id))
+                  .map(tag => (
+                    <SelectItem key={tag.id} value={tag.id.toString()}>
+                      <span className="inline-flex items-center">
+                        <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: tag.color || '#3B82F6' }} />
+                        {tag.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTagDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAssignTag} disabled={selectedTagIds.length === 0}>
+              確認新增
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
