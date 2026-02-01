@@ -1946,3 +1946,36 @@
 - [ ] 測試標籤 CRUD 功能
 - [ ] 測試客戶標籤分配功能
 - [ ] 測試按標籤篩選客戶功能
+
+
+---
+
+## Phase 96: 完善 CRM 客戶標籤功能
+
+### 修正 TypeScript 錯誤
+- [ ] 修正 CrmTagManagement.tsx 的 description 欄位類型錯誤
+- [ ] 在 crmTagsSystemB schema 中新增 description 欄位
+- [ ] 執行 pnpm db:push 同步資料庫
+
+### 客戶標籤分配後端 API
+- [ ] 實作 assignTagToCustomer mutation（為客戶新增標籤）
+- [ ] 實作 removeTagFromCustomer mutation（為客戶移除標籤）
+- [ ] 實作 getCustomerTags query（取得客戶的所有標籤）
+
+### 客戶標籤分配前端 UI
+- [ ] 在 LineCrmDashboard 的客戶列表中新增「新增標籤」按鈕
+- [ ] 建立標籤分配 Dialog（多選標籤）
+- [ ] 實作標籤新增/移除功能（optimistic updates）
+- [ ] 新增 Toast 通知
+
+### 按標籤篩選客戶功能
+- [ ] 在 LineCrmDashboard 新增標籤篩選器（多選下拉選單）
+- [ ] 實作按標籤篩選客戶的後端 API
+- [ ] 實作前端篩選邏輯（支援多標籤 AND/OR 篩選）
+- [ ] 新增「清除篩選」按鈕
+
+### 測試
+- [ ] 測試標籤 CRUD 功能
+- [ ] 測試客戶標籤分配功能
+- [ ] 測試按標籤篩選客戶功能
+- [ ] 確保所有 Toast 通知正常顯示

@@ -2087,6 +2087,7 @@ export const crmTagsSystemB = mysqlTable("crm_tags_system_b", {
   id: int("id").autoincrement().primaryKey(),
   organizationId: int("organization_id").notNull(),
   name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
   color: varchar("color", { length: 20 }).default("#000000"),
   category: varchar("category", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
