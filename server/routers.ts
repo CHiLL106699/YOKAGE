@@ -48,6 +48,10 @@ import { lineMessagingRouter } from './routers/lineMessaging.js';
 // Phase 100: LINE Webhook 自動接收訊息功能
 import { lineWebhookRouter } from './routers/lineWebhook.js';
 import { autoReplyRulesRouter } from './routers/autoReplyRules.js';
+// Phase 101-103: Rich Menu 動態管理、分群推播、AI 對話機器人
+import { richMenuRouter } from './routers/richMenu.js';
+import { broadcastRouter } from './routers/broadcast.js';
+import { aiChatbotRouter } from './routers/aiChatbot.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3882,6 +3886,10 @@ export const appRouter = router({
   // Phase 100: LINE Webhook 自動接收訊息功能
   lineWebhook: lineWebhookRouter,
   autoReplyRules: autoReplyRulesRouter,
+  // Phase 101-103: Rich Menu 動態管理、分群推播、AI 對話機器人
+  richMenu: richMenuRouter,
+  broadcast: broadcastRouter,
+  aiChatbot: aiChatbotRouter,
 });
 
 export type AppRouter = typeof appRouter;

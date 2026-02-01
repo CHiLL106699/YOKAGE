@@ -2294,3 +2294,178 @@ export const autoReplyRules = mysqlTable("auto_reply_rules", {
 
 export type AutoReplyRule = typeof autoReplyRules.$inferSelect;
 export type InsertAutoReplyRule = typeof autoReplyRules.$inferInsert;
+
+
+/**
+ * ========================================
+ * Rich Menu 動態管理系統
+ * ========================================
+ */
+
+/**
+ * Rich Menu 模板表
+ */
+export const richMenuTemplates = mysqlTable('rich_menu_templates', {
+  id: int('id').primaryKey().autoincrement(),
+  organizationId: int('organization_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  richMenuId: varchar('rich_menu_id', { length: 255 }), // LINE Rich Menu ID
+  imageUrl: text('image_url'), // S3 圖片 URL
+  chatBarText: varchar('chat_bar_text', { length: 14 }).notNull(), // 聊天室選單標題
+  areas: json('areas').notNull(), // 按鈕區域定義 (JSON)
+  isActive: boolean('is_active').default(true),
+  targetAudience: varchar('target_audience', { length: 50 }), // 目標受眾：all, new_customer, vip, churn_risk
+  abTestGroup: varchar('ab_test_group', { length: 50 }), // A/B 測試分組：control, variant_a, variant_b
+  createdBy: int('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type RichMenuTemplate = typeof richMenuTemplates.$inferSelect;
+export type InsertRichMenuTemplate = typeof richMenuTemplates.$inferInsert;
+
+/**
+ * Rich Menu 客戶分配記錄表
+ */
+export const richMenuAssignments = mysqlTable('rich_menu_assignments', {
+  id: int('id').primaryKey().autoincrement(),
+  templateId: int('template_id').notNull(),
+  customerId: int('customer_id').notNull(),
+  lineUserId: varchar('line_user_id', { length: 255 }).notNull(),
+  assignedAt: timestamp('assigned_at').defaultNow(),
+});
+
+export type RichMenuAssignment = typeof richMenuAssignments.$inferSelect;
+export type InsertRichMenuAssignment = typeof richMenuAssignments.$inferInsert;
+
+/**
+ * Rich Menu 點擊統計表
+ */
+export const richMenuClickStats = mysqlTable('rich_menu_click_stats', {
+  id: int('id').primaryKey().autoincrement(),
+  templateId: int('template_id').notNull(),
+  customerId: int('customer_id'),
+  lineUserId: varchar('line_user_id', { length: 255 }).notNull(),
+  areaIndex: int('area_index').notNull(), // 點擊的按鈕區域索引
+  clickedAt: timestamp('clicked_at').defaultNow(),
+});
+
+export type RichMenuClickStat = typeof richMenuClickStats.$inferSelect;
+export type InsertRichMenuClickStat = typeof richMenuClickStats.$inferInsert;
+
+
+/**
+ * ========================================
+ * 客戶分群推播系統
+ * ========================================
+ */
+
+/**
+ * 推播活動表
+ */
+export const broadcastCampaigns = mysqlTable('broadcast_campaigns', {
+  id: int('id').primaryKey().autoincrement(),
+  organizationId: int('organization_id').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  messageType: varchar('message_type', { length: 50 }).notNull(), // text, flex, image
+  messageContent: json('message_content').notNull(), // 訊息內容 (JSON)
+  targetAudience: json('target_audience').notNull(), // 分群條件 (JSON)
+  scheduledAt: timestamp('scheduled_at'), // 排程發送時間
+  status: varchar('status', { length: 50 }).default('draft'), // draft, scheduled, sending, completed, failed
+  totalRecipients: int('total_recipients').default(0),
+  sentCount: int('sent_count').default(0),
+  deliveredCount: int('delivered_count').default(0),
+  clickedCount: int('clicked_count').default(0),
+  createdBy: int('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type BroadcastCampaign = typeof broadcastCampaigns.$inferSelect;
+export type InsertBroadcastCampaign = typeof broadcastCampaigns.$inferInsert;
+
+/**
+ * 推播收件人記錄表
+ */
+export const broadcastRecipients = mysqlTable('broadcast_recipients', {
+  id: int('id').primaryKey().autoincrement(),
+  campaignId: int('campaign_id').notNull(),
+  customerId: int('customer_id').notNull(),
+  lineUserId: varchar('line_user_id', { length: 255 }).notNull(),
+  status: varchar('status', { length: 50 }).default('pending'), // pending, sent, delivered, failed
+  sentAt: timestamp('sent_at'),
+  deliveredAt: timestamp('delivered_at'),
+  clickedAt: timestamp('clicked_at'),
+  errorMessage: text('error_message'),
+});
+
+export type BroadcastRecipient = typeof broadcastRecipients.$inferSelect;
+export type InsertBroadcastRecipient = typeof broadcastRecipients.$inferInsert;
+
+
+/**
+ * ========================================
+ * AI 對話機器人
+ * ========================================
+ */
+
+/**
+ * AI 對話記錄表
+ */
+export const aiConversations = mysqlTable('ai_conversations', {
+  id: int('id').primaryKey().autoincrement(),
+  organizationId: int('organization_id').notNull(),
+  customerId: int('customer_id'),
+  lineUserId: varchar('line_user_id', { length: 255 }).notNull(),
+  sessionId: varchar('session_id', { length: 255 }).notNull(), // 對話 Session ID
+  userMessage: text('user_message').notNull(),
+  aiResponse: text('ai_response').notNull(),
+  intent: varchar('intent', { length: 100 }), // 識別的意圖：appointment, consultation, faq, general
+  confidence: decimal('confidence', { precision: 5, scale: 2 }), // 意圖信心分數
+  context: json('context'), // 對話上下文 (JSON)
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export type AiConversation = typeof aiConversations.$inferSelect;
+export type InsertAiConversation = typeof aiConversations.$inferInsert;
+
+/**
+ * AI 意圖定義表
+ */
+export const aiIntents = mysqlTable('ai_intents', {
+  id: int('id').primaryKey().autoincrement(),
+  organizationId: int('organization_id').notNull(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  keywords: json('keywords').notNull(), // 關鍵字列表 (JSON)
+  trainingExamples: json('training_examples'), // 訓練範例 (JSON)
+  responseTemplate: text('response_template'), // 回覆模板
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type AiIntent = typeof aiIntents.$inferSelect;
+export type InsertAiIntent = typeof aiIntents.$inferInsert;
+
+/**
+ * AI 知識庫表
+ */
+export const aiKnowledgeBase = mysqlTable('ai_knowledge_base', {
+  id: int('id').primaryKey().autoincrement(),
+  organizationId: int('organization_id').notNull(),
+  category: varchar('category', { length: 100 }).notNull(), // FAQ, 產品資訊, 療程說明
+  question: text('question').notNull(),
+  answer: text('answer').notNull(),
+  keywords: json('keywords'), // 關鍵字列表 (JSON)
+  priority: int('priority').default(0), // 優先級
+  isActive: boolean('is_active').default(true),
+  createdBy: int('created_by'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type AiKnowledgeBase = typeof aiKnowledgeBase.$inferSelect;
+export type InsertAiKnowledgeBase = typeof aiKnowledgeBase.$inferInsert;

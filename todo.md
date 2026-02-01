@@ -2086,3 +2086,15 @@
 - [ ] 建立 Webhook 測試工具
 - [ ] 建立事件日誌查詢介面
 - [ ] 撰寫單元測試
+
+
+---
+
+## Phase 101-106: LINE Rich Menu 動態管理 + 客戶分群推播 + AI 對話機器人
+
+- [ ] Phase 101: 設計 Rich Menu 資料庫結構（richMenuTemplates, richMenuAssignments, richMenuClickStats）
+- [ ] Phase 102: 實作 Rich Menu 後端 API（CRUD、LINE API 整合、A/B 測試分配、點擊追蹤）
+- [ ] Phase 103: 實作客戶分群推播系統後端（broadcastCampaigns, broadcastRecipients, 分群篩選引擎, 排程發送）
+- [ ] Phase 104: 實作 AI 對話機器人後端（OpenAI GPT 整合、對話上下文管理、意圖識別、對話記錄）
+- [ ] Phase 105: 實作前端 UI（Rich Menu 視覺化編輯器、分群推播介面、AI 對話設定頁面、效果追蹤儀表板）
+- [ ] Phase 106: 完整測試與交付（Rich Menu 切換、分群推播、AI 對話、撰寫操作手冊）

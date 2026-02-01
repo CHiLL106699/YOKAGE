@@ -176,6 +176,13 @@
       "when": 1769962650134,
       "tag": "0024_sturdy_infant_terrible",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1769970101217,
+      "tag": "0025_classy_william_stryker",
+      "breakpoints": true
     }
   ]
 }
