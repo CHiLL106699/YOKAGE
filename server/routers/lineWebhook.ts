@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { db } from '../db';
 import { lineWebhookEvents, lineMessagingSettings, customers, interactions, autoReplyRules } from '../../drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { verifyLineSignature, type LineWebhookPayload, type LineWebhookEvent } from '../_core/lineWebhook';
 import { TRPCError } from '@trpc/server';
 
@@ -88,10 +88,11 @@ export const lineWebhookRouter = router({
         .limit(pageSize)
         .offset(offset);
 
-      const [{ count }] = await db
-        .select({ count: db.$count(lineWebhookEvents) })
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
         .from(lineWebhookEvents)
         .where(and(...conditions));
+      const count = countResult[0]?.count || 0;
 
       return {
         events,

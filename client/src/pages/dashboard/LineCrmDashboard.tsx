@@ -26,7 +26,7 @@ const LineCrmDashboard: React.FC = () => {
   const [isSendLineMessageDialogOpen, setIsSendLineMessageDialogOpen] = useState(false);
   
   // 查詢所有標籤
-  const { data: allTags = [] } = trpc.crmTags.list.useQuery();
+  const { data: allTags = [] } = trpc.crmTags.list.useQuery({ organizationId: 1 }); // TODO: Get from context
   
   // 查詢客戶列表（支援搜尋與標籤篩選）
   const { data: customers = [], refetch: refetchCustomers } = trpc.crmCustomers.list.useQuery({

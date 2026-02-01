@@ -69,7 +69,13 @@ export const autoReplyRulesRouter = router({
         updatedAt: new Date(),
       });
 
-      return { id: result.insertId };
+      const [newRule] = await db
+        .select()
+        .from(autoReplyRules)
+        .where(eq(autoReplyRules.id, result.insertId))
+        .limit(1);
+
+      return newRule;
     }),
 
   /**
@@ -98,7 +104,13 @@ export const autoReplyRulesRouter = router({
         })
         .where(eq(autoReplyRules.id, id));
 
-      return { success: true };
+      const [updatedRule] = await db
+        .select()
+        .from(autoReplyRules)
+        .where(eq(autoReplyRules.id, id))
+        .limit(1);
+
+      return updatedRule;
     }),
 
   /**
@@ -133,7 +145,13 @@ export const autoReplyRulesRouter = router({
         })
         .where(eq(autoReplyRules.id, input.id));
 
-      return { success: true };
+      const [updatedRule] = await db
+        .select()
+        .from(autoReplyRules)
+        .where(eq(autoReplyRules.id, input.id))
+        .limit(1);
+
+      return updatedRule;
     }),
 
   /**

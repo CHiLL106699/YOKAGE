@@ -11,7 +11,7 @@ const CrmTagManagement: React.FC = () => {
     description: ''
   });
 
-  const { data: tags, isLoading } = trpc.crmTags.list.useQuery();
+  const { data: tags, isLoading } = trpc.crmTags.list.useQuery({ organizationId: 1 }); // TODO: Get from context
   const utils = trpc.useUtils();
 
   const createMutation = trpc.crmTags.create.useMutation({
