@@ -12,13 +12,16 @@ const InventoryDashboard: React.FC = () => {
     expiryDate: ''
   });
   
+  // TODO: Get current organization ID from context
+  const organizationId = 1;
+  
   const { data: inventoryItems, isLoading } = trpc.dashboardB.inventory.list.useQuery();
   const utils = trpc.useUtils();
   const createMutation = trpc.dashboardB.inventory.create.useMutation({
     onSuccess: () => {
       utils.dashboardB.inventory.list.invalidate();
       setIsCreateDialogOpen(false);
-      setFormData({ productId: '', location: '', quantity: 0, minStock: 0, expiryDate: '' });
+      setFormData({ productId: 1, location: '', quantity: 0, minStock: 0, expiryDate: '' });
       alert('庫存項目新增成功！');
     },
     onError: (error) => {
@@ -29,9 +32,10 @@ const InventoryDashboard: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate({
+      organizationId,
       productId: Number(formData.productId),
-      location: formData.location,
       quantity: formData.quantity,
+      location: formData.location,
       minStock: formData.minStock,
       expiryDate: formData.expiryDate ? new Date(formData.expiryDate) : undefined
     });

@@ -34,8 +34,9 @@ import { TRPCError } from "@trpc/server";
 // Phase 86: 系統 B 整合 - 6 大核心模組
 import { dashboardSystemBRouter } from "./routers/dashboardSystemB";
 // Phase 92: 營運分析模組匯出報表功能
-import { biExportRouter } from "./routers/biExport";
-
+import { biExportRouter } from './routers/biExport.js';
+// Phase 95: CRM 模組客戶標籤功能
+import { crmTagsRouter } from './routers/crmTags.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3857,6 +3858,8 @@ export const appRouter = router({
   dashboardB: dashboardSystemBRouter,
   // Phase 92: 營運分析模組匯出報表功能
   biExport: biExportRouter,
+  // Phase 95: CRM 模組客戶標籤功能
+  crmTags: crmTagsRouter,
 });
 
 export type AppRouter = typeof appRouter;

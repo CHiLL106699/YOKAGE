@@ -1923,3 +1923,26 @@
 - [ ] 測試刪除調撥單功能
 - [ ] 驗證 Toast 通知正常顯示
 - [ ] 驗證資料即時更新
+
+
+---
+
+## Phase 95: CRM 模組客戶標籤功能
+
+### 後端 API
+- [ ] 實作標籤 CRUD API（createTag, updateTag, deleteTag, listTags）
+- [ ] 實作客戶標籤關聯 API（assignTagToCustomer, removeTagFromCustomer）
+- [ ] 實作按標籤篩選客戶 API（listCustomersByTag）
+- [ ] 新增標籤顏色與圖示支援
+
+### 前端 UI
+- [ ] 建立標籤管理頁面（TagManagement.tsx）
+- [ ] 在 CRM Dashboard 新增標籤篩選器
+- [ ] 在客戶列表中顯示客戶標籤
+- [ ] 實作客戶標籤分配 Dialog
+- [ ] 新增標籤顏色選擇器
+
+### 測試
+- [ ] 測試標籤 CRUD 功能
+- [ ] 測試客戶標籤分配功能
+- [ ] 測試按標籤篩選客戶功能

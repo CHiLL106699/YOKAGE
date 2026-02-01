@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageSquare, Users, Tag, Send, Settings, Search } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface Customer {
   id: string;
@@ -51,6 +52,7 @@ const mockCustomers: Customer[] = [
 ];
 
 const LineCrmDashboard: React.FC = () => {
+  const [, navigate] = useLocation();
   return (
     <div className="min-h-screen bg-slate-50 p-6 flex flex-col h-screen">
       {/* Header */}
@@ -63,6 +65,13 @@ const LineCrmDashboard: React.FC = () => {
           <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#00B900] hover:bg-[#009900] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00B900]">
             <Send className="-ml-1 mr-2 h-5 w-5" />
             群發訊息
+          </button>
+          <button
+            onClick={() => navigate('/dashboard/crm/tags')}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Tag className="-ml-1 mr-2 h-5 w-5" />
+            標籤管理
           </button>
           <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
             <Settings className="-ml-1 mr-2 h-5 w-5" />
