@@ -2098,3 +2098,28 @@
 - [ ] Phase 104: 實作 AI 對話機器人後端（OpenAI GPT 整合、對話上下文管理、意圖識別、對話記錄）
 - [ ] Phase 105: 實作前端 UI（Rich Menu 視覺化編輯器、分群推播介面、AI 對話設定頁面、效果追蹤儀表板）
 - [ ] Phase 106: 完整測試與交付（Rich Menu 切換、分群推播、AI 對話、撰寫操作手冊）
+
+
+---
+
+## Phase 101-106: CRM 進階功能前端 UI 實作
+- [ ] Phase 101: 實作 Rich Menu 管理前端頁面（RichMenuManagement.tsx）
+- [ ] Phase 102: 實作客戶分群推播前端頁面（BroadcastCampaigns.tsx）
+- [ ] Phase 103: 實作 AI 對話機器人設定前端頁面（AiChatbotSettings.tsx）
+- [ ] Phase 104: 註冊路由與導航選單（App.tsx, DashboardLayout.tsx）
+- [ ] Phase 105: 完整測試與交付（瀏覽器測試、操作手冊、最終 Checkpoint）
+
+
+---
+
+## Phase 97-106: CRM 進階功能（客戶互動歷史、自動化標籤、LINE Messaging API、LINE Webhook、Rich Menu、分群推播、AI 對話機器人）
+- [x] Phase 97: 客戶互動歷史記錄功能
+- [x] Phase 98: 自動化標籤系統
+- [x] Phase 99: LINE Messaging API 整合
+- [x] Phase 100: LINE Webhook 自動接收訊息功能
+- [x] Phase 101: Rich Menu 資料庫設計與後端 API
+- [x] Phase 102: 客戶分群推播系統後端 API
+- [x] Phase 103: AI 對話機器人後端 API
+- [x] Phase 104: 前端 UI 實作（Rich Menu 管理、分群推播、AI 設定）
+- [x] Phase 105: 註冊路由與導航選單
+- [ ] Phase 106: 完整測試與交付

@@ -134,6 +134,9 @@ import MultiBranchDashboard from "@/pages/dashboard/MultiBranchDashboard";
 import CrmTagManagement from '@/pages/dashboard/CrmTagManagement';
 import TagRulesManagement from '@/pages/dashboard/TagRulesManagement';
 import { LineWebhookManagement } from '@/pages/dashboard/LineWebhookManagement';
+import RichMenuManagement from '@/pages/dashboard/RichMenuManagement';
+import BroadcastCampaigns from '@/pages/dashboard/BroadcastCampaigns';
+import AiChatbotSettings from '@/pages/dashboard/AiChatbotSettings';
 
 function Router() {
   return (
@@ -148,6 +151,9 @@ function Router() {
       <Route path={"/dashboard/crm/tags"} component={CrmTagManagement} />
       <Route path={"/dashboard/crm/tag-rules"} component={TagRulesManagement} />
       <Route path={"/dashboard/line-webhook"} component={LineWebhookManagement} />
+      <Route path={"/dashboard/rich-menu"} component={RichMenuManagement} />
+      <Route path={"/dashboard/broadcast"} component={BroadcastCampaigns} />
+      <Route path={"/dashboard/ai-chatbot"} component={AiChatbotSettings} />
       <Route path={"/dashboard/bi"} component={BiDashboard} />
       <Route path={"/dashboard/gamification"} component={GamificationDashboard} />
       <Route path={"/dashboard/hr"} component={HrDashboard} />
