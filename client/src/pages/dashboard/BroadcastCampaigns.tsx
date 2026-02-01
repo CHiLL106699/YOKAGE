@@ -22,10 +22,13 @@ export default function BroadcastCampaigns() {
     organizationId: 1,
   });
 
-  // 查詢統計資料
-  const { data: stats } = trpc.broadcast.getStats.useQuery({
-    organizationId: 1,
-  });
+  // 統計資料（從 campaigns 列表計算）
+  const stats = {
+    totalCampaigns: campaigns?.length || 0,
+    sentCampaigns: campaigns?.filter((c: any) => c.status === 'sent').length || 0,
+    totalRecipients: campaigns?.reduce((sum: number, c: any) => sum + (c.totalRecipients || 0), 0) || 0,
+    avgOpenRate: 0, // TODO: 實作開信率追蹤
+  };
 
   // 建立推播活動
   const createMutation = trpc.broadcast.create.useMutation({
@@ -40,7 +43,17 @@ export default function BroadcastCampaigns() {
   });
 
   // 立即發送推播
-    const deleteMutation = trpc.broadcast.delete.useMutation({
+  const sendNowMutation = trpc.broadcast.send.useMutation({
+    onSuccess: () => {
+      toast({ title: "推播已發送" });
+      refetchCampaigns();
+    },
+    onError: (error: any) => {
+      toast({ title: "發送失敗", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = trpc.broadcast.delete.useMutation({
     onSuccess: () => {
       toast({ title: "活動已刪除" });
       refetchCampaigns();
@@ -55,12 +68,12 @@ export default function BroadcastCampaigns() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const targetFilters = {
-      tags: formData.get("tags") ? (formData.get("tags") as string).split(",").map(t => t.trim()) : undefined,
-      minSpending: formData.get("minSpending") ? Number(formData.get("minSpending")) : undefined,
-      maxSpending: formData.get("maxSpending") ? Number(formData.get("maxSpending")) : undefined,
+    const targetAudience = {
+      tags: formData.get("tags") ? (formData.get("tags") as string).split(",").map(Number) : undefined,
+      minSpent: formData.get("minSpending") ? Number(formData.get("minSpending")) : undefined,
+      maxSpent: formData.get("maxSpending") ? Number(formData.get("maxSpending")) : undefined,
       minVisitCount: formData.get("minVisitCount") ? Number(formData.get("minVisitCount")) : undefined,
-      lastVisitDays: formData.get("lastVisitDays") ? Number(formData.get("lastVisitDays")) : undefined,
+      lastVisitDaysAgo: formData.get("lastVisitDays") ? Number(formData.get("lastVisitDays")) : undefined,
     };
 
     createMutation.mutate({
@@ -68,7 +81,7 @@ export default function BroadcastCampaigns() {
       name: formData.get("name") as string,
       messageType: formData.get("messageType") as "text" | "image" | "flex",
       messageContent: formData.get("messageContent") as string,
-      targetFilters,
+      targetAudience,
       scheduledAt: formData.get("scheduledAt") ? (formData.get("scheduledAt") as string) : undefined,
     });
   };

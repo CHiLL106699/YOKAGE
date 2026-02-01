@@ -94,7 +94,6 @@ export default function AiChatbotSettings() {
       description: formData.get("description") as string || undefined,
       keywords: formData.get("patterns") ? (formData.get("patterns") as string).split("\n").filter(p => p.trim()) : [],
       responseTemplate: formData.get("responseTemplate") as string,
-      action: formData.get("action") as string || undefined,
     });
   };
 

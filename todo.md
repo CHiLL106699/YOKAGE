@@ -2123,3 +2123,17 @@
 - [x] Phase 104: 前端 UI 實作（Rich Menu 管理、分群推播、AI 設定）
 - [x] Phase 105: 註冊路由與導航選單
 - [ ] Phase 106: 完整測試與交付
+
+
+---
+
+## Phase 107: Rich Menu 視覺化編輯器
+- [ ] 建立 RichMenuEditor.tsx 組件
+- [ ] 實作圖片上傳與 Canvas 繪製
+- [ ] 實作拖曳式矩形選取功能
+- [ ] 實作座標自動計算
+- [ ] 實作按鈕動作設定對話框
+- [ ] 實作按鈕列表管理（編輯、刪除）
+- [ ] 整合至 RichMenuManagement 頁面
+- [ ] 瀏覽器功能測試
+- [ ] 儲存 Checkpoint

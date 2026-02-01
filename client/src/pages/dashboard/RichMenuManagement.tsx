@@ -10,12 +10,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Eye, Users, BarChart3, Upload } from "lucide-react";
+import RichMenuEditor from "@/components/RichMenuEditor";
 
 export default function RichMenuManagement() {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editorAreas, setEditorAreas] = useState<any[]>([]);
+  const [editorImageUrl, setEditorImageUrl] = useState<string>("");
 
   // 查詢 Rich Menu 模板列表
   const { data: templates = [], refetch: refetchTemplates } = trpc.richMenu.list.useQuery({
@@ -26,7 +29,7 @@ export default function RichMenuManagement() {
   const stats = {
     totalTemplates: templates?.length || 0,
     activeTemplates: templates?.filter(t => t.isActive).length || 0,
-    abTestTemplates: templates?.filter(t => t.abTestEnabled).length || 0,
+    abTestTemplates: 0, // TODO: 實作 A/B 測試功能
   };
 
   // 建立 Rich Menu 模板
@@ -63,11 +66,7 @@ export default function RichMenuManagement() {
       description: formData.get("description") as string || undefined,
       imageBase64: formData.get("imageUrl") as string, // TODO: 實作圖片上傳至 S3 再轉成 Base64
       chatBarText: formData.get("chatBarText") as string,
-      size: {
-        width: 2500,
-        height: 1686,
-      },
-      areas: [], // TODO: 實作按鈕區域編輯器
+      areas: editorAreas
     });
   };
 
@@ -106,15 +105,15 @@ export default function RichMenuManagement() {
                 <Textarea id="description" name="description" placeholder="模板用途說明" />
               </div>
               <div>
-                <Label htmlFor="imageUrl">圖片 URL</Label>
-                <Input id="imageUrl" name="imageUrl" placeholder="https://..." required />
-                <p className="text-sm text-muted-foreground mt-1">
-                  圖片尺寸：2500x1686 或 2500x843 像素
-                </p>
-              </div>
-              <div>
                 <Label htmlFor="chatBarText">聊天列文字</Label>
                 <Input id="chatBarText" name="chatBarText" placeholder="點擊查看選單" required />
+              </div>
+              <div>
+                <Label>Rich Menu 視覺化編輯器</Label>
+                <RichMenuEditor
+                  onAreasChange={setEditorAreas}
+                  onImageChange={setEditorImageUrl}
+                />
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -155,7 +154,7 @@ export default function RichMenuManagement() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalClicks || 0}</div>
+            <div className="text-2xl font-bold">0</div>
           </CardContent>
         </Card>
       </div>
