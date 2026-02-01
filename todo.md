@@ -1979,3 +1979,37 @@
 - [ ] 測試客戶標籤分配功能
 - [ ] 測試按標籤篩選客戶功能
 - [ ] 確保所有 Toast 通知正常顯示
+
+
+---
+
+## Phase 97: 完善 CRM 模組（客戶資料庫整合）
+
+### TypeScript 錯誤修正
+- [ ] 修正 LineCrmDashboard.tsx line 167 的 backgroundColor 類型錯誤
+
+### 客戶資料表 Schema
+- [ ] 設計客戶資料表結構（id, name, phone, email, lineUserId, tags, createdAt, updatedAt）
+- [ ] 建立 crmCustomers 資料表 Schema
+- [ ] 執行 pnpm db:push 同步資料庫
+
+### 客戶 CRUD 後端 API
+- [ ] 實作客戶列表查詢 API（支援按標籤篩選）
+- [ ] 實作客戶新增 API
+- [ ] 實作客戶編輯 API
+- [ ] 實作客戶刪除 API
+- [ ] 註冊 crmCustomers Router
+
+### 前端整合
+- [ ] 將 CRM Dashboard 的 Mock 客戶資料替換為真實 API
+- [ ] 實作客戶新增 Dialog
+- [ ] 實作客戶編輯 Dialog
+- [ ] 實作客戶刪除確認 Dialog
+- [ ] 整合標籤篩選器與客戶 API
+
+### 測試
+- [ ] 測試客戶 CRUD 功能（新增、編輯、刪除）
+- [ ] 測試標籤管理功能（新增、編輯、刪除標籤）
+- [ ] 測試客戶標籤分配功能（新增/移除標籤）
+- [ ] 測試按標籤篩選客戶功能
+- [ ] 測試 Toast 通知顯示

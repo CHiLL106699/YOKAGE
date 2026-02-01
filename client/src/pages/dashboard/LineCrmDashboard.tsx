@@ -1,83 +1,88 @@
 import React, { useState } from 'react';
-import { MessageSquare, Users, Tag, Send, Settings, Search, Plus, X } from 'lucide-react';
+import { MessageSquare, Users, Tag, Send, Settings, Search, Plus, X, Edit, Trash2 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Customer {
-  id: string;
-  name: string;
-  avatar: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  tags: string[];
-  unread: number;
-}
-
-const mockCustomers: Customer[] = [
-  {
-    id: 'C001',
-    name: '林小美',
-    avatar: 'https://i.pravatar.cc/150?u=C001',
-    lastMessage: '請問皮秒雷射還有優惠嗎？',
-    lastMessageTime: '10:30 AM',
-    tags: ['VIP', '皮秒雷射'],
-    unread: 2,
-  },
-  {
-    id: 'C002',
-    name: '陳大文',
-    avatar: 'https://i.pravatar.cc/150?u=C002',
-    lastMessage: '已預約下週二的回診',
-    lastMessageTime: '昨天',
-    tags: ['新客', '肉毒'],
-    unread: 0,
-  },
-  {
-    id: 'C003',
-    name: '張雅婷',
-    avatar: 'https://i.pravatar.cc/150?u=C003',
-    lastMessage: '謝謝醫師，效果很滿意！',
-    lastMessageTime: '前天',
-    tags: ['忠誠客戶', '玻尿酸'],
-    unread: 0,
-  },
-  {
-    id: 'C004',
-    name: '王志豪',
-    avatar: 'https://i.pravatar.cc/150?u=C004',
-    lastMessage: '請問營業時間？',
-    lastMessageTime: '1 週前',
-    tags: ['潛在客戶'],
-    unread: 1,
-  },
-];
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const LineCrmDashboard: React.FC = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer>(mockCustomers[0]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
+  const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterTagIds, setFilterTagIds] = useState<number[]>([]);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
   
   // 查詢所有標籤
   const { data: allTags = [] } = trpc.crmTags.list.useQuery();
   
+  // 查詢客戶列表（支援搜尋與標籤篩選）
+  const { data: customers = [], refetch: refetchCustomers } = trpc.crmCustomers.list.useQuery({
+    organizationId: 1, // TODO: 從 context 取得 organizationId
+    search: searchQuery,
+    tagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
+  });
+  
   // 查詢當前客戶的標籤
-  const { data: customerTags = [], refetch: refetchCustomerTags } = trpc.crmTags.getCustomerTags.useQuery(
-    { customerId: parseInt(selectedCustomer.id.replace('C', '')) },
-    { enabled: !!selectedCustomer }
+  const { data: customerTags = [], refetch: refetchCustomerTags } = trpc.crmCustomers.getCustomerTags.useQuery(
+    { customerId: selectedCustomerId! },
+    { enabled: !!selectedCustomerId }
   );
   
-  // 分配標籤 mutation
-  const assignTag = trpc.crmTags.assignToCustomer.useMutation({
+  // 新增客戶 mutation
+  const createCustomer = trpc.crmCustomers.create.useMutation({
+    onSuccess: () => {
+      toast({ title: '客戶已新增' });
+      refetchCustomers();
+      setIsCustomerDialogOpen(false);
+      setEditingCustomer(null);
+    },
+    onError: () => {
+      toast({ title: '新增客戶失敗', variant: 'destructive' });
+    }
+  });
+  
+  // 更新客戶 mutation
+  const updateCustomer = trpc.crmCustomers.update.useMutation({
+    onSuccess: () => {
+      toast({ title: '客戶已更新' });
+      refetchCustomers();
+      setIsCustomerDialogOpen(false);
+      setEditingCustomer(null);
+    },
+    onError: () => {
+      toast({ title: '更新客戶失敗', variant: 'destructive' });
+    }
+  });
+  
+  // 刪除客戶 mutation
+  const deleteCustomer = trpc.crmCustomers.delete.useMutation({
+    onSuccess: () => {
+      toast({ title: '客戶已刪除' });
+      refetchCustomers();
+      setSelectedCustomerId(null);
+    },
+    onError: () => {
+      toast({ title: '刪除客戶失敗', variant: 'destructive' });
+    }
+  });
+  
+  // 新增標籤 mutation
+  const addTag = trpc.crmCustomers.addTag.useMutation({
     onSuccess: () => {
       toast({ title: '標籤已新增' });
       refetchCustomerTags();
+      refetchCustomers();
       setIsTagDialogOpen(false);
+      setSelectedTagIds([]);
     },
     onError: () => {
       toast({ title: '新增標籤失敗', variant: 'destructive' });
@@ -85,10 +90,11 @@ const LineCrmDashboard: React.FC = () => {
   });
   
   // 移除標籤 mutation
-  const removeTag = trpc.crmTags.removeFromCustomer.useMutation({
+  const removeTag = trpc.crmCustomers.removeTag.useMutation({
     onSuccess: () => {
       toast({ title: '標籤已移除' });
       refetchCustomerTags();
+      refetchCustomers();
     },
     onError: () => {
       toast({ title: '移除標籤失敗', variant: 'destructive' });
@@ -96,200 +102,401 @@ const LineCrmDashboard: React.FC = () => {
   });
   
   const handleAssignTag = () => {
-    if (selectedTagIds.length === 0) return;
+    if (selectedTagIds.length === 0 || !selectedCustomerId) return;
     selectedTagIds.forEach(tagId => {
-      assignTag.mutate({
-        customerId: parseInt(selectedCustomer.id.replace('C', '')),
-        tagId
-      });
+      addTag.mutate({ customerId: selectedCustomerId, tagId });
     });
   };
   
   const handleRemoveTag = (tagId: number) => {
-    removeTag.mutate({
-      customerId: parseInt(selectedCustomer.id.replace('C', '')),
-      tagId
-    });
+    if (!selectedCustomerId) return;
+    removeTag.mutate({ customerId: selectedCustomerId, tagId });
   };
+  
+  const handleSaveCustomer = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      organizationId: 1, // TODO: 從 context 取得 organizationId
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string || undefined,
+      email: formData.get('email') as string || undefined,
+      lineUserId: formData.get('lineUserId') as string || undefined,
+      notes: formData.get('notes') as string || undefined,
+    };
+    
+    if (editingCustomer) {
+      updateCustomer.mutate({ id: editingCustomer.id, ...data });
+    } else {
+      createCustomer.mutate(data);
+    }
+  };
+  
+  const handleDeleteCustomer = () => {
+    if (!selectedCustomerId) return;
+    if (confirm('確定要刪除此客戶嗎？')) {
+      deleteCustomer.mutate({ id: selectedCustomerId });
+    }
+  };
+  
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+
   return (
-    <div className="min-h-screen bg-slate-50 p-6 flex flex-col h-screen">
+    <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <span className="text-[#00B900] mr-2"><MessageSquare className="h-8 w-8" /></span>
-          LINE 智能 iCRM
-        </h1>
-        <div className="flex space-x-4">
-          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#00B900] hover:bg-[#009900] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00B900]">
-            <Send className="-ml-1 mr-2 h-5 w-5" />
-            群發訊息
-          </button>
-          <button
-            onClick={() => navigate('/dashboard/crm/tags')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <Tag className="-ml-1 mr-2 h-5 w-5" />
+      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="w-6 h-6 text-[#06C755]" />
+          <h1 className="text-2xl font-bold text-gray-900">LINE CRM 客戶管理</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/dashboard/crm/tags')}>
+            <Tag className="w-4 h-4 mr-2" />
             標籤管理
-          </button>
-          <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            <Settings className="-ml-1 mr-2 h-5 w-5" />
-            設定
-          </button>
+          </Button>
+          <Button onClick={() => {
+            setEditingCustomer(null);
+            setIsCustomerDialogOpen(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            新增客戶
+          </Button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden bg-white shadow rounded-lg border border-gray-200">
-        {/* Sidebar: Customer List */}
-        <div className="w-1/3 border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200 space-y-3">
-            <div className="relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
-              </div>
-              <input
-                type="text"
-                name="search"
-                id="search"
-                className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2"
-                placeholder="搜尋客戶..."
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - Customer List */}
+        <div className="w-80 bg-white border-r flex flex-col">
+          {/* Search & Filter */}
+          <div className="p-4 border-b space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="搜尋客戶姓名、電話、Email..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select onValueChange={(value) => setSelectedTagIds(value === 'all' ? [] : [parseInt(value)])}>
-              <SelectTrigger className="w-full">
+            
+            {/* 標籤篩選 */}
+            <Select
+              value={filterTagIds.join(',')}
+              onValueChange={(value) => {
+                if (value === 'all') {
+                  setFilterTagIds([]);
+                } else {
+                  setFilterTagIds(value.split(',').map(Number));
+                }
+              }}
+            >
+              <SelectTrigger>
                 <SelectValue placeholder="按標籤篩選" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部客戶</SelectItem>
                 {allTags.map(tag => (
-                  <SelectItem key={tag.id} value={tag.id.toString()}>
-                    <span className="inline-flex items-center">
-                      <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: tag.color }} />
+                  <SelectItem key={tag.id} value={String(tag.id)}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: tag.color || '#6366f1' }}
+                      />
                       {tag.name}
-                    </span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Customer List */}
           <div className="flex-1 overflow-y-auto">
-            <ul className="divide-y divide-gray-200">
-              {mockCustomers.map((customer) => (
-                <li 
-                  key={customer.id} 
-                  className="hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out"
-                  onClick={() => setSelectedCustomer(customer)}
+            {customers.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>尚無客戶資料</p>
+              </div>
+            ) : (
+              customers.map((customer) => (
+                <div
+                  key={customer.id}
+                  onClick={() => setSelectedCustomerId(customer.id)}
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                    selectedCustomerId === customer.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  }`}
                 >
-                  <div className="px-4 py-4 flex items-center sm:px-6">
-                    <div className="min-w-0 flex-1 flex items-center">
-                      <div className="flex-shrink-0">
-                        <img className="h-12 w-12 rounded-full" src={customer.avatar} alt="" />
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                      {customer.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold text-gray-900 truncate">{customer.name}</h3>
                       </div>
-                      <div className="min-w-0 flex-1 px-4 md:grid md:grid-cols-2 md:gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-indigo-600 truncate">{customer.name}</p>
-                          <p className="mt-2 flex items-center text-sm text-gray-500">
-                            <span className="truncate">{customer.lastMessage}</span>
-                          </p>
-                        </div>
-                        <div className="hidden md:block">
-                          <div className="flex flex-col items-end">
-                            <p className="text-sm text-gray-900">{customer.lastMessageTime}</p>
-                            {customer.unread > 0 && (
-                              <span className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                {customer.unread}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                      <p className="text-sm text-gray-500 truncate">{customer.phone || customer.email || '無聯絡資訊'}</p>
+                      {customer.notes && (
+                        <p className="text-xs text-gray-400 truncate mt-1">{customer.notes}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Main Content - Customer Details */}
+        <div className="flex-1 flex flex-col">
+          {selectedCustomer ? (
+            <>
+              {/* Customer Header */}
+              <div className="bg-white border-b px-6 py-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                      {selectedCustomer.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{selectedCustomer.name}</h2>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+                        {selectedCustomer.phone && <span>📞 {selectedCustomer.phone}</span>}
+                        {selectedCustomer.email && <span>✉️ {selectedCustomer.email}</span>}
+                      </div>
+                      
+                      {/* 客戶標籤 */}
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {customerTags.map(tag => (
+                          <span
+                            key={tag.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white"
+                            style={{ backgroundColor: tag.color || '#6366f1' }}
+                          >
+                            {tag.name}
+                            <button
+                              onClick={() => handleRemoveTag(tag.id)}
+                              className="hover:bg-white/20 rounded-full p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsTagDialogOpen(true)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          新增標籤
+                        </Button>
                       </div>
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Main Chat Area (Mockup) */}
-        <div className="flex-1 flex flex-col bg-gray-50">
-          {/* Chat Header */}
-          <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
-            <div className="flex items-center">
-              <img className="h-10 w-10 rounded-full" src={selectedCustomer.avatar} alt="" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">{selectedCustomer.name}</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {customerTags.map(tag => (
-                    <span 
-                      key={tag.id} 
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                      style={{ backgroundColor: (tag.color || '#3B82F6') + '20', color: tag.color || '#3B82F6' }}
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingCustomer(selectedCustomer);
+                        setIsCustomerDialogOpen(true);
+                      }}
                     >
-                      {tag.name}
-                      <button 
-                        onClick={() => handleRemoveTag(tag.id)}
-                        className="ml-1 hover:text-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                  <button 
-                    onClick={() => setIsTagDialogOpen(true)}
-                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    新增標籤
-                  </button>
+                      <Edit className="w-4 h-4 mr-1" />
+                      編輯
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeleteCustomer}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      刪除
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex space-x-2">
-               <button className="p-2 text-gray-400 hover:text-gray-600">
-                 <Users className="h-5 w-5" />
-               </button>
-            </div>
-          </div>
 
-          {/* Chat Messages Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4">
-            <div className="flex justify-end">
-              <div className="bg-[#00B900] text-white rounded-lg py-2 px-4 max-w-xs">
-                您好，請問有什麼可以為您服務的嗎？
+              {/* Customer Info */}
+              <div className="flex-1 p-6 overflow-y-auto">
+                <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">客戶資訊</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm text-gray-600">姓名</Label>
+                      <p className="text-gray-900 font-medium">{selectedCustomer.name}</p>
+                    </div>
+                    
+                    {selectedCustomer.phone && (
+                      <div>
+                        <Label className="text-sm text-gray-600">電話</Label>
+                        <p className="text-gray-900 font-medium">{selectedCustomer.phone}</p>
+                      </div>
+                    )}
+                    
+                    {selectedCustomer.email && (
+                      <div>
+                        <Label className="text-sm text-gray-600">Email</Label>
+                        <p className="text-gray-900 font-medium">{selectedCustomer.email}</p>
+                      </div>
+                    )}
+                    
+                    {selectedCustomer.lineUserId && (
+                      <div>
+                        <Label className="text-sm text-gray-600">LINE ID</Label>
+                        <p className="text-gray-900 font-medium">{selectedCustomer.lineUserId}</p>
+                      </div>
+                    )}
+                    
+                    {selectedCustomer.gender && (
+                      <div>
+                        <Label className="text-sm text-gray-600">性別</Label>
+                        <p className="text-gray-900 font-medium">
+                          {selectedCustomer.gender === 'male' ? '男' : selectedCustomer.gender === 'female' ? '女' : '其他'}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {selectedCustomer.birthday && (
+                      <div>
+                        <Label className="text-sm text-gray-600">生日</Label>
+                        <p className="text-gray-900 font-medium">
+                          {new Date(selectedCustomer.birthday).toLocaleDateString('zh-TW')}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {selectedCustomer.address && (
+                      <div className="col-span-2">
+                        <Label className="text-sm text-gray-600">地址</Label>
+                        <p className="text-gray-900 font-medium">{selectedCustomer.address}</p>
+                      </div>
+                    )}
+                    
+                    {selectedCustomer.source && (
+                      <div>
+                        <Label className="text-sm text-gray-600">來源</Label>
+                        <p className="text-gray-900 font-medium">{selectedCustomer.source}</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <Label className="text-sm text-gray-600">會員等級</Label>
+                      <p className="text-gray-900 font-medium">{selectedCustomer.memberLevel || 'bronze'}</p>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm text-gray-600">累計消費</Label>
+                      <p className="text-gray-900 font-medium">NT$ {selectedCustomer.totalSpent || 0}</p>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm text-gray-600">到店次數</Label>
+                      <p className="text-gray-900 font-medium">{selectedCustomer.visitCount || 0} 次</p>
+                    </div>
+                  </div>
+                  
+                  {selectedCustomer.notes && (
+                    <div className="mt-4">
+                      <Label className="text-sm text-gray-600">備註</Label>
+                      <p className="text-gray-700 mt-1">{selectedCustomer.notes}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <Users className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg">請選擇客戶以查看詳細資訊</p>
               </div>
             </div>
-            <div className="flex justify-start">
-              <div className="bg-white border border-gray-200 text-gray-900 rounded-lg py-2 px-4 max-w-xs">
-                請問皮秒雷射還有優惠嗎？
-              </div>
-            </div>
-          </div>
-
-          {/* Input Area */}
-          <div className="p-4 bg-white border-t border-gray-200">
-            <div className="flex space-x-3">
-              <input
-                type="text"
-                className="flex-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md p-2 border"
-                placeholder="輸入訊息..."
-              />
-              <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <Send className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
-      
+
+      {/* 新增/編輯客戶 Dialog */}
+      <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingCustomer ? '編輯客戶' : '新增客戶'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveCustomer}>
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <div>
+                <Label htmlFor="name">姓名 *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingCustomer?.name}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone">電話</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  defaultValue={editingCustomer?.phone}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  defaultValue={editingCustomer?.email}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="lineUserId">LINE ID</Label>
+                <Input
+                  id="lineUserId"
+                  name="lineUserId"
+                  defaultValue={editingCustomer?.lineUserId}
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <Label htmlFor="notes">備註</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  defaultValue={editingCustomer?.notes}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCustomerDialogOpen(false)}>
+                取消
+              </Button>
+              <Button type="submit">
+                {editingCustomer ? '更新' : '新增'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* 新增標籤 Dialog */}
       <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>為 {selectedCustomer.name} 新增標籤</DialogTitle>
+            <DialogTitle>為客戶新增標籤</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Select onValueChange={(value) => setSelectedTagIds([parseInt(value)])}>
+          <div className="py-4">
+            <Label>選擇標籤</Label>
+            <Select
+              value={selectedTagIds.join(',')}
+              onValueChange={(value) => setSelectedTagIds(value.split(',').map(Number))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="選擇標籤" />
               </SelectTrigger>
@@ -297,20 +504,25 @@ const LineCrmDashboard: React.FC = () => {
                 {allTags
                   .filter(tag => !customerTags.some(ct => ct.id === tag.id))
                   .map(tag => (
-                    <SelectItem key={tag.id} value={tag.id.toString()}>
-                      <span className="inline-flex items-center">
-                        <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: tag.color || '#3B82F6' }} />
+                    <SelectItem key={tag.id} value={String(tag.id)}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: tag.color || '#6366f1' }}
+                        />
                         {tag.name}
-                      </span>
+                      </div>
                     </SelectItem>
                   ))}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTagDialogOpen(false)}>取消</Button>
-            <Button onClick={handleAssignTag} disabled={selectedTagIds.length === 0}>
-              確認新增
+            <Button variant="outline" onClick={() => setIsTagDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleAssignTag}>
+              新增
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -318,12 +530,5 @@ const LineCrmDashboard: React.FC = () => {
     </div>
   );
 };
-
-// Helper icon component
-const PlusTagIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-  </svg>
-);
 
 export default LineCrmDashboard;

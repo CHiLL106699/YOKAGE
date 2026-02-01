@@ -37,6 +37,8 @@ import { dashboardSystemBRouter } from "./routers/dashboardSystemB";
 import { biExportRouter } from './routers/biExport.js';
 // Phase 95: CRM 模組客戶標籤功能
 import { crmTagsRouter } from './routers/crmTags.js';
+// Phase 96: CRM 模組客戶 CRUD 功能
+import { crmCustomersRouter } from './routers/crmCustomers.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3860,6 +3862,8 @@ export const appRouter = router({
   biExport: biExportRouter,
   // Phase 95: CRM 模組客戶標籤功能
   crmTags: crmTagsRouter,
+  // Phase 96: CRM 模組客戶 CRUD 功能
+  crmCustomers: crmCustomersRouter,
 });
 
 export type AppRouter = typeof appRouter;
