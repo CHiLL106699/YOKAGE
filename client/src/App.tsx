@@ -133,6 +133,7 @@ import HrDashboard from "@/pages/dashboard/HrDashboard";
 import MultiBranchDashboard from "@/pages/dashboard/MultiBranchDashboard";
 import CrmTagManagement from '@/pages/dashboard/CrmTagManagement';
 import TagRulesManagement from '@/pages/dashboard/TagRulesManagement';
+import { LineWebhookManagement } from '@/pages/dashboard/LineWebhookManagement';
 
 function Router() {
   return (
@@ -146,6 +147,7 @@ function Router() {
       <Route path={"/dashboard/crm"} component={LineCrmDashboard} />
       <Route path={"/dashboard/crm/tags"} component={CrmTagManagement} />
       <Route path={"/dashboard/crm/tag-rules"} component={TagRulesManagement} />
+      <Route path={"/dashboard/line-webhook"} component={LineWebhookManagement} />
       <Route path={"/dashboard/bi"} component={BiDashboard} />
       <Route path={"/dashboard/gamification"} component={GamificationDashboard} />
       <Route path={"/dashboard/hr"} component={HrDashboard} />

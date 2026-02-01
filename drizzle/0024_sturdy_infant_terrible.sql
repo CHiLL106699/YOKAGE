@@ -1,0 +1,1 @@
+ALTER TABLE `interactions` MODIFY COLUMN `created_by` int;

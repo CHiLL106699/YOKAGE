@@ -2073,3 +2073,16 @@
 - [x] Phase 99: LINE Messaging API 整合（建立 lineMessagingSettings 資料表、實作發送/接收訊息 API、前端發送介面）
 - [x] 建立三層權限架構文件（超級管理員、診所管理者、客戶）
 - [x] 撰寫 CRM 系統操作手冊
+
+--- [x] Phase 100: LINE Webhook 自動接收訊息功能
+- [ ] 建立 lineWebhookEvents 資料表（記錄所有 Webhook 事件）
+- [ ] 建立 autoReplyRules 資料表（自動回覆規則）
+- [ ] 實作 LINE 簽章驗證函式（verifyLineSignature）
+- [ ] 建立 /api/line/webhook 端點（POST）
+- [ ] 實作訊息事件解析（文字、圖片、貼圖、位置等）
+- [ ] 自動建立互動記錄（類型：LINE 對話）
+- [ ] 實作自動回覆規則引擎（關鍵字觸發）
+- [ ] 建立 Webhook 管理前端頁面
+- [ ] 建立 Webhook 測試工具
+- [ ] 建立事件日誌查詢介面
+- [ ] 撰寫單元測試

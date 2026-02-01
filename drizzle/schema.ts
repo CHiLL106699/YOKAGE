@@ -2208,7 +2208,7 @@ export const interactions = mysqlTable("interactions", {
   type: mysqlEnum("type", ["phone", "meeting", "line", "appointment", "treatment", "note"]).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content"),
-  createdBy: int("created_by").notNull(), // 操作員工 ID
+  createdBy: int("created_by"), // 操作員工 ID（客戶發送的訊息為 null）
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -2251,3 +2251,46 @@ export const lineMessagingSettings = mysqlTable("line_messaging_settings", {
 
 export type LineMessagingSetting = typeof lineMessagingSettings.$inferSelect;
 export type InsertLineMessagingSetting = typeof lineMessagingSettings.$inferInsert;
+
+// ============================================
+// LINE Webhook 事件記錄表
+// ============================================
+export const lineWebhookEvents = mysqlTable("line_webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  eventType: varchar("event_type", { length: 50 }).notNull(), // message, follow, unfollow, join, leave, postback, beacon
+  sourceType: varchar("source_type", { length: 20 }).notNull(), // user, group, room
+  sourceId: varchar("source_id", { length: 100 }).notNull(), // LINE User ID, Group ID, Room ID
+  messageType: varchar("message_type", { length: 20 }), // text, image, video, audio, file, location, sticker
+  messageText: text("message_text"), // 訊息文字內容
+  messageId: varchar("message_id", { length: 100 }), // LINE Message ID
+  replyToken: varchar("reply_token", { length: 100 }), // LINE Reply Token
+  rawPayload: json("raw_payload").notNull(), // 完整的 Webhook Payload (JSON)
+  isProcessed: boolean("is_processed").notNull().default(false), // 是否已處理
+  processedAt: timestamp("processed_at"), // 處理時間
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type LineWebhookEvent = typeof lineWebhookEvents.$inferSelect;
+export type InsertLineWebhookEvent = typeof lineWebhookEvents.$inferInsert;
+
+// ============================================
+// 自動回覆規則表
+// ============================================
+export const autoReplyRules = mysqlTable("auto_reply_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(), // 規則名稱
+  description: text("description"), // 規則說明
+  triggerType: mysqlEnum("trigger_type", ["keyword", "regex", "always"]).notNull(), // keyword, regex, always
+  triggerValue: text("trigger_value"), // 觸發關鍵字或正則表達式
+  replyType: mysqlEnum("reply_type", ["text", "flex", "template"]).notNull(), // text, flex, template
+  replyContent: text("reply_content").notNull(), // 回覆內容 (JSON for flex/template)
+  isActive: boolean("is_active").notNull().default(true),
+  priority: int("priority").notNull().default(0), // 優先級（數字越大越優先）
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AutoReplyRule = typeof autoReplyRules.$inferSelect;
+export type InsertAutoReplyRule = typeof autoReplyRules.$inferInsert;

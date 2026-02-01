@@ -6,13 +6,17 @@ import { eq, and } from 'drizzle-orm';
 
 export const crmTagsRouter = router({
   // 列出所有標籤
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const tags = await db
-      .select()
-      .from(crmTagsSystemB)
-      .where(eq(crmTagsSystemB.organizationId, 1)); // TODO: Get from ctx.user
-    return tags;
-  }),
+  list: protectedProcedure
+    .input(z.object({
+      organizationId: z.number(),
+    }))
+    .query(async ({ input }) => {
+      const tags = await db
+        .select()
+        .from(crmTagsSystemB)
+        .where(eq(crmTagsSystemB.organizationId, input.organizationId));
+      return tags;
+    }),
 
   // 建立標籤
   create: protectedProcedure

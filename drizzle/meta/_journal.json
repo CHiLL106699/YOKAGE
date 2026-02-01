@@ -162,6 +162,20 @@
       "when": 1769959177672,
       "tag": "0022_cuddly_starhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1769962573866,
+      "tag": "0023_perfect_inertia",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1769962650134,
+      "tag": "0024_sturdy_infant_terrible",
+      "breakpoints": true
     }
   ]
 }

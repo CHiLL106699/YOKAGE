@@ -45,6 +45,9 @@ import { interactionsRouter } from './routers/interactions.js';
 import { tagRulesRouter } from './routers/tagRules.js';
 // Phase 99: CRM 模組 LINE Messaging API 整合
 import { lineMessagingRouter } from './routers/lineMessaging.js';
+// Phase 100: LINE Webhook 自動接收訊息功能
+import { lineWebhookRouter } from './routers/lineWebhook.js';
+import { autoReplyRulesRouter } from './routers/autoReplyRules.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3876,6 +3879,9 @@ export const appRouter = router({
   tagRules: tagRulesRouter,
   // Phase 99: CRM 模組 LINE Messaging API 整合
   lineMessaging: lineMessagingRouter,
+  // Phase 100: LINE Webhook 自動接收訊息功能
+  lineWebhook: lineWebhookRouter,
+  autoReplyRules: autoReplyRulesRouter,
 });
 
 export type AppRouter = typeof appRouter;
