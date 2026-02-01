@@ -2137,3 +2137,15 @@
 - [ ] 整合至 RichMenuManagement 頁面
 - [ ] 瀏覽器功能測試
 - [ ] 儲存 Checkpoint
+
+
+---
+
+## Phase 108-114: CRM 進階優化功能
+- [ ] Phase 108: 建立 Rich Menu 模板市集資料庫與預建模板
+- [ ] Phase 109: 實作 Rich Menu 模板市集後端 API 與前端 UI
+- [ ] Phase 110: 擴充推播系統支援 A/B 測試
+- [ ] Phase 111: 實作 A/B 測試效果追蹤與比較儀表板
+- [ ] Phase 112: 整合 Supabase pgvector 與向量化知識庫
+- [ ] Phase 113: 實作語意搜尋與相似問題推薦
+- [ ] Phase 114: 完整測試與交付

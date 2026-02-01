@@ -2469,3 +2469,62 @@ export const aiKnowledgeBase = mysqlTable('ai_knowledge_base', {
 
 export type AiKnowledgeBase = typeof aiKnowledgeBase.$inferSelect;
 export type InsertAiKnowledgeBase = typeof aiKnowledgeBase.$inferInsert;
+
+/**
+ * Rich Menu 模板市集表
+ */
+export const richMenuTemplateMarket = mysqlTable('rich_menu_template_market', {
+  id: int('id').primaryKey().autoincrement(),
+  category: varchar('category', { length: 50 }).notNull(), // 'restaurant', 'beauty', 'retail', 'medical'
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  imageUrl: varchar('image_url', { length: 500 }).notNull(),
+  imageWidth: int('image_width').notNull(),
+  imageHeight: int('image_height').notNull(),
+  areas: json('areas').notNull(), // 按鈕區域定義（JSON 格式）
+  tags: json('tags'), // 標籤（例如：['熱門', '新品', '優惠']）
+  usageCount: int('usage_count').default(0), // 使用次數
+  rating: decimal('rating', { precision: 3, scale: 2 }), // 評分（0-5）
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type RichMenuTemplateMarket = typeof richMenuTemplateMarket.$inferSelect;
+export type InsertRichMenuTemplateMarket = typeof richMenuTemplateMarket.$inferInsert;
+
+/**
+ * 推播活動版本表（A/B 測試）
+ */
+export const broadcastCampaignVariants = mysqlTable('broadcast_campaign_variants', {
+  id: int('id').primaryKey().autoincrement(),
+  campaignId: int('campaign_id').notNull(),
+  variantName: varchar('variant_name', { length: 100 }).notNull(), // 版本名稱（例如：A, B, C）
+  messageContent: text('message_content').notNull(),
+  messageType: varchar('message_type', { length: 50 }).notNull(), // text, image, flex
+  flexMessageJson: json('flex_message_json'), // Flex Message JSON
+  trafficPercentage: int('traffic_percentage').notNull(), // 流量分配百分比（0-100）
+  sentCount: int('sent_count').default(0), // 發送數量
+  openedCount: int('opened_count').default(0), // 開啟數量
+  clickedCount: int('clicked_count').default(0), // 點擊數量
+  convertedCount: int('converted_count').default(0), // 轉換數量
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type BroadcastCampaignVariant = typeof broadcastCampaignVariants.$inferSelect;
+export type InsertBroadcastCampaignVariant = typeof broadcastCampaignVariants.$inferInsert;
+
+/**
+ * AI 知識庫向量表（pgvector 整合）
+ */
+export const aiKnowledgeBaseVectors = mysqlTable('ai_knowledge_base_vectors', {
+  id: int('id').primaryKey().autoincrement(),
+  knowledgeBaseId: int('knowledge_base_id').notNull(),
+  embedding: json('embedding').notNull(), // 向量（JSON 格式，因 MySQL 不支援 vector 類型）
+  embeddingModel: varchar('embedding_model', { length: 100 }).default('text-embedding-ada-002'), // 向量模型
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export type AiKnowledgeBaseVector = typeof aiKnowledgeBaseVectors.$inferSelect;
+export type InsertAiKnowledgeBaseVector = typeof aiKnowledgeBaseVectors.$inferInsert;
