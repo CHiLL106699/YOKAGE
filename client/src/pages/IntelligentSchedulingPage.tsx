@@ -3,7 +3,7 @@ import { PageTemplate } from '@/components/PageTemplate';
 import { trpc } from '@/lib/trpc'; 
 
 const IntelligentSchedulingPage: React.FC = () => {
-  const { data, isLoading, error } = trpc.staff.list.useQuery({});
+  const { data, isLoading, error } = trpc.staff.list.useQuery({ organizationId: 1 });
 
   const pageTitle = "智能排程中心";
   const pageDescription = "透過 AI 演算法優化您的資源分配與時間表。所有敏感操作均在後端處理，確保資安。";
