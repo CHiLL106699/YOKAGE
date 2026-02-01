@@ -2196,3 +2196,58 @@ export const inventoryTransfersSystemB = mysqlTable("inventory_transfers_system_
 
 export type InventoryTransferSystemB = typeof inventoryTransfersSystemB.$inferSelect;
 export type InsertInventoryTransferSystemB = typeof inventoryTransfersSystemB.$inferInsert;
+
+
+// ============================================
+// 客戶互動歷史記錄表
+// ============================================
+export const interactions = mysqlTable("interactions", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  customerId: int("customer_id").notNull(),
+  type: mysqlEnum("type", ["phone", "meeting", "line", "appointment", "treatment", "note"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content"),
+  createdBy: int("created_by").notNull(), // 操作員工 ID
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Interaction = typeof interactions.$inferSelect;
+export type InsertInteraction = typeof interactions.$inferInsert;
+
+// ============================================
+// 自動化標籤規則表
+// ============================================
+export const tagRules = mysqlTable("tag_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull(),
+  tagId: int("tag_id").notNull(), // 關聯到 customerTags
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  ruleType: mysqlEnum("rule_type", ["spending", "visit_count", "last_visit", "member_level"]).notNull(),
+  condition: json("condition").notNull(), // 規則條件 JSON（例如：{"operator": ">=", "value": 100000}）
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TagRule = typeof tagRules.$inferSelect;
+export type InsertTagRule = typeof tagRules.$inferInsert;
+
+// ============================================
+// LINE Messaging API 設定表
+// ============================================
+export const lineMessagingSettings = mysqlTable("line_messaging_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organization_id").notNull().unique(),
+  channelAccessToken: text("channel_access_token").notNull(),
+  channelSecret: varchar("channel_secret", { length: 255 }).notNull(),
+  webhookUrl: text("webhook_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LineMessagingSetting = typeof lineMessagingSettings.$inferSelect;
+export type InsertLineMessagingSetting = typeof lineMessagingSettings.$inferInsert;

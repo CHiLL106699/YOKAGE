@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Users, Tag, Send, Settings, Search, Plus, X, Edit, Trash2 } from 'lucide-react';
+import { MessageSquare, Users, Tag, Send, Settings, Search, Plus, X, Edit, Trash2, History } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { InteractionHistory } from '@/components/InteractionHistory';
+import { SendLineMessageDialog } from '@/components/SendLineMessageDialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const LineCrmDashboard: React.FC = () => {
   const [, navigate] = useLocation();
@@ -20,6 +23,7 @@ const LineCrmDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTagIds, setFilterTagIds] = useState<number[]>([]);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [isSendLineMessageDialogOpen, setIsSendLineMessageDialogOpen] = useState(false);
   
   // 查詢所有標籤
   const { data: allTags = [] } = trpc.crmTags.list.useQuery();
@@ -295,6 +299,14 @@ const LineCrmDashboard: React.FC = () => {
                   
                   <div className="flex items-center gap-2">
                     <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setIsSendLineMessageDialogOpen(true)}
+                    >
+                      <Send className="w-4 h-4 mr-1" />
+                      發送 LINE 訊息
+                    </Button>
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
@@ -317,10 +329,16 @@ const LineCrmDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Customer Info */}
+              {/* Customer Info with Tabs */}
               <div className="flex-1 p-6 overflow-y-auto">
-                <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">客戶資訊</h3>
+                <Tabs defaultValue="info" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="info">客戶資訊</TabsTrigger>
+                    <TabsTrigger value="interactions">互動歷史</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="info" className="mt-4">
+                    <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -397,13 +415,19 @@ const LineCrmDashboard: React.FC = () => {
                     </div>
                   </div>
                   
-                  {selectedCustomer.notes && (
-                    <div className="mt-4">
-                      <Label className="text-sm text-gray-600">備註</Label>
-                      <p className="text-gray-700 mt-1">{selectedCustomer.notes}</p>
+                      {selectedCustomer.notes && (
+                        <div className="mt-4">
+                          <Label className="text-sm text-gray-600">備註</Label>
+                          <p className="text-gray-700 mt-1">{selectedCustomer.notes}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="interactions" className="mt-4">
+                    <InteractionHistory customerId={selectedCustomerId!} organizationId={1} />
+                  </TabsContent>
+                </Tabs>
               </div>
             </>
           ) : (
@@ -527,6 +551,15 @@ const LineCrmDashboard: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 發送 LINE 訊息 Dialog */}
+      <SendLineMessageDialog
+        open={isSendLineMessageDialogOpen}
+        onOpenChange={setIsSendLineMessageDialogOpen}
+        organizationId={1}
+        customerId={selectedCustomerId || undefined}
+        mode="single"
+      />
     </div>
   );
 };

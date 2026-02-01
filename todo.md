@@ -2013,3 +2013,63 @@
 - [ ] 測試客戶標籤分配功能（新增/移除標籤）
 - [ ] 測試按標籤篩選客戶功能
 - [ ] 測試 Toast 通知顯示
+
+
+---
+
+## Phase 97-103: CRM 進階功能（客戶互動歷史、自動化標籤、LINE Messaging API 整合）
+
+### Phase 97: 設計資料庫 Schema
+- [ ] 建立 interactions 資料表（客戶互動歷史記錄）
+- [ ] 建立 tagRules 資料表（自動化標籤規則）
+- [ ] 建立 lineMessagingSettings 資料表（LINE Bot 設定）
+- [ ] 執行資料庫 migration
+
+### Phase 98: 實作客戶互動歷史記錄後端 API
+- [ ] 建立 interactions Router（list, create, update, delete）
+- [ ] 支援按客戶 ID 查詢互動記錄
+- [ ] 支援按時間範圍篩選
+- [ ] 註冊 Router 至 routers.ts
+
+### Phase 99: 實作自動化標籤系統後端邏輯
+- [ ] 建立標籤規則引擎（根據消費金額、到店次數、最後到店時間自動分配標籤）
+- [ ] 建立 tagRules Router（CRUD API）
+- [ ] 實作標籤自動分配排程任務
+- [ ] 註冊 Router 至 routers.ts
+
+### Phase 100: 整合 LINE Messaging API 後端
+- [ ] 建立 lineMessaging Router（發送訊息、接收 Webhook）
+- [ ] 整合 LINE Messaging API SDK
+- [ ] 實作 Webhook 處理邏輯（接收客戶訊息）
+- [ ] 實作訊息發送功能（文字、圖片、Flex Message）
+- [ ] 註冊 Router 至 routers.ts
+
+### Phase 101: 實作前端 UI
+- [ ] 在客戶詳細資訊頁面新增「互動歷史」時間軸
+- [ ] 建立「新增互動記錄」Dialog
+- [ ] 建立「標籤規則管理」頁面（超級管理員專用）
+- [ ] 在 CRM Dashboard 新增「發送訊息」功能
+- [ ] 建立「LINE 設定」頁面（超級管理員專用）
+
+### Phase 102: 建立三層權限架構與操作文件
+- [ ] 實作 RBAC 權限控制（superAdmin, clinicManager, customer）
+- [ ] 撰寫超級管理員操作手冊（如何設定 LINE Bot、管理標籤規則）
+- [ ] 撰寫診所管理者操作手冊（如何發送訊息、查看互動歷史）
+- [ ] 建立權限測試案例
+
+### Phase 103: 完整測試與交付
+- [ ] 測試客戶互動歷史記錄功能
+- [ ] 測試自動化標籤系統
+- [ ] 測試 LINE 訊息發送/接收功能
+- [ ] 測試三層權限架構
+- [ ] 產生最終操作文件
+- [ ] 儲存 Checkpoint 並交付
+
+---
+
+## Phase 97-99: CRM 進階功能（客戶互動歷史、自動化標籤、LINE Messaging API）
+- [x] Phase 97: 客戶互動歷史記錄功能（建立 interactions 資料表、實作 CRUD API、前端 UI 整合）
+- [x] Phase 98: 自動化標籤系統（建立 tagRules 資料表、實作標籤規則引擎、前端管理介面）
+- [x] Phase 99: LINE Messaging API 整合（建立 lineMessagingSettings 資料表、實作發送/接收訊息 API、前端發送介面）
+- [x] 建立三層權限架構文件（超級管理員、診所管理者、客戶）
+- [x] 撰寫 CRM 系統操作手冊

@@ -131,7 +131,8 @@ import BiDashboard from "@/pages/dashboard/BiDashboard";
 import GamificationDashboard from "@/pages/dashboard/GamificationDashboard";
 import HrDashboard from "@/pages/dashboard/HrDashboard";
 import MultiBranchDashboard from "@/pages/dashboard/MultiBranchDashboard";
-import CrmTagManagement from "@/pages/dashboard/CrmTagManagement";
+import CrmTagManagement from '@/pages/dashboard/CrmTagManagement';
+import TagRulesManagement from '@/pages/dashboard/TagRulesManagement';
 
 function Router() {
   return (
@@ -144,6 +145,7 @@ function Router() {
       <Route path={"/dashboard/inventory"} component={InventoryDashboard} />
       <Route path={"/dashboard/crm"} component={LineCrmDashboard} />
       <Route path={"/dashboard/crm/tags"} component={CrmTagManagement} />
+      <Route path={"/dashboard/crm/tag-rules"} component={TagRulesManagement} />
       <Route path={"/dashboard/bi"} component={BiDashboard} />
       <Route path={"/dashboard/gamification"} component={GamificationDashboard} />
       <Route path={"/dashboard/hr"} component={HrDashboard} />

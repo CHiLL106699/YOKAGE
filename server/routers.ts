@@ -39,6 +39,12 @@ import { biExportRouter } from './routers/biExport.js';
 import { crmTagsRouter } from './routers/crmTags.js';
 // Phase 96: CRM 模組客戶 CRUD 功能
 import { crmCustomersRouter } from './routers/crmCustomers.js';
+// Phase 97: CRM 模組客戶互動歷史記錄功能
+import { interactionsRouter } from './routers/interactions.js';
+// Phase 98: CRM 模組自動化標籤系統
+import { tagRulesRouter } from './routers/tagRules.js';
+// Phase 99: CRM 模組 LINE Messaging API 整合
+import { lineMessagingRouter } from './routers/lineMessaging.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3864,6 +3870,12 @@ export const appRouter = router({
   crmTags: crmTagsRouter,
   // Phase 96: CRM 模組客戶 CRUD 功能
   crmCustomers: crmCustomersRouter,
+  // Phase 97: CRM 模組客戶互動歷史記錄功能
+  interactions: interactionsRouter,
+  // Phase 98: CRM 模組自動化標籤系統
+  tagRules: tagRulesRouter,
+  // Phase 99: CRM 模組 LINE Messaging API 整合
+  lineMessaging: lineMessagingRouter,
 });
 
 export type AppRouter = typeof appRouter;
