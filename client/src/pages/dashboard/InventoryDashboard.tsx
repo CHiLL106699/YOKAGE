@@ -1,9 +1,41 @@
 import React from 'react';
-import { Package, Box, AlertCircle, Plus, Settings } from 'lucide-react';
+import { Package, Box, AlertCircle, Plus, Settings, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
 const InventoryDashboard: React.FC = () => {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+  const [formData, setFormData] = React.useState({
+    productId: 1,
+    location: '',
+    quantity: 0,
+    minStock: 0,
+    expiryDate: ''
+  });
+  
   const { data: inventoryItems, isLoading } = trpc.dashboardB.inventory.list.useQuery();
+  const utils = trpc.useUtils();
+  const createMutation = trpc.dashboardB.inventory.create.useMutation({
+    onSuccess: () => {
+      utils.dashboardB.inventory.list.invalidate();
+      setIsCreateDialogOpen(false);
+      setFormData({ productId: '', location: '', quantity: 0, minStock: 0, expiryDate: '' });
+      alert('庫存項目新增成功！');
+    },
+    onError: (error) => {
+      alert(`新增失敗：${error.message}`);
+    }
+  });
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMutation.mutate({
+      productId: Number(formData.productId),
+      location: formData.location,
+      quantity: formData.quantity,
+      minStock: formData.minStock,
+      expiryDate: formData.expiryDate ? new Date(formData.expiryDate) : undefined
+    });
+  };
 
   // Calculate stats based on real data
   const totalValue = inventoryItems?.reduce((acc, item) => acc + (item.quantity || 0) * 100, 0) || 0;
@@ -29,7 +61,10 @@ const InventoryDashboard: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-gray-900">庫存管理</h1>
         <div className="flex space-x-4">
-          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
             <Plus className="-ml-1 mr-2 h-5 w-5" />
             新增項目
           </button>
@@ -136,6 +171,85 @@ const InventoryDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Create Dialog */}
+      {isCreateDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">新增庫存項目</h3>
+              <button onClick={() => setIsCreateDialogOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">產品 ID</label>
+                <input
+                  type="number"
+                  value={formData.productId}
+                  onChange={(e) => setFormData({ ...formData, productId: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">儲存位置</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">庫存量</label>
+                <input
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">最低庫存</label>
+                <input
+                  type="number"
+                  value={formData.minStock}
+                  onChange={(e) => setFormData({ ...formData, minStock: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">到期日</label>
+                <input
+                  type="date"
+                  value={formData.expiryDate}
+                  onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {createMutation.isPending ? '新增中...' : '確認新增'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
