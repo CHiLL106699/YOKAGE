@@ -10,7 +10,26 @@ import {
   date,
   time,
   serial,
+  customType,
 } from "drizzle-orm/pg-core";
+
+// pgvector custom type for Drizzle ORM
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return 'vector(1536)';
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(',')}]`;
+  },
+  fromDriver(value: string): number[] {
+    // Parse PostgreSQL vector format: [0.1,0.2,...]
+    return value
+      .replace(/^\[/, '')
+      .replace(/\]$/, '')
+      .split(',')
+      .map(Number);
+  },
+});
 
 // ============================================
 // LemonSqueezy 金流整合
@@ -2519,11 +2538,11 @@ export type InsertBroadcastCampaignVariant = typeof broadcastCampaignVariants.$i
  */
 export const aiKnowledgeBaseVectors = pgTable('ai_knowledge_base_vectors', {
   id: serial('id').primaryKey(),
-  knowledgeBaseId: integer('knowledge_base_id').notNull(),
-  embedding: jsonb('embedding').notNull(), // 向量（JSON 格式，因 MySQL 不支援 vector 類型）
-  embeddingModel: varchar('embedding_model', { length: 100 }).default('text-embedding-ada-002'), // 向量模型
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  knowledgeBaseId: integer('knowledgeBaseId').notNull(),
+  embedding: vector('embedding').notNull(), // pgvector vector(1536) - OpenAI text-embedding-3-small
+  embeddingModel: varchar('embeddingModel', { length: 100 }).default('text-embedding-3-small'),
+  createdAt: timestamp('createdAt').defaultNow(),
+  updatedAt: timestamp('updatedAt').defaultNow(),
 });
 
 export type AiKnowledgeBaseVector = typeof aiKnowledgeBaseVectors.$inferSelect;

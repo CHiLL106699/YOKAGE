@@ -12,4 +12,6 @@ export const ENV = {
   lineUserId: process.env.LINE_USER_ID ?? "",
   // LemonSqueezy 金流整合
   lemonsqueezyApiKey: process.env.LEMONSQUEEZY_API_KEY ?? "",
+  // OpenAI API Key（用於 Embeddings 向量化）
+  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
 };
