@@ -39,9 +39,9 @@ export const tagRulesRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const [rule] = await db.insert(tagRules).values(input);
+      const [rule] = await db.insert(tagRules).values(input).returning();
 
-      return { success: true, id: rule.insertId };
+      return { success: true, id: rule.id };
     }),
 
   // 更新標籤規則

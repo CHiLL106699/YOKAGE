@@ -125,12 +125,12 @@ describe('LINE Webhook Integration Tests', () => {
         rawPayload: JSON.stringify(mockPayload),
         isProcessed: true,
         createdAt: new Date(),
-      });
+      }).returning();
 
       const [event] = await db
         .select()
         .from(lineWebhookEvents)
-        .where(eq(lineWebhookEvents.id, result.insertId))
+        .where(eq(lineWebhookEvents.id, result.id))
         .limit(1);
 
       expect(event).toBeDefined();

@@ -27,13 +27,13 @@ export const subscriptionRouter = router({
       features: z.array(z.string()),
     }))
     .mutation(async ({ input }) => {
-      // MySQL 的 insert 操作不支援 .returning()，需先插入後再查詢
+      // PostgreSQL insert with .returning()
       const [result] = await db.insert(subscriptionPlans).values({
         name: input.name,
         price: input.price.toString(),
         features: input.features,
-      });
-      const insertId = result.insertId;
+      }).returning();
+      const insertId = result.id;
       const [newPlan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, insertId));
       return newPlan;
     }),

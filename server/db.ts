@@ -1,5 +1,5 @@
 import { eq, and, desc, asc, sql, like, or, gte, lte, isNull, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
 import {
   InsertUser, users,
   organizations, InsertOrganization,
@@ -98,7 +98,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+    await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
@@ -125,8 +125,9 @@ export async function getUserById(id: number) {
 export async function createOrganization(org: InsertOrganization) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(organizations).values(org);
-  return result[0].insertId;
+  const [result] = await db.insert(organizations).values(org).returning();
+
+  return result.id;
 }
 
 export async function updateOrganization(id: number, org: Partial<InsertOrganization>) {
@@ -182,8 +183,9 @@ export async function deleteOrganization(id: number) {
 export async function addUserToOrganization(data: InsertOrganizationUser) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(organizationUsers).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(organizationUsers).values(data).returning();
+
+  return result.id;
 }
 
 export async function getUserOrganizations(userId: number) {
@@ -224,8 +226,9 @@ export async function getOrganizationUsers(organizationId: number) {
 export async function createCustomer(customer: InsertCustomer) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(customers).values(customer);
-  return result[0].insertId;
+  const [result] = await db.insert(customers).values(customer).returning();
+
+  return result.id;
 }
 
 export async function updateCustomer(id: number, customer: Partial<InsertCustomer>) {
@@ -281,8 +284,9 @@ export async function deleteCustomer(id: number) {
 export async function createCustomerTag(tag: InsertCustomerTag) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(customerTags).values(tag);
-  return result[0].insertId;
+  const [result] = await db.insert(customerTags).values(tag).returning();
+
+  return result.id;
 }
 
 export async function listCustomerTags(organizationId: number) {
@@ -316,8 +320,9 @@ export async function getCustomerTags(customerId: number) {
 export async function createProduct(product: InsertProduct) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(products).values(product);
-  return result[0].insertId;
+  const [result] = await db.insert(products).values(product).returning();
+
+  return result.id;
 }
 
 export async function updateProduct(id: number, product: Partial<InsertProduct>) {
@@ -360,8 +365,9 @@ export async function listProducts(organizationId: number, options?: { page?: nu
 export async function createStaff(staffData: InsertStaff) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(staff).values(staffData);
-  return result[0].insertId;
+  const [result] = await db.insert(staff).values(staffData).returning();
+
+  return result.id;
 }
 
 export async function updateStaff(id: number, staffData: Partial<InsertStaff>) {
@@ -402,8 +408,9 @@ export async function listStaff(organizationId: number, options?: { page?: numbe
 export async function createAppointment(appointment: InsertAppointment) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(appointments).values(appointment);
-  return result[0].insertId;
+  const [result] = await db.insert(appointments).values(appointment).returning();
+
+  return result.id;
 }
 
 export async function updateAppointment(id: number, appointment: Partial<InsertAppointment>) {
@@ -449,8 +456,9 @@ export async function listAppointments(organizationId: number, options?: { page?
 export async function createSchedule(schedule: InsertSchedule) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(schedules).values(schedule);
-  return result[0].insertId;
+  const [result] = await db.insert(schedules).values(schedule).returning();
+
+  return result.id;
 }
 
 export async function listSchedules(organizationId: number, options?: { startDate?: string; endDate?: string; staffId?: number }) {
@@ -472,8 +480,9 @@ export async function listSchedules(organizationId: number, options?: { startDat
 export async function createAttendanceRecord(record: InsertAttendanceRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(attendanceRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(attendanceRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function updateAttendanceRecord(id: number, record: Partial<InsertAttendanceRecord>) {
@@ -504,8 +513,9 @@ export async function listAttendanceRecords(organizationId: number, options?: { 
 export async function createOrder(order: InsertOrder) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(orders).values(order);
-  return result[0].insertId;
+  const [result] = await db.insert(orders).values(order).returning();
+
+  return result.id;
 }
 
 export async function updateOrder(id: number, order: Partial<InsertOrder>) {
@@ -542,8 +552,9 @@ export async function listOrders(organizationId: number, options?: { page?: numb
 export async function createCoupon(coupon: InsertCoupon) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(coupons).values(coupon);
-  return result[0].insertId;
+  const [result] = await db.insert(coupons).values(coupon).returning();
+
+  return result.id;
 }
 
 export async function getCouponByCode(organizationId: number, code: string) {
@@ -567,8 +578,9 @@ export async function listCoupons(organizationId: number) {
 export async function createAftercareRecord(record: InsertAftercareRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(aftercareRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(aftercareRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function updateAftercareRecord(id: number, record: Partial<InsertAftercareRecord>) {
@@ -596,8 +608,9 @@ export async function listAftercareRecords(organizationId: number, options?: { c
 export async function createLineChannel(channel: InsertLineChannel) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(lineChannels).values(channel);
-  return result[0].insertId;
+  const [result] = await db.insert(lineChannels).values(channel).returning();
+
+  return result.id;
 }
 
 export async function getLineChannelByOrg(organizationId: number) {
@@ -683,8 +696,9 @@ import {
 export async function createTreatmentRecord(record: InsertTreatmentRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(treatmentRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(treatmentRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function updateTreatmentRecord(id: number, record: Partial<InsertTreatmentRecord>) {
@@ -732,8 +746,9 @@ export async function getCustomerTreatmentTimeline(customerId: number) {
 export async function createTreatmentPhoto(photo: InsertTreatmentPhoto) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(treatmentPhotos).values(photo);
-  return result[0].insertId;
+  const [result] = await db.insert(treatmentPhotos).values(photo).returning();
+
+  return result.id;
 }
 
 export async function listTreatmentPhotos(customerId: number, options?: { treatmentRecordId?: number; photoType?: string }) {
@@ -771,8 +786,9 @@ export async function getBeforeAfterPhotos(customerId: number, treatmentRecordId
 export async function createCustomerPackage(pkg: InsertCustomerPackage) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(customerPackages).values(pkg);
-  return result[0].insertId;
+  const [result] = await db.insert(customerPackages).values(pkg).returning();
+
+  return result.id;
 }
 
 export async function updateCustomerPackage(id: number, pkg: Partial<InsertCustomerPackage>) {
@@ -847,8 +863,9 @@ export async function deductPackageSession(packageId: number, sessionsToDeduct: 
 export async function createPackageUsageRecord(record: InsertPackageUsageRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(packageUsageRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(packageUsageRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function listPackageUsageRecords(packageId: number) {
@@ -863,8 +880,9 @@ export async function listPackageUsageRecords(packageId: number) {
 export async function createConsultation(consultation: InsertConsultation) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(consultations).values(consultation);
-  return result[0].insertId;
+  const [result] = await db.insert(consultations).values(consultation).returning();
+
+  return result.id;
 }
 
 export async function updateConsultation(id: number, consultation: Partial<InsertConsultation>) {
@@ -923,8 +941,9 @@ export async function getConsultationConversionStats(organizationId: number) {
 export async function createFollowUp(followUp: InsertFollowUp) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(followUps).values(followUp);
-  return result[0].insertId;
+  const [result] = await db.insert(followUps).values(followUp).returning();
+
+  return result.id;
 }
 
 export async function updateFollowUp(id: number, followUp: Partial<InsertFollowUp>) {
@@ -981,8 +1000,9 @@ export async function upsertCustomerRfmScore(score: InsertCustomerRfmScore) {
     }).where(eq(customerRfmScores.id, existing[0].id));
     return existing[0].id;
   } else {
-    const result = await db.insert(customerRfmScores).values(score);
-    return result[0].insertId;
+    const [result] = await db.insert(customerRfmScores).values(score).returning();
+
+    return result.id;
   }
 }
 
@@ -1075,8 +1095,9 @@ export async function calculateCustomerRfm(organizationId: number, customerId: n
 export async function createCommissionRule(rule: InsertCommissionRule) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(commissionRules).values(rule);
-  return result[0].insertId;
+  const [result] = await db.insert(commissionRules).values(rule).returning();
+
+  return result.id;
 }
 
 export async function updateCommissionRule(id: number, rule: Partial<InsertCommissionRule>) {
@@ -1094,8 +1115,9 @@ export async function listCommissionRules(organizationId: number) {
 export async function createStaffCommission(commission: InsertStaffCommission) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(staffCommissions).values(commission);
-  return result[0].insertId;
+  const [result] = await db.insert(staffCommissions).values(commission).returning();
+
+  return result.id;
 }
 
 export async function updateStaffCommission(id: number, commission: Partial<InsertStaffCommission>) {
@@ -1147,7 +1169,7 @@ export async function getStaffCommissionSummary(organizationId: number, staffId:
 export async function createInventoryTransaction(transaction: InsertInventoryTransaction) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(inventoryTransactions).values(transaction);
+  const [result] = await db.insert(inventoryTransactions).values(transaction).returning();
   
   // 更新產品庫存
   const product = await getProductById(transaction.productId);
@@ -1161,7 +1183,7 @@ export async function createInventoryTransaction(transaction: InsertInventoryTra
     await updateProduct(transaction.productId, { stock: newStock });
   }
   
-  return result[0].insertId;
+  return result.id;
 }
 
 export async function listInventoryTransactions(organizationId: number, options?: { productId?: number; transactionType?: string; startDate?: Date; endDate?: Date }) {
@@ -1203,8 +1225,9 @@ export async function getProductCostAnalysis(organizationId: number, productId: 
 export async function createRevenueTarget(target: InsertRevenueTarget) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(revenueTargets).values(target);
-  return result[0].insertId;
+  const [result] = await db.insert(revenueTargets).values(target).returning();
+
+  return result.id;
 }
 
 export async function updateRevenueTarget(id: number, target: Partial<InsertRevenueTarget>) {
@@ -1276,8 +1299,9 @@ export async function calculateRevenueAchievement(organizationId: number, year: 
 export async function createMarketingCampaign(campaign: InsertMarketingCampaign) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(marketingCampaigns).values(campaign);
-  return result[0].insertId;
+  const [result] = await db.insert(marketingCampaigns).values(campaign).returning();
+
+  return result.id;
 }
 
 export async function updateMarketingCampaign(id: number, campaign: Partial<InsertMarketingCampaign>) {
@@ -1304,8 +1328,9 @@ export async function listMarketingCampaigns(organizationId: number, options?: {
 export async function createCustomerSource(source: InsertCustomerSource) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(customerSources).values(source);
-  return result[0].insertId;
+  const [result] = await db.insert(customerSources).values(source).returning();
+
+  return result.id;
 }
 
 export async function updateCustomerSource(id: number, source: Partial<InsertCustomerSource>) {
@@ -1357,8 +1382,9 @@ export async function getSourceROIAnalysis(organizationId: number, campaignId?: 
 export async function createSatisfactionSurvey(survey: InsertSatisfactionSurvey) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(satisfactionSurveys).values(survey);
-  return result[0].insertId;
+  const [result] = await db.insert(satisfactionSurveys).values(survey).returning();
+
+  return result.id;
 }
 
 export async function updateSatisfactionSurvey(id: number, survey: Partial<InsertSatisfactionSurvey>) {
@@ -1562,8 +1588,9 @@ import { waitlist, InsertWaitlist } from "../drizzle/schema";
 export async function addToWaitlist(data: InsertWaitlist) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(waitlist).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(waitlist).values(data).returning();
+
+  return result.id;
 }
 
 export async function getWaitlist(organizationId: number, date?: string) {
@@ -1576,7 +1603,7 @@ export async function getWaitlist(organizationId: number, date?: string) {
   );
 
   if (date) {
-    whereClause = and(whereClause, eq(waitlist.preferredDate, new Date(date))) as typeof whereClause;
+    whereClause = and(whereClause, eq(waitlist.preferredDate, date)) as typeof whereClause;
   }
 
   return await db.select().from(waitlist).where(whereClause).orderBy(asc(waitlist.preferredDate), asc(waitlist.createdAt));
@@ -1604,7 +1631,7 @@ export async function notifyWaitlistForCancellation(organizationId: number, appo
   // 找到符合條件的候補客戶
   let whereClause = and(
     eq(waitlist.organizationId, organizationId),
-    eq(waitlist.preferredDate, new Date(appointmentDate)),
+    eq(waitlist.preferredDate, appointmentDate),
     eq(waitlist.status, 'waiting')
   );
 
@@ -1644,8 +1671,9 @@ import {
 export async function createInjectionRecord(record: InsertInjectionRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(injectionRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(injectionRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function getInjectionRecordById(id: number) {
@@ -1673,8 +1701,9 @@ export async function listInjectionRecords(customerId: number, options?: { page?
 export async function createInjectionPoint(point: InsertInjectionPoint) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(injectionPoints).values(point);
-  return result[0].insertId;
+  const [result] = await db.insert(injectionPoints).values(point).returning();
+
+  return result.id;
 }
 
 export async function listInjectionPoints(injectionRecordId: number) {
@@ -1706,8 +1735,9 @@ export async function compareInjectionHistory(customerId: number, templateType: 
 export async function createConsentFormTemplate(template: InsertConsentFormTemplate) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(consentFormTemplates).values(template);
-  return result[0].insertId;
+  const [result] = await db.insert(consentFormTemplates).values(template).returning();
+
+  return result.id;
 }
 
 export async function updateConsentFormTemplate(id: number, template: Partial<InsertConsentFormTemplate>) {
@@ -1734,8 +1764,9 @@ export async function listConsentFormTemplates(organizationId: number, options?:
 export async function createConsentSignature(signature: InsertConsentSignature) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(consentSignatures).values(signature);
-  return result[0].insertId;
+  const [result] = await db.insert(consentSignatures).values(signature).returning();
+
+  return result.id;
 }
 
 export async function getConsentSignatureById(id: number) {
@@ -1766,8 +1797,9 @@ export async function listCustomerConsentSignatures(customerId: number, options?
 export async function createMedication(medication: InsertMedication) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(medications).values(medication);
-  return result[0].insertId;
+  const [result] = await db.insert(medications).values(medication).returning();
+
+  return result.id;
 }
 
 export async function updateMedication(id: number, medication: Partial<InsertMedication>) {
@@ -1794,8 +1826,9 @@ export async function listMedications(organizationId: number, options?: { catego
 export async function createPrescription(prescription: InsertPrescription) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(prescriptions).values(prescription);
-  return result[0].insertId;
+  const [result] = await db.insert(prescriptions).values(prescription).returning();
+
+  return result.id;
 }
 
 export async function updatePrescription(id: number, prescription: Partial<InsertPrescription>) {
@@ -1827,8 +1860,9 @@ export async function listCustomerPrescriptions(customerId: number, options?: { 
 export async function createCustomerAllergy(allergy: InsertCustomerAllergy) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(customerAllergies).values(allergy);
-  return result[0].insertId;
+  const [result] = await db.insert(customerAllergies).values(allergy).returning();
+
+  return result.id;
 }
 
 export async function listCustomerAllergies(customerId: number) {
@@ -1860,8 +1894,9 @@ export async function checkAllergyConflict(customerId: number, medicationId: num
 export async function createSkinAnalysisRecord(record: InsertSkinAnalysisRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(skinAnalysisRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(skinAnalysisRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function getSkinAnalysisRecordById(id: number) {
@@ -1889,8 +1924,9 @@ export async function listSkinAnalysisRecords(customerId: number, options?: { pa
 export async function createSkinMetric(metric: InsertSkinMetric) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(skinMetrics).values(metric);
-  return result[0].insertId;
+  const [result] = await db.insert(skinMetrics).values(metric).returning();
+
+  return result.id;
 }
 
 export async function listSkinMetrics(analysisRecordId: number) {
@@ -1925,8 +1961,9 @@ export async function compareSkinAnalysis(customerId: number, metricType?: strin
 export async function createMembershipPlan(plan: InsertMembershipPlan) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(membershipPlans).values(plan);
-  return result[0].insertId;
+  const [result] = await db.insert(membershipPlans).values(plan).returning();
+
+  return result.id;
 }
 
 export async function updateMembershipPlan(id: number, plan: Partial<InsertMembershipPlan>) {
@@ -1950,8 +1987,9 @@ export async function listMembershipPlans(organizationId: number, options?: { is
 export async function createMemberSubscription(subscription: InsertMemberSubscription) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(memberSubscriptions).values(subscription);
-  return result[0].insertId;
+  const [result] = await db.insert(memberSubscriptions).values(subscription).returning();
+
+  return result.id;
 }
 
 export async function updateMemberSubscription(id: number, subscription: Partial<InsertMemberSubscription>) {
@@ -1992,8 +2030,9 @@ export async function listOrganizationSubscriptions(organizationId: number, opti
 export async function createSubscriptionPayment(payment: InsertSubscriptionPayment) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(subscriptionPayments).values(payment);
-  return result[0].insertId;
+  const [result] = await db.insert(subscriptionPayments).values(payment).returning();
+
+  return result.id;
 }
 
 export async function listSubscriptionPayments(subscriptionId: number) {
@@ -2008,8 +2047,9 @@ export async function listSubscriptionPayments(subscriptionId: number) {
 export async function createTeleConsultation(consultation: InsertTeleConsultation) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(teleConsultations).values(consultation);
-  return result[0].insertId;
+  const [result] = await db.insert(teleConsultations).values(consultation).returning();
+
+  return result.id;
 }
 
 export async function updateTeleConsultation(id: number, consultation: Partial<InsertTeleConsultation>) {
@@ -2054,8 +2094,9 @@ export async function listTeleConsultations(organizationId: number, options?: { 
 export async function createConsultationRecording(recording: InsertConsultationRecording) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(consultationRecordings).values(recording);
-  return result[0].insertId;
+  const [result] = await db.insert(consultationRecordings).values(recording).returning();
+
+  return result.id;
 }
 
 export async function listConsultationRecordings(teleConsultationId: number) {
@@ -2070,8 +2111,9 @@ export async function listConsultationRecordings(teleConsultationId: number) {
 export async function createReferralCode(code: InsertReferralCode) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(referralCodes).values(code);
-  return result[0].insertId;
+  const [result] = await db.insert(referralCodes).values(code).returning();
+
+  return result.id;
 }
 
 export async function getReferralCodeByCode(code: string) {
@@ -2099,8 +2141,9 @@ export async function updateReferralCodeUsage(id: number) {
 export async function createReferralRecord(record: InsertReferralRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(referralRecords).values(record);
-  return result[0].insertId;
+  const [result] = await db.insert(referralRecords).values(record).returning();
+
+  return result.id;
 }
 
 export async function listReferralRecords(organizationId: number, options?: { referrerId?: number; status?: string; page?: number; limit?: number }) {
@@ -2129,8 +2172,9 @@ export async function listReferralRecords(organizationId: number, options?: { re
 export async function createReferralReward(reward: InsertReferralReward) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(referralRewards).values(reward);
-  return result[0].insertId;
+  const [result] = await db.insert(referralRewards).values(reward).returning();
+
+  return result.id;
 }
 
 export async function listCustomerReferralRewards(customerId: number, options?: { status?: string }) {
@@ -2166,8 +2210,9 @@ export async function getReferralStats(organizationId: number) {
 export async function createSocialAccount(account: InsertSocialAccount) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(socialAccounts).values(account);
-  return result[0].insertId;
+  const [result] = await db.insert(socialAccounts).values(account).returning();
+
+  return result.id;
 }
 
 export async function updateSocialAccount(id: number, account: Partial<InsertSocialAccount>) {
@@ -2185,8 +2230,9 @@ export async function listSocialAccounts(organizationId: number) {
 export async function createScheduledPost(post: InsertScheduledPost) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(scheduledPosts).values(post);
-  return result[0].insertId;
+  const [result] = await db.insert(scheduledPosts).values(post).returning();
+
+  return result.id;
 }
 
 export async function updateScheduledPost(id: number, post: Partial<InsertScheduledPost>) {
@@ -2221,8 +2267,9 @@ export async function listScheduledPosts(organizationId: number, options?: { sta
 export async function createSocialAnalytic(analytic: InsertSocialAnalytic) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(socialAnalytics).values(analytic);
-  return result[0].insertId;
+  const [result] = await db.insert(socialAnalytics).values(analytic).returning();
+
+  return result.id;
 }
 
 export async function getSocialAnalytics(socialAccountId: number, options?: { startDate?: string; endDate?: string }) {
@@ -2231,10 +2278,10 @@ export async function getSocialAnalytics(socialAccountId: number, options?: { st
 
   let whereClause = eq(socialAnalytics.socialAccountId, socialAccountId);
   if (options?.startDate) {
-    whereClause = and(whereClause, gte(socialAnalytics.date, new Date(options.startDate))) as typeof whereClause;
+    whereClause = and(whereClause, gte(socialAnalytics.date, options.startDate)) as typeof whereClause;
   }
   if (options?.endDate) {
-    whereClause = and(whereClause, lte(socialAnalytics.date, new Date(options.endDate))) as typeof whereClause;
+    whereClause = and(whereClause, lte(socialAnalytics.date, options.endDate)) as typeof whereClause;
   }
 
   return await db.select().from(socialAnalytics).where(whereClause).orderBy(socialAnalytics.date);
@@ -2267,8 +2314,9 @@ import { backgroundJobs, InsertBackgroundJob } from "../drizzle/schema";
 export async function createBackgroundJob(job: InsertBackgroundJob) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(backgroundJobs).values(job);
-  return result[0].insertId;
+  const [result] = await db.insert(backgroundJobs).values(job).returning();
+
+  return result.id;
 }
 
 export async function getBackgroundJobById(id: number) {
@@ -2403,8 +2451,9 @@ import { nanoid } from 'nanoid';
 export async function createVoucherTemplate(template: InsertVoucherTemplate) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(voucherTemplates).values(template);
-  return result[0].insertId;
+  const [result] = await db.insert(voucherTemplates).values(template).returning();
+
+  return result.id;
 }
 
 export async function updateVoucherTemplate(id: number, template: Partial<InsertVoucherTemplate>) {
@@ -2463,14 +2512,14 @@ export async function createVoucherInstance(instance: InsertVoucherInstance) {
     instance.voucherCode = await generateVoucherCode();
   }
   
-  const result = await db.insert(voucherInstances).values(instance);
+  const [result] = await db.insert(voucherInstances).values(instance).returning();
   
   // 更新模板的發送統計
   await db.update(voucherTemplates)
     .set({ totalIssued: sql`totalIssued + 1` })
     .where(eq(voucherTemplates.id, instance.templateId));
   
-  return result[0].insertId;
+  return result.id;
 }
 
 export async function updateVoucherInstance(id: number, instance: Partial<InsertVoucherInstance>) {
@@ -2559,7 +2608,7 @@ export async function redeemVoucher(redemption: InsertVoucherRedemption) {
   if (voucher.validUntil && new Date(voucher.validUntil) < new Date()) throw new Error("Voucher has expired");
   
   // 建立核銷記錄
-  const result = await db.insert(voucherRedemptions).values(redemption);
+  const [result] = await db.insert(voucherRedemptions).values(redemption).returning();
   
   // 更新票券實例
   const newUsedCount = (voucher.usedCount ?? 0) + 1;
@@ -2577,7 +2626,7 @@ export async function redeemVoucher(redemption: InsertVoucherRedemption) {
     .set({ totalRedeemed: sql`totalRedeemed + 1` })
     .where(eq(voucherTemplates.id, voucher.templateId));
   
-  return result[0].insertId;
+  return result.id;
 }
 
 export async function listVoucherRedemptions(organizationId: number, options?: { 
@@ -2612,8 +2661,9 @@ export async function listVoucherRedemptions(organizationId: number, options?: {
 export async function createVoucherBatch(batch: InsertVoucherBatch) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(voucherBatches).values(batch);
-  return result[0].insertId;
+  const [result] = await db.insert(voucherBatches).values(batch).returning();
+
+  return result.id;
 }
 
 export async function updateVoucherBatch(id: number, batch: Partial<InsertVoucherBatch>) {
@@ -2838,14 +2888,14 @@ export async function createVoucherTransfer(transfer: InsertVoucherTransfer) {
     transfer.expiresAt = expiresAt;
   }
   
-  const result = await db.insert(voucherTransfers).values(transfer);
+  const [result] = await db.insert(voucherTransfers).values(transfer).returning();
   
   // 更新票券狀態為待轉贈
   await updateVoucherInstance(transfer.voucherInstanceId, {
     status: 'transferred',
   });
   
-  return result[0].insertId;
+  return result.id;
 }
 
 // 根據領取碼獲取轉贈記錄
@@ -3030,8 +3080,8 @@ export async function batchCreateVoucherTemplates(templates: InsertVoucherTempla
   
   const results: number[] = [];
   for (const template of templates) {
-    const result = await db.insert(voucherTemplates).values(template);
-    results.push(result[0].insertId);
+    const [result] = await db.insert(voucherTemplates).values(template).returning();
+    results.push(result.id);
   }
   
   return results;
@@ -3248,8 +3298,9 @@ export async function upsertSystemSetting(key: string, value: string, descriptio
     await db.update(systemSettings).set({ value, description, category: category as any }).where(eq(systemSettings.key, key));
     return existing.id;
   } else {
-    const result = await db.insert(systemSettings).values({ key, value, description, category: category as any });
-    return result[0].insertId;
+    const [result] = await db.insert(systemSettings).values({ key, value, description, category: category as any }).returning();
+
+    return result.id;
   }
 }
 
@@ -3267,8 +3318,9 @@ export async function createVoucherReminderLog(data: InsertVoucherReminderLog) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(voucherReminderLogs).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(voucherReminderLogs).values(data).returning();
+
+  return result.id;
 }
 
 export async function updateVoucherReminderLog(id: number, data: Partial<InsertVoucherReminderLog>) {
@@ -3726,8 +3778,9 @@ export async function createDailySettlement(data: InsertDailySettlement) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(dailySettlements).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(dailySettlements).values(data).returning();
+
+  return result.id;
 }
 
 // 根據 ID 獲取結帳記錄
@@ -3747,7 +3800,7 @@ export async function getDailySettlementByDate(organizationId: number, date: str
   const result = await db.select().from(dailySettlements)
     .where(and(
       eq(dailySettlements.organizationId, organizationId),
-      eq(dailySettlements.settlementDate, new Date(date))
+      eq(dailySettlements.settlementDate, date)
     ))
     .limit(1);
   return result[0] || null;
@@ -3779,10 +3832,10 @@ export async function listDailySettlements(organizationId: number, options?: {
   let whereClause: any = eq(dailySettlements.organizationId, organizationId);
   
   if (options?.startDate) {
-    whereClause = and(whereClause, gte(dailySettlements.settlementDate, new Date(options.startDate)));
+    whereClause = and(whereClause, gte(dailySettlements.settlementDate, options.startDate));
   }
   if (options?.endDate) {
-    whereClause = and(whereClause, lte(dailySettlements.settlementDate, new Date(options.endDate)));
+    whereClause = and(whereClause, lte(dailySettlements.settlementDate, options.endDate));
   }
   if (options?.status) {
     whereClause = and(whereClause, eq(dailySettlements.status, options.status as any));
@@ -3811,18 +3864,18 @@ export async function openDailySettlement(organizationId: number, date: string, 
     throw new Error("當日已開帳");
   }
   
-  const result = await db.insert(dailySettlements).values({
+  const [result] = await db.insert(dailySettlements).values({
     organizationId,
-    settlementDate: new Date(date),
+    settlementDate: date,
     openingCash: openingCash.toString(),
     openedBy,
     openedAt: new Date(),
     status: 'open',
-  });
+  }).returning();
   
   // 建立開帳收銀機記錄
   await createCashDrawerRecord({
-    settlementId: result[0].insertId,
+    settlementId: result.id,
     organizationId,
     operationType: 'open',
     amount: openingCash.toString(),
@@ -3830,7 +3883,7 @@ export async function openDailySettlement(organizationId: number, date: string, 
     operatedBy: openedBy,
   });
   
-  return result[0].insertId;
+  return result.id;
 }
 
 // 結帳
@@ -3978,7 +4031,7 @@ export async function calculateDailyStats(organizationId: number, date: string) 
     .from(appointments)
     .where(and(
       eq(appointments.organizationId, organizationId),
-      eq(appointments.appointmentDate, new Date(date))
+      eq(appointments.appointmentDate, date)
     ))
     .groupBy(appointments.status);
   
@@ -4013,8 +4066,9 @@ export async function createSettlementItem(data: InsertSettlementItem) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(settlementItems).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(settlementItems).values(data).returning();
+
+  return result.id;
 }
 
 // 列出結帳明細
@@ -4044,8 +4098,9 @@ export async function createCashDrawerRecord(data: InsertCashDrawerRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(cashDrawerRecords).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(cashDrawerRecords).values(data).returning();
+
+  return result.id;
 }
 
 // 列出收銀機記錄
@@ -4063,8 +4118,9 @@ export async function createPaymentRecord(data: InsertPaymentRecord) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(paymentRecords).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(paymentRecords).values(data).returning();
+
+  return result.id;
 }
 
 // 更新付款記錄
@@ -4144,10 +4200,10 @@ export async function getSettlementSummary(organizationId: number, options?: { s
   let whereClause: any = eq(dailySettlements.organizationId, organizationId);
   
   if (options?.startDate) {
-    whereClause = and(whereClause, gte(dailySettlements.settlementDate, new Date(options.startDate)));
+    whereClause = and(whereClause, gte(dailySettlements.settlementDate, options.startDate));
   }
   if (options?.endDate) {
-    whereClause = and(whereClause, lte(dailySettlements.settlementDate, new Date(options.endDate)));
+    whereClause = and(whereClause, lte(dailySettlements.settlementDate, options.endDate));
   }
   
   const summary = await db.select({
@@ -4187,8 +4243,9 @@ export async function createLineChannelConfig(data: InsertLineChannelConfig) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(lineChannelConfigs).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(lineChannelConfigs).values(data).returning();
+
+  return result.id;
 }
 
 // 更新 LINE Channel 設定
@@ -4324,11 +4381,12 @@ export async function upsertAutoSettlementSettings(organizationId: number, data:
       .where(eq(autoSettlementSettings.organizationId, organizationId));
     return existing.id;
   } else {
-    const result = await db.insert(autoSettlementSettings).values({
+    const [result] = await db.insert(autoSettlementSettings).values({
       organizationId,
       ...data,
-    });
-    return result[0].insertId;
+    }).returning();
+
+    return result.id;
   }
 }
 
@@ -4337,8 +4395,9 @@ export async function createSettlementReport(data: InsertSettlementReport) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(settlementReports).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(settlementReports).values(data).returning();
+
+  return result.id;
 }
 
 export async function getSettlementReportById(id: number) {
@@ -4376,10 +4435,10 @@ export async function listSettlementReports(organizationId: number, options?: {
     whereClause = and(whereClause, eq(settlementReports.reportType, options.reportType as any));
   }
   if (options?.startDate) {
-    whereClause = and(whereClause, gte(settlementReports.periodStart, new Date(options.startDate)));
+    whereClause = and(whereClause, gte(settlementReports.periodStart, options.startDate));
   }
   if (options?.endDate) {
-    whereClause = and(whereClause, lte(settlementReports.periodEnd, new Date(options.endDate)));
+    whereClause = and(whereClause, lte(settlementReports.periodEnd, options.endDate));
   }
   
   const data = await db.select().from(settlementReports)
@@ -4409,8 +4468,8 @@ export async function generateDailySettlementReport(settlementId: number, genera
     organizationId: settlement.organizationId,
     settlementId,
     reportType: 'daily',
-    periodStart: new Date(dateStr),
-    periodEnd: new Date(dateStr),
+    periodStart: dateStr,
+    periodEnd: dateStr,
     title: `每日結帳報表 - ${dateStr}`,
     totalRevenue: settlement.totalRevenue || "0",
     cashRevenue: settlement.cashRevenue || "0",
@@ -4435,7 +4494,7 @@ export async function generateDailySettlementReport(settlementId: number, genera
   // 同時建立營收快照
   await createRevenueTrendSnapshot({
     organizationId: settlement.organizationId,
-    snapshotDate: new Date(dateStr),
+    snapshotDate: dateStr,
     periodType: 'daily',
     totalRevenue: settlement.totalRevenue || "0",
     cashRevenue: settlement.cashRevenue || "0",
@@ -4458,8 +4517,9 @@ export async function createRevenueTrendSnapshot(data: InsertRevenueTrendSnapsho
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(revenueTrendSnapshots).values(data);
-  return result[0].insertId;
+  const [result] = await db.insert(revenueTrendSnapshots).values(data).returning();
+
+  return result.id;
 }
 
 export async function getRevenueTrends(organizationId: number, options: {
@@ -4474,8 +4534,8 @@ export async function getRevenueTrends(organizationId: number, options: {
     .where(and(
       eq(revenueTrendSnapshots.organizationId, organizationId),
       eq(revenueTrendSnapshots.periodType, options.periodType),
-      gte(revenueTrendSnapshots.snapshotDate, new Date(options.startDate)),
-      lte(revenueTrendSnapshots.snapshotDate, new Date(options.endDate))
+      gte(revenueTrendSnapshots.snapshotDate, options.startDate),
+      lte(revenueTrendSnapshots.snapshotDate, options.endDate)
     ))
     .orderBy(revenueTrendSnapshots.snapshotDate);
 }
@@ -4517,7 +4577,7 @@ export async function getRevenueDashboardData(organizationId: number, options?: 
     .from(dailySettlements)
     .where(and(
       eq(dailySettlements.organizationId, organizationId),
-      gte(dailySettlements.settlementDate, thirtyDaysAgo),
+      gte(dailySettlements.settlementDate, thirtyDaysAgo.toISOString().split('T')[0]),
       eq(dailySettlements.status, 'closed')
     ))
     .orderBy(dailySettlements.settlementDate);
@@ -4531,7 +4591,7 @@ export async function getRevenueDashboardData(organizationId: number, options?: 
     .from(dailySettlements)
     .where(and(
       eq(dailySettlements.organizationId, organizationId),
-      gte(dailySettlements.settlementDate, new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000)),
+      gte(dailySettlements.settlementDate, new Date(now.getTime() - 84 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
       eq(dailySettlements.status, 'closed')
     ))
     .groupBy(sql`YEARWEEK(${dailySettlements.settlementDate}, 1)`)
@@ -4546,7 +4606,7 @@ export async function getRevenueDashboardData(organizationId: number, options?: 
     .from(dailySettlements)
     .where(and(
       eq(dailySettlements.organizationId, organizationId),
-      gte(dailySettlements.settlementDate, new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)),
+      gte(dailySettlements.settlementDate, new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
       eq(dailySettlements.status, 'closed')
     ))
     .groupBy(sql`DATE_FORMAT(${dailySettlements.settlementDate}, '%Y-%m')`)
@@ -4608,10 +4668,10 @@ export async function listDailySettlementsAdvanced(organizationId: number, optio
   let whereConditions: any[] = [eq(dailySettlements.organizationId, organizationId)];
   
   if (options.startDate) {
-    whereConditions.push(gte(dailySettlements.settlementDate, new Date(options.startDate)));
+    whereConditions.push(gte(dailySettlements.settlementDate, options.startDate));
   }
   if (options.endDate) {
-    whereConditions.push(lte(dailySettlements.settlementDate, new Date(options.endDate)));
+    whereConditions.push(lte(dailySettlements.settlementDate, options.endDate));
   }
   if (options.minAmount !== undefined) {
     whereConditions.push(gte(dailySettlements.totalRevenue, options.minAmount.toString()));

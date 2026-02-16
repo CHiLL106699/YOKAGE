@@ -18,16 +18,16 @@ describe('Dashboard System B CRUD Operations', () => {
 
   describe('Inventory CRUD', () => {
     it('should create inventory item', async () => {
-      const result = await db.insert(inventorySystemB).values({
+      const [result] = await db.insert(inventorySystemB).values({
         productId: 999,
         organizationId: 1,
         location: 'Test Location',
         quantity: 100,
         minStock: 10,
         expiryDate: new Date('2025-12-31'),
-      });
+      }).returning();
       expect(result).toBeDefined();
-      testInventoryId = Number(result.insertId);
+      testInventoryId = result.id;
     });
 
     it('should read inventory item', async () => {
@@ -54,13 +54,13 @@ describe('Dashboard System B CRUD Operations', () => {
 
   describe('CRM Tags CRUD', () => {
     it('should create CRM tag', async () => {
-      const result = await db.insert(crmTagsSystemB).values({
+      const [result] = await db.insert(crmTagsSystemB).values({
         name: 'Test Tag',
         color: '#FF0000',
         organizationId: 1,
-      });
+      }).returning();
       expect(result).toBeDefined();
-      testTagId = Number(result.insertId);
+      testTagId = result.id;
     });
 
     it('should read CRM tag', async () => {
@@ -87,16 +87,16 @@ describe('Dashboard System B CRUD Operations', () => {
 
   describe('Games CRUD', () => {
     it('should create game', async () => {
-      const result = await db.insert(gamesSystemB).values({
+      const [result] = await db.insert(gamesSystemB).values({
         name: 'Test Game',
         type: 'ichiban_kuji',
         organizationId: 1,
         startDate: new Date('2026-01-01'),
         endDate: new Date('2026-12-31'),
         status: 'active',
-      });
+      }).returning();
       expect(result).toBeDefined();
-      testGameId = Number(result.insertId);
+      testGameId = result.id;
     });
 
     it('should read game', async () => {

@@ -43,9 +43,9 @@ export const interactionsRouter = router({
       const [record] = await db.insert(interactions).values({
         ...input,
         createdBy: ctx.user.id,
-      });
+      }).returning();
 
-      return { success: true, id: record.insertId };
+      return { success: true, id: record.id };
     }),
 
   // 更新互動記錄

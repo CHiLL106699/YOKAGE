@@ -71,7 +71,7 @@ export const inventoryRouter = router({
         productId: input.productId,
         quantity: input.quantity,
         batchNumber: input.batchNumber,
-        expiryDate: input.expiryDate,
+        expiryDate: input.expiryDate?.toISOString().split('T')[0],
         location: input.location,
         supplier: input.supplier,
         minStock: input.minStock,

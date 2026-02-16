@@ -67,12 +67,12 @@ export const autoReplyRulesRouter = router({
         ...input,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      }).returning();
 
       const [newRule] = await db
         .select()
         .from(autoReplyRules)
-        .where(eq(autoReplyRules.id, result.insertId))
+        .where(eq(autoReplyRules.id, result.id))
         .limit(1);
 
       return newRule;

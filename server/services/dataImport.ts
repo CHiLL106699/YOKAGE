@@ -413,7 +413,7 @@ export async function importCustomers(
     totalRows: rows.length,
     status: 'processing',
     startedAt: new Date(),
-  }).$returningId();
+  }).returning();
 
   for (let i = 0; i < rows.length; i++) {
     const validation = validateCustomerRow(rows[i], i + 2); // +2 因為跳過標題行，行號從 1 開始
@@ -430,7 +430,7 @@ export async function importCustomers(
         phone: validation.data!.phone,
         email: validation.data!.email,
         gender: validation.data!.gender,
-        birthday: validation.data!.birthday ? new Date(validation.data!.birthday) : null,
+        birthday: validation.data!.birthday ?? null,
         address: validation.data!.address,
         memberLevel: validation.data!.memberLevel,
         notes: validation.data!.notes,
@@ -500,7 +500,7 @@ export async function importProducts(
     totalRows: rows.length,
     status: 'processing',
     startedAt: new Date(),
-  }).$returningId();
+  }).returning();
 
   for (let i = 0; i < rows.length; i++) {
     const validation = validateProductRow(rows[i], i + 2);
@@ -586,7 +586,7 @@ export async function importStaff(
     totalRows: rows.length,
     status: 'processing',
     startedAt: new Date(),
-  }).$returningId();
+  }).returning();
 
   for (let i = 0; i < rows.length; i++) {
     const validation = validateStaffRow(rows[i], i + 2);
@@ -604,7 +604,7 @@ export async function importStaff(
         email: validation.data!.email,
         position: validation.data!.position,
         department: validation.data!.department,
-        hireDate: validation.data!.hireDate ? new Date(validation.data!.hireDate) : null,
+        hireDate: validation.data!.hireDate ?? null,
         salary: validation.data!.salary?.toString(),
         salaryType: validation.data!.salaryType,
       });

@@ -81,10 +81,14 @@ export const staffRouter = router({
   create: protectedProcedure
     .input(StaffCreateSchema)
     .mutation(async ({ input }) => {
-      // MySQL 的 insert 操作不支援 .returning()，需先插入後再查詢
-      const [result] = await db.insert(staff).values(input);
-      // 取得最後插入的 ID（Drizzle ORM 的 MySQL 語法）
-      const [newStaff] = await db.select().from(staff).where(eq(staff.id, result.insertId));
+      const { hireDate, ...rest } = input;
+      // PostgreSQL insert with .returning()
+      const [result] = await db.insert(staff).values({
+        ...rest,
+        ...(hireDate ? { hireDate: hireDate.toISOString().split('T')[0] } : {}),
+      }).returning();
+      // 取得插入結果
+      const [newStaff] = await db.select().from(staff).where(eq(staff.id, result.id));
       return newStaff;
     }),
 
@@ -95,10 +99,13 @@ export const staffRouter = router({
   update: protectedProcedure
     .input(StaffUpdateSchema)
     .mutation(async ({ input }) => {
-      const { id, ...updates } = input;
-      // MySQL 的 update 操作不支援 .returning()，需先更新後再查詢
+      const { id, hireDate, ...updates } = input;
+      // PostgreSQL update
       await db.update(staff)
-        .set(updates)
+        .set({
+          ...updates,
+          ...(hireDate !== undefined ? { hireDate: hireDate.toISOString().split('T')[0] } : {}),
+        })
         .where(eq(staff.id, id));
       const [updatedStaff] = await db.select().from(staff).where(eq(staff.id, id));
       return updatedStaff;

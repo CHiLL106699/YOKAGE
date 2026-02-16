@@ -242,9 +242,9 @@ ${knowledgeBase.map((kb) => `Q: ${kb.question}\nA: ${kb.answer}`).join("\n\n")}
         keywords: input.keywords as any,
         trainingExamples: input.trainingExamples as any,
         responseTemplate: input.responseTemplate,
-      });
+      }).returning();
 
-      const insertId: number = Number(result.insertId);
+      const insertId = result.id;
       const [newIntent] = await db
         .select()
         .from(aiIntents)
@@ -368,9 +368,9 @@ ${knowledgeBase.map((kb) => `Q: ${kb.question}\nA: ${kb.answer}`).join("\n\n")}
         keywords: input.keywords as any,
         priority: input.priority,
         createdBy: ctx.user.id,
-      });
+      }).returning();
 
-      const insertId: number = Number(result.insertId);
+      const insertId = result.id;
       const [newKnowledge] = await db
         .select()
         .from(aiKnowledgeBase)

@@ -860,7 +860,7 @@ const appointmentRouter = router({
       const { preferredDate, ...rest } = input;
       const id = await db.addToWaitlist({
         ...rest,
-        preferredDate: new Date(preferredDate),
+        preferredDate: preferredDate,
       });
       return { id };
     }),
@@ -2580,7 +2580,7 @@ const prescriptionRouter = router({
     .mutation(async ({ input }) => {
       const id = await db.createCustomerAllergy({
         ...input,
-        diagnosedDate: input.diagnosedDate ? new Date(input.diagnosedDate) : undefined,
+        diagnosedDate: input.diagnosedDate ?? undefined,
       });
       return { id };
     }),
@@ -2715,13 +2715,15 @@ const subscriptionRouter = router({
       paymentMethod: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const startDate = new Date();
-      const endDate = new Date();
+      const startDateObj = new Date();
+      const endDateObj = new Date();
       if (input.billingCycle === 'annual') {
-        endDate.setFullYear(endDate.getFullYear() + 1);
+        endDateObj.setFullYear(endDateObj.getFullYear() + 1);
       } else {
-        endDate.setMonth(endDate.getMonth() + 1);
+        endDateObj.setMonth(endDateObj.getMonth() + 1);
       }
+      const startDate = startDateObj.toISOString().split('T')[0];
+      const endDate = endDateObj.toISOString().split('T')[0];
       
       const id = await db.createMemberSubscription({
         ...input,
@@ -3113,8 +3115,8 @@ const voucherRouter = router({
     .mutation(async ({ input }) => {
       const id = await db.createVoucherTemplate({
         ...input,
-        fixedStartDate: input.fixedStartDate ? new Date(input.fixedStartDate) : undefined,
-        fixedEndDate: input.fixedEndDate ? new Date(input.fixedEndDate) : undefined,
+        fixedStartDate: input.fixedStartDate ?? undefined,
+        fixedEndDate: input.fixedEndDate ?? undefined,
       });
       return { id };
     }),

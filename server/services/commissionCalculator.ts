@@ -169,8 +169,8 @@ export async function calculateCommissions(
 
   // 服務業績統計（預約完成）
   const serviceConditions = [
-    gte(appointments.appointmentDate, startDate),
-    lte(appointments.appointmentDate, endDate),
+    gte(appointments.appointmentDate, startDate.toISOString().split('T')[0]),
+    lte(appointments.appointmentDate, endDate.toISOString().split('T')[0]),
     eq(appointments.status, 'completed'),
   ];
 

@@ -163,9 +163,9 @@ export const broadcastRouter = router({
         status: input.scheduledAt ? "scheduled" : "draft",
         totalRecipients: count,
         createdBy: ctx.user.id,
-      });
+      }).returning();
 
-      const insertId: number = Number(result.insertId);
+      const insertId = result.id;
       const [newCampaign] = await db
         .select()
         .from(broadcastCampaigns)

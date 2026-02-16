@@ -1,14 +1,16 @@
-import { mysqlTable, varchar, decimal, datetime, int, text, index } from 'drizzle-orm/mysql-core';
+import {
+  pgTable, varchar, decimal, timestamp, integer, text, index,
+} from "drizzle-orm/pg-core";
 
 /**
  * 業績記錄表
  * 記錄員工的業績資料（自動計算或手動新增）
  */
-export const performanceRecords = mysqlTable('performance_records', {
+export const performanceRecords = pgTable('performance_records', {
   id: varchar('id', { length: 191 }).primaryKey(),
   clinicId: varchar('clinic_id', { length: 191 }).notNull(),
   staffId: varchar('staff_id', { length: 191 }).notNull(),
-  recordDate: datetime('record_date').notNull(),
+  recordDate: timestamp('record_date').notNull(),
   
   // 業績金額（使用 DECIMAL 確保精確性）
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull().default('0.00'),
@@ -23,8 +25,8 @@ export const performanceRecords = mysqlTable('performance_records', {
   notes: text('notes'),
   
   // 建立時間與更新時間
-  createdAt: datetime('created_at').notNull(),
-  updatedAt: datetime('updated_at').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
 }, (table) => ({
   clinicIdIdx: index('clinic_id_idx').on(table.clinicId),
   staffIdIdx: index('staff_id_idx').on(table.staffId),
@@ -35,7 +37,7 @@ export const performanceRecords = mysqlTable('performance_records', {
  * 業績目標表
  * 記錄員工的業績目標（月度、季度、年度）
  */
-export const performanceTargets = mysqlTable('performance_targets', {
+export const performanceTargets = pgTable('performance_targets', {
   id: varchar('id', { length: 191 }).primaryKey(),
   clinicId: varchar('clinic_id', { length: 191 }).notNull(),
   staffId: varchar('staff_id', { length: 191 }).notNull(),
@@ -44,10 +46,10 @@ export const performanceTargets = mysqlTable('performance_targets', {
   periodType: varchar('period_type', { length: 50 }).notNull(),
   
   // 目標年份
-  year: int('year').notNull(),
+  year: integer('year').notNull(),
   
   // 目標月份或季度（月度：1-12，季度：1-4，年度：0）
-  period: int('period').notNull(),
+  period: integer('period').notNull(),
   
   // 目標金額（使用 DECIMAL 確保精確性）
   targetAmount: decimal('target_amount', { precision: 10, scale: 2 }).notNull().default('0.00'),
@@ -56,8 +58,8 @@ export const performanceTargets = mysqlTable('performance_targets', {
   notes: text('notes'),
   
   // 建立時間與更新時間
-  createdAt: datetime('created_at').notNull(),
-  updatedAt: datetime('updated_at').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
 }, (table) => ({
   clinicIdIdx: index('clinic_id_idx').on(table.clinicId),
   staffIdIdx: index('staff_id_idx').on(table.staffId),

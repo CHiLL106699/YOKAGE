@@ -53,9 +53,9 @@ export const lineMessagingRouter = router({
         return { success: true, id: existing.id };
       } else {
         // 建立新設定
-        const [result] = await db.insert(lineMessagingSettings).values(input);
+        const [result] = await db.insert(lineMessagingSettings).values(input).returning();
 
-        return { success: true, id: result.insertId };
+        return { success: true, id: result.id };
       }
     }),
 

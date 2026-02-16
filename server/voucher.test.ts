@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { voucherTemplates, voucherInstances, customers } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 // 直接建立資料庫連接
-const pool = mysql.createPool(process.env.DATABASE_URL!);
-const db = drizzle(pool);
+const client = postgres(process.env.DATABASE_URL!);
+const db = drizzle(client);
 
 describe("Voucher System", () => {
   let testTemplateId: number;
@@ -33,7 +33,7 @@ describe("Voucher System", () => {
           phone: "0912345678",
           memberLevel: "silver",
         })
-        .$returningId();
+        .returning({ id: customers.id });
       testCustomerId = newCustomer.id;
     }
   });
@@ -44,6 +44,7 @@ describe("Voucher System", () => {
       await db.delete(voucherInstances).where(eq(voucherInstances.templateId, testTemplateId));
       await db.delete(voucherTemplates).where(eq(voucherTemplates.id, testTemplateId));
     }
+    await client.end();
   });
 
   describe("Voucher Template CRUD", () => {
@@ -63,7 +64,7 @@ describe("Voucher System", () => {
           backgroundColor: "#1E3A5F",
           textColor: "#F5D78E",
         })
-        .$returningId();
+        .returning({ id: voucherTemplates.id });
 
       testTemplateId = template.id;
       expect(testTemplateId).toBeGreaterThan(0);
@@ -114,7 +115,7 @@ describe("Voucher System", () => {
           usedCount: 0,
           issueChannel: "manual",
         })
-        .$returningId();
+        .returning({ id: voucherInstances.id });
 
       expect(instance.id).toBeGreaterThan(0);
     });

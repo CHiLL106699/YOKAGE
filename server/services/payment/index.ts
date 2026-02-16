@@ -175,7 +175,7 @@ export async function createPaymentTransaction(
       status: (data.status || 'pending') as any,
       paymentMethod: data.paymentMethod,
       metadata: data.metadata,
-    }).$returningId();
+    }).returning();
 
     return result.id;
   } catch (error) {

@@ -143,13 +143,12 @@ async function processLineEvent(organizationId: number, event: LineWebhookEvent)
     messageId: event.message?.id || null,
     replyToken: event.replyToken || null,
     rawPayload: JSON.stringify(event),
-    isProcessed: false,
-  });
-
+     isProcessed: false,
+  }).returning();
   // 2. 根據事件類型進行處理
   switch (event.type) {
     case 'message':
-      await handleMessageEvent(organizationId, event, webhookEvent.insertId);
+      await handleMessageEvent(organizationId, event, webhookEvent.id);
       break;
     case 'follow':
       await handleFollowEvent(organizationId, event);
@@ -168,9 +167,9 @@ async function processLineEvent(organizationId: number, event: LineWebhookEvent)
       isProcessed: true,
       processedAt: new Date(),
     })
-    .where(eq(lineWebhookEvents.id, webhookEvent.insertId));
+    .where(eq(lineWebhookEvents.id, webhookEvent.id));
 
-  return { eventId: webhookEvent.insertId, type: event.type };
+  return { eventId: webhookEvent.id, type: event.type };
 }
 
 /**

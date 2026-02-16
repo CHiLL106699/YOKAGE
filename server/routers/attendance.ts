@@ -103,7 +103,7 @@ export const attendanceRouter = router({
         await db.insert(attendanceRecords).values({
           organizationId: input.organizationId,
           staffId: input.staffId,
-          recordDate: new Date(today),
+          recordDate: today,
           clockIn: new Date(),
           checkInLatitude: input.latitude.toString(),
           checkInLongitude: input.longitude.toString(),
@@ -210,7 +210,7 @@ export const attendanceRouter = router({
       await db.insert(attendanceRecords).values({
         organizationId: input.organizationId,
         staffId: input.staffId,
-          recordDate: new Date(input.recordDate),
+          recordDate: input.recordDate,
         clockIn: input.clockIn ? new Date(input.clockIn) : null,
         clockOut: input.clockOut ? new Date(input.clockOut) : null,
         isManualEntry: true,

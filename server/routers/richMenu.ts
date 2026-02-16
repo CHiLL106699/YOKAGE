@@ -113,9 +113,9 @@ export const richMenuRouter = router({
         targetAudience: input.targetAudience,
         abTestGroup: input.abTestGroup,
         createdBy: ctx.user.id,
-      });
+      }).returning();
 
-      const insertId = Number(result.insertId);
+      const insertId = result.id;
       const [newTemplate] = await db
         .select()
         .from(richMenuTemplates)

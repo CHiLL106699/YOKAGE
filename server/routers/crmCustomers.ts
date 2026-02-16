@@ -67,13 +67,15 @@ export const crmCustomersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      const { birthday, ...rest } = input;
       const [newCustomer] = await db.insert(customers).values({
-        ...input,
+        ...rest,
+        birthday: birthday?.toISOString().split('T')[0],
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      }).returning();
 
-      return { success: true, customerId: newCustomer.insertId };
+      return { success: true, customerId: newCustomer.id };
     }),
 
   // 更新客戶
@@ -94,11 +96,15 @@ export const crmCustomersRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const { id, ...updateData } = input;
+      const { id, birthday, ...updateData } = input;
 
       await db
         .update(customers)
-        .set({ ...updateData, updatedAt: new Date() })
+        .set({
+          ...updateData,
+          ...(birthday !== undefined ? { birthday: birthday.toISOString().split('T')[0] } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(customers.id, id));
 
       return { success: true };
