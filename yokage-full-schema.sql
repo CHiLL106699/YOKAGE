@@ -1,7 +1,7 @@
 -- ============================================================
 -- YOChiLL SaaS Platform - Complete PostgreSQL Schema
 -- ============================================================
--- Total Tables: 101
+-- Total Tables: 120
 -- Source: Drizzle ORM MySQL Schema (auto-converted)
 -- Target: Supabase PostgreSQL (YOKAGE)
 -- ============================================================
@@ -108,19 +108,38 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 --  93. line_messaging_settings (8 columns)
 --  94. line_webhook_events (13 columns)
 --  95. auto_reply_rules (12 columns)
---  96. inventory (12 columns)
---  97. crm_tags (6 columns)
---  98. customer_tags (4 columns)
---  99. games_system_b (13 columns)
--- 100. prizes_system_b (11 columns)
--- 101. game_participations_system_b (7 columns)
--- 102. staff_commissions (9 columns)
--- 103. inventory_transfers_system_b (11 columns)
--- 104. attendance_records (3 columns)
--- 105. attendance_settings (3 columns)
+--  96. rich_menu_templates (14 columns)
+--  97. rich_menu_assignments (5 columns)
+--  98. rich_menu_click_stats (6 columns)
+--  99. broadcast_campaigns (16 columns)
+-- 100. broadcast_recipients (9 columns)
+-- 101. ai_conversations (11 columns)
+-- 102. ai_intents (10 columns)
+-- 103. ai_knowledge_base (11 columns)
+-- 104. rich_menu_template_market (13 columns)
+-- 105. broadcast_campaign_variants (13 columns)
+-- 106. ai_knowledge_base_vectors (6 columns)
+-- 107. inventory (12 columns)
+-- 108. crm_tags (6 columns)
+-- 109. customer_tags (4 columns)
+-- 110. games_system_b (13 columns)
+-- 111. prizes_system_b (11 columns)
+-- 112. game_participations_system_b (7 columns)
+-- 113. staff_commissions (9 columns)
+-- 114. inventory_transfers_system_b (11 columns)
+-- 115. lemonsqueezy_plans (13 columns)
+-- 116. lemonsqueezy_subscriptions (13 columns)
+-- 117. lemonsqueezy_payments (16 columns)
+-- 118. lemonsqueezy_webhook_events (7 columns)
+-- 119. line_rich_menus (13 columns)
+-- 120. leave_requests (13 columns)
+-- 121. attendance_records (3 columns)
+-- 122. attendance_settings (3 columns)
+-- 123. performance_records (7 columns)
+-- 124. performance_targets (8 columns)
 -- ============================================================
 
--- [1/105] Table: users
+-- [1/124] Table: users
 CREATE TABLE IF NOT EXISTS "users" (
   "id" SERIAL PRIMARY KEY,
   "openId" VARCHAR(64) NOT NULL UNIQUE,
@@ -136,7 +155,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "lastSignedIn" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [2/105] Table: organizations
+-- [2/124] Table: organizations
 CREATE TABLE IF NOT EXISTS "organizations" (
   "id" SERIAL PRIMARY KEY,
   "name" VARCHAR(255) NOT NULL,
@@ -157,7 +176,7 @@ CREATE TABLE IF NOT EXISTS "organizations" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [3/105] Table: organizationUsers
+-- [3/124] Table: organizationUsers
 CREATE TABLE IF NOT EXISTS "organizationUsers" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -170,7 +189,7 @@ CREATE TABLE IF NOT EXISTS "organizationUsers" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [4/105] Table: customers
+-- [4/124] Table: customers
 CREATE TABLE IF NOT EXISTS "customers" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -193,7 +212,7 @@ CREATE TABLE IF NOT EXISTS "customers" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [5/105] Table: customerTags
+-- [5/124] Table: customerTags
 CREATE TABLE IF NOT EXISTS "customerTags" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -203,7 +222,7 @@ CREATE TABLE IF NOT EXISTS "customerTags" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [6/105] Table: customerTagRelations
+-- [6/124] Table: customerTagRelations
 CREATE TABLE IF NOT EXISTS "customerTagRelations" (
   "id" SERIAL PRIMARY KEY,
   "customerId" INTEGER NOT NULL,
@@ -211,7 +230,7 @@ CREATE TABLE IF NOT EXISTS "customerTagRelations" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [7/105] Table: products
+-- [7/124] Table: products
 CREATE TABLE IF NOT EXISTS "products" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -230,7 +249,7 @@ CREATE TABLE IF NOT EXISTS "products" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [8/105] Table: staff
+-- [8/124] Table: staff
 CREATE TABLE IF NOT EXISTS "staff" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -251,7 +270,7 @@ CREATE TABLE IF NOT EXISTS "staff" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [9/105] Table: appointmentSlots
+-- [9/124] Table: appointmentSlots
 CREATE TABLE IF NOT EXISTS "appointmentSlots" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -265,7 +284,7 @@ CREATE TABLE IF NOT EXISTS "appointmentSlots" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [10/105] Table: appointments
+-- [10/124] Table: appointments
 CREATE TABLE IF NOT EXISTS "appointments" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -284,7 +303,7 @@ CREATE TABLE IF NOT EXISTS "appointments" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [11/105] Table: schedules
+-- [11/124] Table: schedules
 CREATE TABLE IF NOT EXISTS "schedules" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -298,7 +317,7 @@ CREATE TABLE IF NOT EXISTS "schedules" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [12/105] Table: attendanceRecords
+-- [12/124] Table: attendanceRecords
 CREATE TABLE IF NOT EXISTS "attendanceRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -330,7 +349,7 @@ CREATE TABLE IF NOT EXISTS "attendanceRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [13/105] Table: coupons
+-- [13/124] Table: coupons
 CREATE TABLE IF NOT EXISTS "coupons" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -350,7 +369,7 @@ CREATE TABLE IF NOT EXISTS "coupons" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [14/105] Table: orders
+-- [14/124] Table: orders
 CREATE TABLE IF NOT EXISTS "orders" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -369,7 +388,7 @@ CREATE TABLE IF NOT EXISTS "orders" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [15/105] Table: orderItems
+-- [15/124] Table: orderItems
 CREATE TABLE IF NOT EXISTS "orderItems" (
   "id" SERIAL PRIMARY KEY,
   "orderId" INTEGER NOT NULL,
@@ -381,7 +400,7 @@ CREATE TABLE IF NOT EXISTS "orderItems" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [16/105] Table: aftercareRecords
+-- [16/124] Table: aftercareRecords
 CREATE TABLE IF NOT EXISTS "aftercareRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -400,7 +419,7 @@ CREATE TABLE IF NOT EXISTS "aftercareRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [17/105] Table: lineChannels
+-- [17/124] Table: lineChannels
 CREATE TABLE IF NOT EXISTS "lineChannels" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -415,7 +434,7 @@ CREATE TABLE IF NOT EXISTS "lineChannels" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [18/105] Table: activityLogs
+-- [18/124] Table: activityLogs
 CREATE TABLE IF NOT EXISTS "activityLogs" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER,
@@ -429,7 +448,7 @@ CREATE TABLE IF NOT EXISTS "activityLogs" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [19/105] Table: treatmentRecords
+-- [19/124] Table: treatmentRecords
 CREATE TABLE IF NOT EXISTS "treatmentRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -449,7 +468,7 @@ CREATE TABLE IF NOT EXISTS "treatmentRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [20/105] Table: treatmentPhotos
+-- [20/124] Table: treatmentPhotos
 CREATE TABLE IF NOT EXISTS "treatmentPhotos" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -466,7 +485,7 @@ CREATE TABLE IF NOT EXISTS "treatmentPhotos" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [21/105] Table: customerPackages
+-- [21/124] Table: customerPackages
 CREATE TABLE IF NOT EXISTS "customerPackages" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -485,7 +504,7 @@ CREATE TABLE IF NOT EXISTS "customerPackages" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [22/105] Table: packageUsageRecords
+-- [22/124] Table: packageUsageRecords
 CREATE TABLE IF NOT EXISTS "packageUsageRecords" (
   "id" SERIAL PRIMARY KEY,
   "packageId" INTEGER NOT NULL,
@@ -499,7 +518,7 @@ CREATE TABLE IF NOT EXISTS "packageUsageRecords" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [23/105] Table: consultations
+-- [23/124] Table: consultations
 CREATE TABLE IF NOT EXISTS "consultations" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -522,7 +541,7 @@ CREATE TABLE IF NOT EXISTS "consultations" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [24/105] Table: followUps
+-- [24/124] Table: followUps
 CREATE TABLE IF NOT EXISTS "followUps" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -539,7 +558,7 @@ CREATE TABLE IF NOT EXISTS "followUps" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [25/105] Table: customerRfmScores
+-- [25/124] Table: customerRfmScores
 CREATE TABLE IF NOT EXISTS "customerRfmScores" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -558,7 +577,7 @@ CREATE TABLE IF NOT EXISTS "customerRfmScores" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [26/105] Table: commissionRules
+-- [26/124] Table: commissionRules
 CREATE TABLE IF NOT EXISTS "commissionRules" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -573,7 +592,7 @@ CREATE TABLE IF NOT EXISTS "commissionRules" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [27/105] Table: staffCommissions
+-- [27/124] Table: staffCommissions
 CREATE TABLE IF NOT EXISTS "staffCommissions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -592,7 +611,7 @@ CREATE TABLE IF NOT EXISTS "staffCommissions" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [28/105] Table: inventoryTransactions
+-- [28/124] Table: inventoryTransactions
 CREATE TABLE IF NOT EXISTS "inventoryTransactions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -611,7 +630,7 @@ CREATE TABLE IF NOT EXISTS "inventoryTransactions" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [29/105] Table: revenueTargets
+-- [29/124] Table: revenueTargets
 CREATE TABLE IF NOT EXISTS "revenueTargets" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -629,7 +648,7 @@ CREATE TABLE IF NOT EXISTS "revenueTargets" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [30/105] Table: marketingCampaigns
+-- [30/124] Table: marketingCampaigns
 CREATE TABLE IF NOT EXISTS "marketingCampaigns" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -647,7 +666,7 @@ CREATE TABLE IF NOT EXISTS "marketingCampaigns" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [31/105] Table: customerSources
+-- [31/124] Table: customerSources
 CREATE TABLE IF NOT EXISTS "customerSources" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -665,7 +684,7 @@ CREATE TABLE IF NOT EXISTS "customerSources" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [32/105] Table: satisfactionSurveys
+-- [32/124] Table: satisfactionSurveys
 CREATE TABLE IF NOT EXISTS "satisfactionSurveys" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -690,7 +709,7 @@ CREATE TABLE IF NOT EXISTS "satisfactionSurveys" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [33/105] Table: waitlist
+-- [33/124] Table: waitlist
 CREATE TABLE IF NOT EXISTS "waitlist" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -706,7 +725,7 @@ CREATE TABLE IF NOT EXISTS "waitlist" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [34/105] Table: injectionRecords
+-- [34/124] Table: injectionRecords
 CREATE TABLE IF NOT EXISTS "injectionRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -722,7 +741,7 @@ CREATE TABLE IF NOT EXISTS "injectionRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [35/105] Table: injectionPoints
+-- [35/124] Table: injectionPoints
 CREATE TABLE IF NOT EXISTS "injectionPoints" (
   "id" SERIAL PRIMARY KEY,
   "injectionRecordId" INTEGER NOT NULL,
@@ -735,7 +754,7 @@ CREATE TABLE IF NOT EXISTS "injectionPoints" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [36/105] Table: consentFormTemplates
+-- [36/124] Table: consentFormTemplates
 CREATE TABLE IF NOT EXISTS "consentFormTemplates" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -749,7 +768,7 @@ CREATE TABLE IF NOT EXISTS "consentFormTemplates" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [37/105] Table: consentSignatures
+-- [37/124] Table: consentSignatures
 CREATE TABLE IF NOT EXISTS "consentSignatures" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -769,7 +788,7 @@ CREATE TABLE IF NOT EXISTS "consentSignatures" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [38/105] Table: medications
+-- [38/124] Table: medications
 CREATE TABLE IF NOT EXISTS "medications" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -788,7 +807,7 @@ CREATE TABLE IF NOT EXISTS "medications" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [39/105] Table: prescriptions
+-- [39/124] Table: prescriptions
 CREATE TABLE IF NOT EXISTS "prescriptions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -812,7 +831,7 @@ CREATE TABLE IF NOT EXISTS "prescriptions" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [40/105] Table: customerAllergies
+-- [40/124] Table: customerAllergies
 CREATE TABLE IF NOT EXISTS "customerAllergies" (
   "id" SERIAL PRIMARY KEY,
   "customerId" INTEGER NOT NULL,
@@ -827,7 +846,7 @@ CREATE TABLE IF NOT EXISTS "customerAllergies" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [41/105] Table: skinAnalysisRecords
+-- [41/124] Table: skinAnalysisRecords
 CREATE TABLE IF NOT EXISTS "skinAnalysisRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -845,7 +864,7 @@ CREATE TABLE IF NOT EXISTS "skinAnalysisRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [42/105] Table: skinMetrics
+-- [42/124] Table: skinMetrics
 CREATE TABLE IF NOT EXISTS "skinMetrics" (
   "id" SERIAL PRIMARY KEY,
   "analysisRecordId" INTEGER NOT NULL,
@@ -857,7 +876,7 @@ CREATE TABLE IF NOT EXISTS "skinMetrics" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [43/105] Table: membershipPlans
+-- [43/124] Table: membershipPlans
 CREATE TABLE IF NOT EXISTS "membershipPlans" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -876,7 +895,7 @@ CREATE TABLE IF NOT EXISTS "membershipPlans" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [44/105] Table: memberSubscriptions
+-- [44/124] Table: memberSubscriptions
 CREATE TABLE IF NOT EXISTS "memberSubscriptions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -896,7 +915,7 @@ CREATE TABLE IF NOT EXISTS "memberSubscriptions" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [45/105] Table: subscriptionPayments
+-- [45/124] Table: subscriptionPayments
 CREATE TABLE IF NOT EXISTS "subscriptionPayments" (
   "id" SERIAL PRIMARY KEY,
   "subscriptionId" INTEGER NOT NULL,
@@ -913,7 +932,7 @@ CREATE TABLE IF NOT EXISTS "subscriptionPayments" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [46/105] Table: teleConsultations
+-- [46/124] Table: teleConsultations
 CREATE TABLE IF NOT EXISTS "teleConsultations" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -934,7 +953,7 @@ CREATE TABLE IF NOT EXISTS "teleConsultations" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [47/105] Table: consultationRecordings
+-- [47/124] Table: consultationRecordings
 CREATE TABLE IF NOT EXISTS "consultationRecordings" (
   "id" SERIAL PRIMARY KEY,
   "teleConsultationId" INTEGER NOT NULL,
@@ -948,7 +967,7 @@ CREATE TABLE IF NOT EXISTS "consultationRecordings" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [48/105] Table: referralCodes
+-- [48/124] Table: referralCodes
 CREATE TABLE IF NOT EXISTS "referralCodes" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -966,7 +985,7 @@ CREATE TABLE IF NOT EXISTS "referralCodes" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [49/105] Table: referralRecords
+-- [49/124] Table: referralRecords
 CREATE TABLE IF NOT EXISTS "referralRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -980,7 +999,7 @@ CREATE TABLE IF NOT EXISTS "referralRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [50/105] Table: referralRewards
+-- [50/124] Table: referralRewards
 CREATE TABLE IF NOT EXISTS "referralRewards" (
   "id" SERIAL PRIMARY KEY,
   "referralRecordId" INTEGER NOT NULL,
@@ -996,7 +1015,7 @@ CREATE TABLE IF NOT EXISTS "referralRewards" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [51/105] Table: socialAccounts
+-- [51/124] Table: socialAccounts
 CREATE TABLE IF NOT EXISTS "socialAccounts" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1013,7 +1032,7 @@ CREATE TABLE IF NOT EXISTS "socialAccounts" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [52/105] Table: scheduledPosts
+-- [52/124] Table: scheduledPosts
 CREATE TABLE IF NOT EXISTS "scheduledPosts" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1032,7 +1051,7 @@ CREATE TABLE IF NOT EXISTS "scheduledPosts" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [53/105] Table: socialAnalytics
+-- [53/124] Table: socialAnalytics
 CREATE TABLE IF NOT EXISTS "socialAnalytics" (
   "id" SERIAL PRIMARY KEY,
   "socialAccountId" INTEGER NOT NULL,
@@ -1050,7 +1069,7 @@ CREATE TABLE IF NOT EXISTS "socialAnalytics" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [54/105] Table: backgroundJobs
+-- [54/124] Table: backgroundJobs
 CREATE TABLE IF NOT EXISTS "backgroundJobs" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1068,7 +1087,7 @@ CREATE TABLE IF NOT EXISTS "backgroundJobs" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [55/105] Table: voucherTemplates
+-- [55/124] Table: voucherTemplates
 CREATE TABLE IF NOT EXISTS "voucherTemplates" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1098,7 +1117,7 @@ CREATE TABLE IF NOT EXISTS "voucherTemplates" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [56/105] Table: voucherInstances
+-- [56/124] Table: voucherInstances
 CREATE TABLE IF NOT EXISTS "voucherInstances" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1124,7 +1143,7 @@ CREATE TABLE IF NOT EXISTS "voucherInstances" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [57/105] Table: voucherRedemptions
+-- [57/124] Table: voucherRedemptions
 CREATE TABLE IF NOT EXISTS "voucherRedemptions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1144,7 +1163,7 @@ CREATE TABLE IF NOT EXISTS "voucherRedemptions" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [58/105] Table: voucherBatches
+-- [58/124] Table: voucherBatches
 CREATE TABLE IF NOT EXISTS "voucherBatches" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1165,7 +1184,7 @@ CREATE TABLE IF NOT EXISTS "voucherBatches" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [59/105] Table: voucherTransfers
+-- [59/124] Table: voucherTransfers
 CREATE TABLE IF NOT EXISTS "voucherTransfers" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1190,7 +1209,7 @@ CREATE TABLE IF NOT EXISTS "voucherTransfers" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [60/105] Table: systemSettings
+-- [60/124] Table: systemSettings
 CREATE TABLE IF NOT EXISTS "systemSettings" (
   "id" SERIAL PRIMARY KEY,
   "key" VARCHAR(100) NOT NULL UNIQUE,
@@ -1201,7 +1220,7 @@ CREATE TABLE IF NOT EXISTS "systemSettings" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [61/105] Table: voucherReminderLogs
+-- [61/124] Table: voucherReminderLogs
 CREATE TABLE IF NOT EXISTS "voucherReminderLogs" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1219,7 +1238,7 @@ CREATE TABLE IF NOT EXISTS "voucherReminderLogs" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [62/105] Table: dailySettlements
+-- [62/124] Table: dailySettlements
 CREATE TABLE IF NOT EXISTS "dailySettlements" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1250,7 +1269,7 @@ CREATE TABLE IF NOT EXISTS "dailySettlements" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [63/105] Table: settlementItems
+-- [63/124] Table: settlementItems
 CREATE TABLE IF NOT EXISTS "settlementItems" (
   "id" SERIAL PRIMARY KEY,
   "settlementId" INTEGER NOT NULL,
@@ -1268,7 +1287,7 @@ CREATE TABLE IF NOT EXISTS "settlementItems" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [64/105] Table: cashDrawerRecords
+-- [64/124] Table: cashDrawerRecords
 CREATE TABLE IF NOT EXISTS "cashDrawerRecords" (
   "id" SERIAL PRIMARY KEY,
   "settlementId" INTEGER NOT NULL,
@@ -1284,7 +1303,7 @@ CREATE TABLE IF NOT EXISTS "cashDrawerRecords" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [65/105] Table: paymentRecords
+-- [65/124] Table: paymentRecords
 CREATE TABLE IF NOT EXISTS "paymentRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1307,7 +1326,7 @@ CREATE TABLE IF NOT EXISTS "paymentRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [66/105] Table: lineChannelConfigs
+-- [66/124] Table: lineChannelConfigs
 CREATE TABLE IF NOT EXISTS "lineChannelConfigs" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER,
@@ -1324,7 +1343,7 @@ CREATE TABLE IF NOT EXISTS "lineChannelConfigs" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [67/105] Table: autoSettlementSettings
+-- [67/124] Table: autoSettlementSettings
 CREATE TABLE IF NOT EXISTS "autoSettlementSettings" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL UNIQUE,
@@ -1343,7 +1362,7 @@ CREATE TABLE IF NOT EXISTS "autoSettlementSettings" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [68/105] Table: settlementReports
+-- [68/124] Table: settlementReports
 CREATE TABLE IF NOT EXISTS "settlementReports" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1372,7 +1391,7 @@ CREATE TABLE IF NOT EXISTS "settlementReports" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [69/105] Table: revenueTrendSnapshots
+-- [69/124] Table: revenueTrendSnapshots
 CREATE TABLE IF NOT EXISTS "revenueTrendSnapshots" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1393,7 +1412,7 @@ CREATE TABLE IF NOT EXISTS "revenueTrendSnapshots" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [70/105] Table: lineChannelSettings
+-- [70/124] Table: lineChannelSettings
 CREATE TABLE IF NOT EXISTS "lineChannelSettings" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL UNIQUE,
@@ -1415,7 +1434,7 @@ CREATE TABLE IF NOT EXISTS "lineChannelSettings" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [71/105] Table: importRecords
+-- [71/124] Table: importRecords
 CREATE TABLE IF NOT EXISTS "importRecords" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1433,7 +1452,7 @@ CREATE TABLE IF NOT EXISTS "importRecords" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [72/105] Table: paymentSettings
+-- [72/124] Table: paymentSettings
 CREATE TABLE IF NOT EXISTS "paymentSettings" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1461,7 +1480,7 @@ CREATE TABLE IF NOT EXISTS "paymentSettings" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [73/105] Table: paymentTransactions
+-- [73/124] Table: paymentTransactions
 CREATE TABLE IF NOT EXISTS "paymentTransactions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1486,7 +1505,7 @@ CREATE TABLE IF NOT EXISTS "paymentTransactions" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [74/105] Table: subscriptionPlans
+-- [74/124] Table: subscriptionPlans
 CREATE TABLE IF NOT EXISTS "subscriptionPlans" (
   "id" SERIAL PRIMARY KEY,
   "name" VARCHAR(255) NOT NULL,
@@ -1507,7 +1526,7 @@ CREATE TABLE IF NOT EXISTS "subscriptionPlans" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [75/105] Table: organizationSubscriptions
+-- [75/124] Table: organizationSubscriptions
 CREATE TABLE IF NOT EXISTS "organizationSubscriptions" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1526,7 +1545,7 @@ CREATE TABLE IF NOT EXISTS "organizationSubscriptions" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [76/105] Table: attendanceSettings
+-- [76/124] Table: attendanceSettings
 CREATE TABLE IF NOT EXISTS "attendanceSettings" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL UNIQUE,
@@ -1542,7 +1561,7 @@ CREATE TABLE IF NOT EXISTS "attendanceSettings" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [77/105] Table: games
+-- [77/124] Table: games
 CREATE TABLE IF NOT EXISTS "games" (
   "id" SERIAL PRIMARY KEY,
   "organizationId" INTEGER NOT NULL,
@@ -1557,7 +1576,7 @@ CREATE TABLE IF NOT EXISTS "games" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [78/105] Table: prizes
+-- [78/124] Table: prizes
 CREATE TABLE IF NOT EXISTS "prizes" (
   "id" SERIAL PRIMARY KEY,
   "gameId" INTEGER NOT NULL,
@@ -1577,7 +1596,7 @@ CREATE TABLE IF NOT EXISTS "prizes" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [79/105] Table: gamePlays
+-- [79/124] Table: gamePlays
 CREATE TABLE IF NOT EXISTS "gamePlays" (
   "id" SERIAL PRIMARY KEY,
   "gameId" INTEGER NOT NULL,
@@ -1590,7 +1609,7 @@ CREATE TABLE IF NOT EXISTS "gamePlays" (
   "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [80/105] Table: userPrizes
+-- [80/124] Table: userPrizes
 CREATE TABLE IF NOT EXISTS "userPrizes" (
   "id" SERIAL PRIMARY KEY,
   "userId" INTEGER NOT NULL,
@@ -1607,7 +1626,7 @@ CREATE TABLE IF NOT EXISTS "userPrizes" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [81/105] Table: performanceRecords
+-- [81/124] Table: performanceRecords
 CREATE TABLE IF NOT EXISTS "performanceRecords" (
   "id" VARCHAR(191) PRIMARY KEY,
   "clinicId" VARCHAR(191) NOT NULL,
@@ -1621,7 +1640,7 @@ CREATE TABLE IF NOT EXISTS "performanceRecords" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [82/105] Table: performanceTargets
+-- [82/124] Table: performanceTargets
 CREATE TABLE IF NOT EXISTS "performanceTargets" (
   "id" VARCHAR(191) PRIMARY KEY,
   "clinicId" VARCHAR(191) NOT NULL,
@@ -1635,7 +1654,7 @@ CREATE TABLE IF NOT EXISTS "performanceTargets" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [83/105] Table: inventory_system_b
+-- [83/124] Table: inventory_system_b
 CREATE TABLE IF NOT EXISTS "inventory_system_b" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1651,7 +1670,7 @@ CREATE TABLE IF NOT EXISTS "inventory_system_b" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [84/105] Table: crm_tags_system_b
+-- [84/124] Table: crm_tags_system_b
 CREATE TABLE IF NOT EXISTS "crm_tags_system_b" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1662,7 +1681,7 @@ CREATE TABLE IF NOT EXISTS "crm_tags_system_b" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [85/105] Table: customer_tags_system_b
+-- [85/124] Table: customer_tags_system_b
 CREATE TABLE IF NOT EXISTS "customer_tags_system_b" (
   "id" SERIAL PRIMARY KEY,
   "customer_id" INTEGER NOT NULL,
@@ -1670,7 +1689,7 @@ CREATE TABLE IF NOT EXISTS "customer_tags_system_b" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [86/105] Table: games_system_b
+-- [86/124] Table: games_system_b
 CREATE TABLE IF NOT EXISTS "games_system_b" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1687,7 +1706,7 @@ CREATE TABLE IF NOT EXISTS "games_system_b" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [87/105] Table: prizes_system_b
+-- [87/124] Table: prizes_system_b
 CREATE TABLE IF NOT EXISTS "prizes_system_b" (
   "id" SERIAL PRIMARY KEY,
   "game_id" INTEGER NOT NULL,
@@ -1702,7 +1721,7 @@ CREATE TABLE IF NOT EXISTS "prizes_system_b" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [88/105] Table: game_participations_system_b
+-- [88/124] Table: game_participations_system_b
 CREATE TABLE IF NOT EXISTS "game_participations_system_b" (
   "id" SERIAL PRIMARY KEY,
   "game_id" INTEGER NOT NULL,
@@ -1713,7 +1732,7 @@ CREATE TABLE IF NOT EXISTS "game_participations_system_b" (
   "claimed_at" TIMESTAMPTZ
 );
 
--- [89/105] Table: staff_commissions_system_b
+-- [89/124] Table: staff_commissions_system_b
 CREATE TABLE IF NOT EXISTS "staff_commissions_system_b" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1726,7 +1745,7 @@ CREATE TABLE IF NOT EXISTS "staff_commissions_system_b" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [90/105] Table: inventory_transfers_system_b
+-- [90/124] Table: inventory_transfers_system_b
 CREATE TABLE IF NOT EXISTS "inventory_transfers_system_b" (
   "id" SERIAL PRIMARY KEY,
   "from_org_id" INTEGER NOT NULL,
@@ -1741,7 +1760,7 @@ CREATE TABLE IF NOT EXISTS "inventory_transfers_system_b" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [91/105] Table: interactions
+-- [91/124] Table: interactions
 CREATE TABLE IF NOT EXISTS "interactions" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1754,7 +1773,7 @@ CREATE TABLE IF NOT EXISTS "interactions" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [92/105] Table: tag_rules
+-- [92/124] Table: tag_rules
 CREATE TABLE IF NOT EXISTS "tag_rules" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1768,7 +1787,7 @@ CREATE TABLE IF NOT EXISTS "tag_rules" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [93/105] Table: line_messaging_settings
+-- [93/124] Table: line_messaging_settings
 CREATE TABLE IF NOT EXISTS "line_messaging_settings" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL UNIQUE,
@@ -1780,7 +1799,7 @@ CREATE TABLE IF NOT EXISTS "line_messaging_settings" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [94/105] Table: line_webhook_events
+-- [94/124] Table: line_webhook_events
 CREATE TABLE IF NOT EXISTS "line_webhook_events" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1797,7 +1816,7 @@ CREATE TABLE IF NOT EXISTS "line_webhook_events" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [95/105] Table: auto_reply_rules
+-- [95/124] Table: auto_reply_rules
 CREATE TABLE IF NOT EXISTS "auto_reply_rules" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1813,7 +1832,165 @@ CREATE TABLE IF NOT EXISTS "auto_reply_rules" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [96/105] Table: inventory
+-- [96/124] Table: rich_menu_templates
+CREATE TABLE IF NOT EXISTS "rich_menu_templates" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "description" TEXT,
+  "richMenuId" VARCHAR(255),
+  "imageUrl" TEXT,
+  "chatBarText" VARCHAR(14) NOT NULL,
+  "areas" JSONB NOT NULL,
+  "isActive" BOOLEAN DEFAULT true,
+  "targetAudience" VARCHAR(50),
+  "abTestGroup" VARCHAR(50),
+  "createdBy" INTEGER,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [97/124] Table: rich_menu_assignments
+CREATE TABLE IF NOT EXISTS "rich_menu_assignments" (
+  "id" SERIAL PRIMARY KEY,
+  "templateId" INTEGER NOT NULL,
+  "customerId" INTEGER NOT NULL,
+  "lineUserId" VARCHAR(255) NOT NULL,
+  "assignedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [98/124] Table: rich_menu_click_stats
+CREATE TABLE IF NOT EXISTS "rich_menu_click_stats" (
+  "id" SERIAL PRIMARY KEY,
+  "templateId" INTEGER NOT NULL,
+  "customerId" INTEGER,
+  "lineUserId" VARCHAR(255) NOT NULL,
+  "areaIndex" INTEGER NOT NULL,
+  "clickedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [99/124] Table: broadcast_campaigns
+CREATE TABLE IF NOT EXISTS "broadcast_campaigns" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "description" TEXT,
+  "messageType" VARCHAR(50) NOT NULL,
+  "messageContent" JSONB NOT NULL,
+  "targetAudience" JSONB NOT NULL,
+  "scheduledAt" TIMESTAMPTZ,
+  "status" VARCHAR(50) DEFAULT 'draft',
+  "totalRecipients" INTEGER DEFAULT 0,
+  "sentCount" INTEGER DEFAULT 0,
+  "deliveredCount" INTEGER DEFAULT 0,
+  "clickedCount" INTEGER DEFAULT 0,
+  "createdBy" INTEGER,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [100/124] Table: broadcast_recipients
+CREATE TABLE IF NOT EXISTS "broadcast_recipients" (
+  "id" SERIAL PRIMARY KEY,
+  "campaignId" INTEGER NOT NULL,
+  "customerId" INTEGER NOT NULL,
+  "lineUserId" VARCHAR(255) NOT NULL,
+  "status" VARCHAR(50) DEFAULT 'pending',
+  "sentAt" TIMESTAMPTZ,
+  "deliveredAt" TIMESTAMPTZ,
+  "clickedAt" TIMESTAMPTZ,
+  "errorMessage" TEXT
+);
+
+-- [101/124] Table: ai_conversations
+CREATE TABLE IF NOT EXISTS "ai_conversations" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "customerId" INTEGER,
+  "lineUserId" VARCHAR(255) NOT NULL,
+  "sessionId" VARCHAR(255) NOT NULL,
+  "userMessage" TEXT NOT NULL,
+  "aiResponse" TEXT NOT NULL,
+  "intent" VARCHAR(100),
+  "confidence" NUMERIC(5, 2),
+  "context" JSONB,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [102/124] Table: ai_intents
+CREATE TABLE IF NOT EXISTS "ai_intents" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "name" VARCHAR(100) NOT NULL,
+  "description" TEXT,
+  "keywords" JSONB NOT NULL,
+  "trainingExamples" JSONB,
+  "responseTemplate" TEXT,
+  "isActive" BOOLEAN DEFAULT true,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [103/124] Table: ai_knowledge_base
+CREATE TABLE IF NOT EXISTS "ai_knowledge_base" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "category" VARCHAR(100) NOT NULL,
+  "question" TEXT NOT NULL,
+  "answer" TEXT NOT NULL,
+  "keywords" JSONB,
+  "priority" INTEGER DEFAULT 0,
+  "isActive" BOOLEAN DEFAULT true,
+  "createdBy" INTEGER,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [104/124] Table: rich_menu_template_market
+CREATE TABLE IF NOT EXISTS "rich_menu_template_market" (
+  "id" SERIAL PRIMARY KEY,
+  "category" VARCHAR(50) NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "description" TEXT,
+  "imageUrl" VARCHAR(500) NOT NULL,
+  "imageWidth" INTEGER NOT NULL,
+  "imageHeight" INTEGER NOT NULL,
+  "areas" JSONB NOT NULL,
+  "tags" JSONB,
+  "usageCount" INTEGER DEFAULT 0,
+  "rating" NUMERIC(3, 2),
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [105/124] Table: broadcast_campaign_variants
+CREATE TABLE IF NOT EXISTS "broadcast_campaign_variants" (
+  "id" SERIAL PRIMARY KEY,
+  "campaignId" INTEGER NOT NULL,
+  "variantName" VARCHAR(100) NOT NULL,
+  "messageContent" TEXT NOT NULL,
+  "messageType" VARCHAR(50) NOT NULL,
+  "flexMessageJson" JSONB,
+  "trafficPercentage" INTEGER NOT NULL,
+  "sentCount" INTEGER DEFAULT 0,
+  "openedCount" INTEGER DEFAULT 0,
+  "clickedCount" INTEGER DEFAULT 0,
+  "convertedCount" INTEGER DEFAULT 0,
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [106/124] Table: ai_knowledge_base_vectors
+CREATE TABLE IF NOT EXISTS "ai_knowledge_base_vectors" (
+  "id" SERIAL PRIMARY KEY,
+  "knowledgeBaseId" INTEGER NOT NULL,
+  "embedding" JSONB NOT NULL,
+  "embeddingModel" VARCHAR(100) DEFAULT 'text-embedding-ada-002',
+  "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [107/124] Table: inventory
 CREATE TABLE IF NOT EXISTS "inventory" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1829,7 +2006,7 @@ CREATE TABLE IF NOT EXISTS "inventory" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [97/105] Table: crm_tags
+-- [108/124] Table: crm_tags
 CREATE TABLE IF NOT EXISTS "crm_tags" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1839,7 +2016,7 @@ CREATE TABLE IF NOT EXISTS "crm_tags" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- [98/105] Table: customer_tags
+-- [109/124] Table: customer_tags
 CREATE TABLE IF NOT EXISTS "customer_tags" (
   "id" SERIAL PRIMARY KEY,
   "customer_id" INTEGER NOT NULL,
@@ -1850,7 +2027,7 @@ CREATE TABLE IF NOT EXISTS "customer_tags" (
 
 
 
--- [102/105] Table: staff_commissions
+-- [113/124] Table: staff_commissions
 CREATE TABLE IF NOT EXISTS "staff_commissions" (
   "id" SERIAL PRIMARY KEY,
   "organization_id" INTEGER NOT NULL,
@@ -1864,18 +2041,140 @@ CREATE TABLE IF NOT EXISTS "staff_commissions" (
 );
 
 
--- [104/105] Table: attendance_records
+-- [115/124] Table: lemonsqueezy_plans
+CREATE TABLE IF NOT EXISTS "lemonsqueezy_plans" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "lemonSqueezyProductId" VARCHAR(255) NOT NULL,
+  "lemonSqueezyVariantId" VARCHAR(255) NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "description" TEXT,
+  "price" NUMERIC(10, 2) NOT NULL,
+  "currency" VARCHAR(10) NOT NULL DEFAULT 'TWD',
+  "interval" TEXT CHECK ("interval" IN ()) NOT NULL,
+  "intervalCount" INTEGER NOT NULL DEFAULT 1,
+  "isActive" INTEGER NOT NULL DEFAULT 1,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [116/124] Table: lemonsqueezy_subscriptions
+CREATE TABLE IF NOT EXISTS "lemonsqueezy_subscriptions" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "userId" INTEGER NOT NULL,
+  "planId" INTEGER NOT NULL,
+  "lemonSqueezySubscriptionId" VARCHAR(255) NOT NULL UNIQUE,
+  "lemonSqueezyCustomerId" VARCHAR(255) NOT NULL,
+  "lemonSqueezyOrderId" VARCHAR(255),
+  "status" TEXT CHECK ("status" IN ()) NOT NULL,
+  "trialEndsAt" TIMESTAMPTZ,
+  "renewsAt" TIMESTAMPTZ,
+  "endsAt" TIMESTAMPTZ,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [117/124] Table: lemonsqueezy_payments
+CREATE TABLE IF NOT EXISTS "lemonsqueezy_payments" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "userId" INTEGER NOT NULL,
+  "subscriptionId" INTEGER,
+  "lemonSqueezyOrderId" VARCHAR(255) NOT NULL UNIQUE,
+  "lemonSqueezyCustomerId" VARCHAR(255) NOT NULL,
+  "amount" NUMERIC(10, 2) NOT NULL,
+  "currency" VARCHAR(10) NOT NULL DEFAULT 'TWD',
+  "status" TEXT CHECK ("status" IN ()) NOT NULL,
+  "refundAmount" NUMERIC(10, 2),
+  "refundedAt" TIMESTAMPTZ,
+  "receiptUrl" VARCHAR(500),
+  "invoiceUrl" VARCHAR(500),
+  "paidAt" TIMESTAMPTZ,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [118/124] Table: lemonsqueezy_webhook_events
+CREATE TABLE IF NOT EXISTS "lemonsqueezy_webhook_events" (
+  "id" SERIAL PRIMARY KEY,
+  "lemonSqueezyEventId" VARCHAR(255) NOT NULL UNIQUE,
+  "eventName" VARCHAR(255) NOT NULL,
+  "payload" TEXT NOT NULL,
+  "processed" INTEGER NOT NULL DEFAULT 0,
+  "processedAt" TIMESTAMPTZ,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [119/124] Table: line_rich_menus
+CREATE TABLE IF NOT EXISTS "line_rich_menus" (
+  "id" SERIAL PRIMARY KEY,
+  "organizationId" INTEGER NOT NULL,
+  "richMenuId" VARCHAR(255) NOT NULL UNIQUE,
+  "name" VARCHAR(255) NOT NULL,
+  "chatBarText" VARCHAR(14) NOT NULL,
+  "imageUrl" TEXT NOT NULL,
+  "imageKey" TEXT,
+  "areas" JSONB NOT NULL,
+  "isDefault" BOOLEAN NOT NULL DEFAULT false,
+  "isActive" BOOLEAN NOT NULL DEFAULT true,
+  "clickCount" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [120/124] Table: leave_requests
+CREATE TABLE IF NOT EXISTS "leave_requests" (
+  "id" VARCHAR(36) PRIMARY KEY,
+  "clinicId" VARCHAR(36) NOT NULL,
+  "staffId" VARCHAR(36) NOT NULL,
+  "leaveType" TEXT CHECK ("leaveType" IN ()) NOT NULL,
+  "startDate" TIMESTAMPTZ NOT NULL,
+  "endDate" TIMESTAMPTZ NOT NULL,
+  "reason" TEXT,
+  "status" TEXT CHECK ("status" IN ()) NOT NULL DEFAULT 'pending',
+  "reviewerId" VARCHAR(36),
+  "reviewedAt" TIMESTAMPTZ,
+  "reviewNote" TEXT,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [121/124] Table: attendance_records
 CREATE TABLE IF NOT EXISTS "attendance_records" (
   "check_in_address" TEXT,
   "check_out_address" TEXT,
   "is_within_geofence" BOOLEAN DEFAULT true
 );
 
--- [105/105] Table: attendance_settings
+-- [122/124] Table: attendance_settings
 CREATE TABLE IF NOT EXISTS "attendance_settings" (
   "valid_distance" INTEGER DEFAULT 100,
   "enable_geofence" BOOLEAN DEFAULT false,
   "allow_offline_clock_in" BOOLEAN DEFAULT true
+);
+
+-- [123/124] Table: performance_records
+CREATE TABLE IF NOT EXISTS "performance_records" (
+  "id" VARCHAR(191) PRIMARY KEY,
+  "clinicId" VARCHAR(191) NOT NULL,
+  "staffId" VARCHAR(191) NOT NULL,
+  "amount" NUMERIC(10, 2) NOT NULL DEFAULT '0.00',
+  "type" VARCHAR(50) NOT NULL,
+  "relatedId" VARCHAR(191),
+  "notes" TEXT
+);
+
+-- [124/124] Table: performance_targets
+CREATE TABLE IF NOT EXISTS "performance_targets" (
+  "id" VARCHAR(191) PRIMARY KEY,
+  "clinicId" VARCHAR(191) NOT NULL,
+  "staffId" VARCHAR(191) NOT NULL,
+  "periodType" VARCHAR(50) NOT NULL,
+  "year" INTEGER NOT NULL,
+  "period" INTEGER NOT NULL,
+  "targetAmount" NUMERIC(10, 2) NOT NULL DEFAULT '0.00',
+  "notes" TEXT
 );
 
 -- ============================================================
@@ -2182,6 +2481,34 @@ CREATE TRIGGER "set_updated_at_auto_reply_rules"
   BEFORE UPDATE ON "auto_reply_rules"
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
+CREATE TRIGGER "set_updated_at_rich_menu_templates"
+  BEFORE UPDATE ON "rich_menu_templates"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_broadcast_campaigns"
+  BEFORE UPDATE ON "broadcast_campaigns"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_ai_intents"
+  BEFORE UPDATE ON "ai_intents"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_ai_knowledge_base"
+  BEFORE UPDATE ON "ai_knowledge_base"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_rich_menu_template_market"
+  BEFORE UPDATE ON "rich_menu_template_market"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_broadcast_campaign_variants"
+  BEFORE UPDATE ON "broadcast_campaign_variants"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_ai_knowledge_base_vectors"
+  BEFORE UPDATE ON "ai_knowledge_base_vectors"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
 CREATE TRIGGER "set_updated_at_inventory"
   BEFORE UPDATE ON "inventory"
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
@@ -2200,6 +2527,26 @@ CREATE TRIGGER "set_updated_at_staff_commissions"
 
 CREATE TRIGGER "set_updated_at_inventory_transfers_system_b"
   BEFORE UPDATE ON "inventory_transfers_system_b"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_lemonsqueezy_plans"
+  BEFORE UPDATE ON "lemonsqueezy_plans"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_lemonsqueezy_subscriptions"
+  BEFORE UPDATE ON "lemonsqueezy_subscriptions"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_lemonsqueezy_payments"
+  BEFORE UPDATE ON "lemonsqueezy_payments"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_line_rich_menus"
+  BEFORE UPDATE ON "line_rich_menus"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+CREATE TRIGGER "set_updated_at_leave_requests"
+  BEFORE UPDATE ON "leave_requests"
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
 
@@ -2301,6 +2648,17 @@ ALTER TABLE "tag_rules" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "line_messaging_settings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "line_webhook_events" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "auto_reply_rules" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "rich_menu_templates" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "rich_menu_assignments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "rich_menu_click_stats" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "broadcast_campaigns" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "broadcast_recipients" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ai_conversations" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ai_intents" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ai_knowledge_base" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "rich_menu_template_market" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "broadcast_campaign_variants" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ai_knowledge_base_vectors" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "inventory" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "crm_tags" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "customer_tags" ENABLE ROW LEVEL SECURITY;
@@ -2309,8 +2667,16 @@ ALTER TABLE "prizes_system_b" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "game_participations_system_b" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "staff_commissions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "inventory_transfers_system_b" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "lemonsqueezy_plans" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "lemonsqueezy_subscriptions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "lemonsqueezy_payments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "lemonsqueezy_webhook_events" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "line_rich_menus" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "leave_requests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "attendance_records" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "attendance_settings" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "performance_records" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "performance_targets" ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- RLS POLICIES: Multi-tenant isolation by organizationId
@@ -4758,6 +5124,171 @@ CREATE POLICY "tenant_isolation_delete_auto_reply_rules" ON "auto_reply_rules"
     )
   );
 
+-- RLS for rich_menu_templates
+CREATE POLICY "tenant_isolation_select_rich_menu_templates" ON "rich_menu_templates"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_rich_menu_templates" ON "rich_menu_templates"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_rich_menu_templates" ON "rich_menu_templates"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_rich_menu_templates" ON "rich_menu_templates"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for broadcast_campaigns
+CREATE POLICY "tenant_isolation_select_broadcast_campaigns" ON "broadcast_campaigns"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_broadcast_campaigns" ON "broadcast_campaigns"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_broadcast_campaigns" ON "broadcast_campaigns"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_broadcast_campaigns" ON "broadcast_campaigns"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for ai_conversations
+CREATE POLICY "tenant_isolation_select_ai_conversations" ON "ai_conversations"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_ai_conversations" ON "ai_conversations"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_ai_conversations" ON "ai_conversations"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_ai_conversations" ON "ai_conversations"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for ai_intents
+CREATE POLICY "tenant_isolation_select_ai_intents" ON "ai_intents"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_ai_intents" ON "ai_intents"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_ai_intents" ON "ai_intents"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_ai_intents" ON "ai_intents"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for ai_knowledge_base
+CREATE POLICY "tenant_isolation_select_ai_knowledge_base" ON "ai_knowledge_base"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_ai_knowledge_base" ON "ai_knowledge_base"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_ai_knowledge_base" ON "ai_knowledge_base"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_ai_knowledge_base" ON "ai_knowledge_base"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
 -- RLS for inventory
 CREATE POLICY "tenant_isolation_select_inventory" ON "inventory"
   FOR SELECT USING (
@@ -4883,6 +5414,138 @@ CREATE POLICY "tenant_isolation_update_staff_commissions" ON "staff_commissions"
   );
 
 CREATE POLICY "tenant_isolation_delete_staff_commissions" ON "staff_commissions"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for lemonsqueezy_plans
+CREATE POLICY "tenant_isolation_select_lemonsqueezy_plans" ON "lemonsqueezy_plans"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_lemonsqueezy_plans" ON "lemonsqueezy_plans"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_lemonsqueezy_plans" ON "lemonsqueezy_plans"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_lemonsqueezy_plans" ON "lemonsqueezy_plans"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for lemonsqueezy_subscriptions
+CREATE POLICY "tenant_isolation_select_lemonsqueezy_subscriptions" ON "lemonsqueezy_subscriptions"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_lemonsqueezy_subscriptions" ON "lemonsqueezy_subscriptions"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_lemonsqueezy_subscriptions" ON "lemonsqueezy_subscriptions"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_lemonsqueezy_subscriptions" ON "lemonsqueezy_subscriptions"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for lemonsqueezy_payments
+CREATE POLICY "tenant_isolation_select_lemonsqueezy_payments" ON "lemonsqueezy_payments"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_lemonsqueezy_payments" ON "lemonsqueezy_payments"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_lemonsqueezy_payments" ON "lemonsqueezy_payments"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_lemonsqueezy_payments" ON "lemonsqueezy_payments"
+  FOR DELETE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+-- RLS for line_rich_menus
+CREATE POLICY "tenant_isolation_select_line_rich_menus" ON "line_rich_menus"
+  FOR SELECT USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_insert_line_rich_menus" ON "line_rich_menus"
+  FOR INSERT WITH CHECK (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_update_line_rich_menus" ON "line_rich_menus"
+  FOR UPDATE USING (
+    "organization_id" IN (
+      SELECT "organizationId" FROM "organizationUsers"
+      WHERE "userId" = (SELECT id FROM "users" WHERE "openId" = auth.uid()::text)
+    )
+  );
+
+CREATE POLICY "tenant_isolation_delete_line_rich_menus" ON "line_rich_menus"
   FOR DELETE USING (
     "organization_id" IN (
       SELECT "organizationId" FROM "organizationUsers"
@@ -5083,6 +5746,28 @@ CREATE POLICY "service_role_bypass_line_webhook_events" ON "line_webhook_events"
   FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "service_role_bypass_auto_reply_rules" ON "auto_reply_rules"
   FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_rich_menu_templates" ON "rich_menu_templates"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_rich_menu_assignments" ON "rich_menu_assignments"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_rich_menu_click_stats" ON "rich_menu_click_stats"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_broadcast_campaigns" ON "broadcast_campaigns"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_broadcast_recipients" ON "broadcast_recipients"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_ai_conversations" ON "ai_conversations"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_ai_intents" ON "ai_intents"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_ai_knowledge_base" ON "ai_knowledge_base"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_rich_menu_template_market" ON "rich_menu_template_market"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_broadcast_campaign_variants" ON "broadcast_campaign_variants"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_ai_knowledge_base_vectors" ON "ai_knowledge_base_vectors"
+  FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "service_role_bypass_inventory" ON "inventory"
   FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "service_role_bypass_crm_tags" ON "crm_tags"
@@ -5099,12 +5784,28 @@ CREATE POLICY "service_role_bypass_staff_commissions" ON "staff_commissions"
   FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "service_role_bypass_inventory_transfers_system_b" ON "inventory_transfers_system_b"
   FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_lemonsqueezy_plans" ON "lemonsqueezy_plans"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_lemonsqueezy_subscriptions" ON "lemonsqueezy_subscriptions"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_lemonsqueezy_payments" ON "lemonsqueezy_payments"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_lemonsqueezy_webhook_events" ON "lemonsqueezy_webhook_events"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_line_rich_menus" ON "line_rich_menus"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_leave_requests" ON "leave_requests"
+  FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "service_role_bypass_attendance_records" ON "attendance_records"
   FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "service_role_bypass_attendance_settings" ON "attendance_settings"
   FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_performance_records" ON "performance_records"
+  FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "service_role_bypass_performance_targets" ON "performance_targets"
+  FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================================
 -- SCHEMA GENERATION COMPLETE
--- Total: 105 tables
+-- Total: 120 tables
 -- ============================================================
