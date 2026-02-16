@@ -15,7 +15,7 @@ interface InteractionHistoryProps {
   organizationId: number;
 }
 
-const interactionTypeIcons = {
+const interactionTypeIcons: Record<string, typeof Phone> = {
   phone: Phone,
   meeting: Users,
   line: MessageCircle,
@@ -24,7 +24,7 @@ const interactionTypeIcons = {
   note: FileText,
 };
 
-const interactionTypeLabels = {
+const interactionTypeLabels: Record<string, string> = {
   phone: "電話",
   meeting: "面談",
   line: "LINE 對話",

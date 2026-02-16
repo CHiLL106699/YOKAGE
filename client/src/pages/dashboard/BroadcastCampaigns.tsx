@@ -206,7 +206,7 @@ export default function BroadcastCampaigns() {
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{campaigns?.filter(c => c.status === 'sent').length || 0}</div>
+            <div className="text-2xl font-bold">{campaigns?.filter((c: any) => c.status === 'sent').length || 0}</div>
           </CardContent>
         </Card>
         <Card>

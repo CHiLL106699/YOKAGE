@@ -16,6 +16,65 @@ import { TRPCError } from "@trpc/server";
  * - 效果追蹤統計
  */
 
+// ============================================
+// 共用的 targetAudience schema
+// ============================================
+const targetAudienceSchema = z.object({
+  tags: z.array(z.number()).optional(),
+  minSpent: z.number().optional(),
+  maxSpent: z.number().optional(),
+  minVisitCount: z.number().optional(),
+  maxVisitCount: z.number().optional(),
+  lastVisitDaysAgo: z.number().optional(),
+  memberLevels: z.array(z.enum(["bronze", "silver", "gold", "platinum", "diamond"])).optional(),
+});
+
+type TargetAudience = z.infer<typeof targetAudienceSchema>;
+
+// ============================================
+// 提取為獨立的 helper function，避免 broadcastRouter.createCaller 循環引用
+// ============================================
+async function computeAudienceCount(organizationId: number, targetAudience: TargetAudience): Promise<number> {
+  const conditions: any[] = [eq(customers.organizationId, organizationId)];
+
+  if (targetAudience.minSpent !== undefined) {
+    conditions.push(gte(customers.totalSpent, targetAudience.minSpent.toString()));
+  }
+  if (targetAudience.maxSpent !== undefined) {
+    conditions.push(lte(customers.totalSpent, targetAudience.maxSpent.toString()));
+  }
+  if (targetAudience.minVisitCount !== undefined) {
+    conditions.push(gte(customers.visitCount, targetAudience.minVisitCount));
+  }
+  if (targetAudience.maxVisitCount !== undefined) {
+    conditions.push(lte(customers.visitCount, targetAudience.maxVisitCount));
+  }
+  if (targetAudience.memberLevels && targetAudience.memberLevels.length > 0) {
+    conditions.push(inArray(customers.memberLevel, targetAudience.memberLevels));
+  }
+
+  let query = db.select({ count: sql<number>`count(distinct ${customers.id})` }).from(customers);
+
+  if (targetAudience.tags && targetAudience.tags.length > 0) {
+    query = query
+      .innerJoin(customerTagRelations, eq(customers.id, customerTagRelations.customerId))
+      .where(
+        and(
+          ...conditions,
+          inArray(customerTagRelations.tagId, targetAudience.tags)
+        )
+      ) as any;
+  } else {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const [result] = await query;
+  return Number((result as any).count);
+}
+
+// ============================================
+// Router 定義
+// ============================================
 export const broadcastRouter = router({
   /**
    * 列出所有推播活動
@@ -64,62 +123,10 @@ export const broadcastRouter = router({
   previewAudience: protectedProcedure
     .input(z.object({
       organizationId: z.number(),
-      targetAudience: z.object({
-        tags: z.array(z.number()).optional(), // 客戶標籤 ID 列表
-        minSpent: z.number().optional(), // 最低消費金額
-        maxSpent: z.number().optional(), // 最高消費金額
-        minVisitCount: z.number().optional(), // 最低到店次數
-        maxVisitCount: z.number().optional(), // 最高到店次數
-        lastVisitDaysAgo: z.number().optional(), // 最後到店天數（例如：90 表示 90 天內未回診）
-        memberLevels: z.array(z.enum(["bronze", "silver", "gold", "platinum", "diamond"])).optional(), // 會員等級
-      }),
+      targetAudience: targetAudienceSchema,
     }))
-    .query(async ({ input }) => {
-      const { organizationId, targetAudience } = input;
-
-      // 建立查詢條件
-      const conditions: any[] = [eq(customers.organizationId, organizationId)];
-
-      // 消費金額篩選
-      if (targetAudience.minSpent !== undefined) {
-        conditions.push(gte(customers.totalSpent, targetAudience.minSpent.toString()));
-      }
-      if (targetAudience.maxSpent !== undefined) {
-        conditions.push(lte(customers.totalSpent, targetAudience.maxSpent.toString()));
-      }
-
-      // 到店次數篩選
-      if (targetAudience.minVisitCount !== undefined) {
-        conditions.push(gte(customers.visitCount, targetAudience.minVisitCount));
-      }
-      if (targetAudience.maxVisitCount !== undefined) {
-        conditions.push(lte(customers.visitCount, targetAudience.maxVisitCount));
-      }
-
-      // 會員等級篩選
-      if (targetAudience.memberLevels && targetAudience.memberLevels.length > 0) {
-        conditions.push(inArray(customers.memberLevel, targetAudience.memberLevels));
-      }
-
-      // 標籤篩選（需要 JOIN customerTagRelations）
-      let query = db.select({ count: sql<number>`count(distinct ${customers.id})` }).from(customers);
-
-      if (targetAudience.tags && targetAudience.tags.length > 0) {
-        query = query
-          .innerJoin(customerTagRelations, eq(customers.id, customerTagRelations.customerId))
-          .where(
-            and(
-              ...conditions,
-              inArray(customerTagRelations.tagId, targetAudience.tags)
-            )
-          ) as any;
-      } else {
-        query = query.where(and(...conditions)) as any;
-      }
-
-      const [result] = await query;
-      const count = Number(result.count);
-
+    .query(async ({ input }): Promise<{ count: number }> => {
+      const count = await computeAudienceCount(input.organizationId, input.targetAudience);
       return { count };
     }),
 
@@ -132,24 +139,13 @@ export const broadcastRouter = router({
       name: z.string(),
       description: z.string().optional(),
       messageType: z.enum(["text", "flex", "image"]),
-      messageContent: z.any(), // JSON 格式的訊息內容
-      targetAudience: z.object({
-        tags: z.array(z.number()).optional(),
-        minSpent: z.number().optional(),
-        maxSpent: z.number().optional(),
-        minVisitCount: z.number().optional(),
-        maxVisitCount: z.number().optional(),
-        lastVisitDaysAgo: z.number().optional(),
-        memberLevels: z.array(z.enum(["bronze", "silver", "gold", "platinum", "diamond"])).optional(),
-      }),
-      scheduledAt: z.string().optional(), // ISO 8601 格式的排程時間
+      messageContent: z.any(),
+      targetAudience: targetAudienceSchema,
+      scheduledAt: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      // 1. 計算目標客戶數量
-      const { count } = await broadcastRouter.createCaller({ user: ctx.user } as any).previewAudience({
-        organizationId: input.organizationId,
-        targetAudience: input.targetAudience,
-      });
+      // 1. 使用 helper function 計算目標客戶數量（避免循環引用）
+      const count = await computeAudienceCount(input.organizationId, input.targetAudience);
 
       // 2. 建立推播活動
       const [result] = await db.insert(broadcastCampaigns).values({
@@ -185,15 +181,7 @@ export const broadcastRouter = router({
       description: z.string().optional(),
       messageType: z.enum(["text", "flex", "image"]).optional(),
       messageContent: z.any().optional(),
-      targetAudience: z.object({
-        tags: z.array(z.number()).optional(),
-        minSpent: z.number().optional(),
-        maxSpent: z.number().optional(),
-        minVisitCount: z.number().optional(),
-        maxVisitCount: z.number().optional(),
-        lastVisitDaysAgo: z.number().optional(),
-        memberLevels: z.array(z.enum(["bronze", "silver", "gold", "platinum", "diamond"])).optional(),
-      }).optional(),
+      targetAudience: targetAudienceSchema.optional(),
       scheduledAt: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
@@ -206,7 +194,6 @@ export const broadcastRouter = router({
         scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : undefined,
       };
 
-      // 移除 undefined 的欄位
       Object.keys(updateData).forEach((key) => {
         if (updateData[key] === undefined) {
           delete updateData[key];
@@ -271,28 +258,22 @@ export const broadcastRouter = router({
         eq(customers.isActive, true),
       ];
 
-      // 消費金額篩選
       if (targetAudience.minSpent !== undefined) {
         conditions.push(gte(customers.totalSpent, targetAudience.minSpent.toString()));
       }
       if (targetAudience.maxSpent !== undefined) {
         conditions.push(lte(customers.totalSpent, targetAudience.maxSpent.toString()));
       }
-
-      // 到店次數篩選
       if (targetAudience.minVisitCount !== undefined) {
         conditions.push(gte(customers.visitCount, targetAudience.minVisitCount));
       }
       if (targetAudience.maxVisitCount !== undefined) {
         conditions.push(lte(customers.visitCount, targetAudience.maxVisitCount));
       }
-
-      // 會員等級篩選
       if (targetAudience.memberLevels && targetAudience.memberLevels.length > 0) {
         conditions.push(inArray(customers.memberLevel, targetAudience.memberLevels));
       }
 
-      // 標籤篩選
       let targetCustomers;
       if (targetAudience.tags && targetAudience.tags.length > 0) {
         targetCustomers = await db
@@ -376,7 +357,6 @@ export const broadcastRouter = router({
       id: z.number(),
     }))
     .query(async ({ input }) => {
-      // 1. 取得推播活動資訊
       const [campaign] = await db
         .select()
         .from(broadcastCampaigns)
@@ -390,7 +370,6 @@ export const broadcastRouter = router({
         });
       }
 
-      // 2. 計算各狀態的收件人數量
       const [sentResult] = await db
         .select({ count: sql<number>`count(*)` })
         .from(broadcastRecipients)
@@ -425,7 +404,6 @@ export const broadcastRouter = router({
       const deliveredCount = Number(deliveredResult.count);
       const failedCount = Number(failedResult.count);
 
-      // 3. 計算送達率
       const totalRecipients = campaign.totalRecipients || 0;
       const deliveryRate =
         totalRecipients > 0

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Play, CheckCircle } from "lucide-react";
 
-const ruleTypeLabels = {
+const ruleTypeLabels: Record<string, string> = {
   spending: "消費金額",
   visit_count: "到店次數",
   last_visit: "最後到店時間",
