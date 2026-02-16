@@ -137,6 +137,7 @@ import { LineWebhookManagement } from '@/pages/dashboard/LineWebhookManagement';
 import RichMenuManagement from '@/pages/dashboard/RichMenuManagement';
 import BroadcastCampaigns from '@/pages/dashboard/BroadcastCampaigns';
 import AiChatbotSettings from '@/pages/dashboard/AiChatbotSettings';
+import RichMenuTemplateMarket from '@/pages/dashboard/RichMenuTemplateMarket';
 
 function Router() {
   return (
@@ -152,6 +153,7 @@ function Router() {
       <Route path={"/dashboard/crm/tag-rules"} component={TagRulesManagement} />
       <Route path={"/dashboard/line-webhook"} component={LineWebhookManagement} />
       <Route path={"/dashboard/rich-menu"} component={RichMenuManagement} />
+      <Route path={"/dashboard/rich-menu/market"} component={RichMenuTemplateMarket} />
       <Route path={"/dashboard/broadcast"} component={BroadcastCampaigns} />
       <Route path={"/dashboard/ai-chatbot"} component={AiChatbotSettings} />
       <Route path={"/dashboard/bi"} component={BiDashboard} />

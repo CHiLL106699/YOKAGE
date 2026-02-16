@@ -54,6 +54,8 @@ import { broadcastRouter } from './routers/broadcast.js';
 import { aiChatbotRouter } from './routers/aiChatbot.js';
 // Phase 110: 推播系統 A/B 測試版本管理
 import { broadcastVariantsRouter } from './routers/broadcastVariants.js';
+// Phase 109: Rich Menu 模板市集
+import { richMenuTemplateMarketRouter } from './routers/richMenuTemplateMarket.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3895,6 +3897,8 @@ export const appRouter = router({
   broadcast: broadcastRouter,
   broadcastVariants: broadcastVariantsRouter,
   aiChatbot: aiChatbotRouter,
+  // Phase 109: Rich Menu 模板市集
+  richMenuTemplateMarket: richMenuTemplateMarketRouter,
 });
 
 export type AppRouter = typeof appRouter;

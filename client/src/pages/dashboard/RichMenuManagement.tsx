@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Eye, Users, BarChart3, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Users, BarChart3, Upload, Store } from "lucide-react";
 import RichMenuEditor from "@/components/RichMenuEditor";
+import { useLocation } from "wouter";
 
 export default function RichMenuManagement() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -84,13 +86,18 @@ export default function RichMenuManagement() {
           <h1 className="text-3xl font-bold">Rich Menu 管理</h1>
           <p className="text-muted-foreground">管理 LINE Rich Menu 模板與分配設定</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              新增模板
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/dashboard/rich-menu/market")}>
+            <Store className="mr-2 h-4 w-4" />
+            模板市集
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                新增模板
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>新增 Rich Menu 模板</DialogTitle>
@@ -126,6 +133,7 @@ export default function RichMenuManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* 統計卡片 */}
