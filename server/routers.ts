@@ -52,6 +52,8 @@ import { autoReplyRulesRouter } from './routers/autoReplyRules.js';
 import { richMenuRouter } from './routers/richMenu.js';
 import { broadcastRouter } from './routers/broadcast.js';
 import { aiChatbotRouter } from './routers/aiChatbot.js';
+// Phase 110: 推播系統 A/B 測試版本管理
+import { broadcastVariantsRouter } from './routers/broadcastVariants.js';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3891,6 +3893,7 @@ export const appRouter = router({
   // Phase 101-103: Rich Menu 動態管理、分群推播、AI 對話機器人
   richMenu: richMenuRouter,
   broadcast: broadcastRouter,
+  broadcastVariants: broadcastVariantsRouter,
   aiChatbot: aiChatbotRouter,
 });
 
