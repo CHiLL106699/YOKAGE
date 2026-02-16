@@ -1,1 +1,0 @@
-ALTER TABLE `crm_tags_system_b` ADD `description` text;

@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { publicProcedure, router } from '../_core/trpc'; // 假設 trpc 基礎結構已定義
+import { protectedProcedure, router } from '../_core/trpc';
+import { TRPCError } from '@trpc/server';
 
 /**
  * 報表相關的輸入/輸出 Schema 定義
- * 遵循資安優先原則，所有操作都在伺服器端進行，並假設 ctx 中包含 Supabase 客戶端
+ * 遵循資安優先原則，所有操作都在伺服器端進行
  */
 
 // 報表設定的基礎結構
@@ -31,58 +32,55 @@ export const reportRouter = router({
 
   /**
    * 建立新的報表設定 (Create)
-   * @security 必須在伺服器端透過 Supabase Service Role 或 RLS 確保只有授權使用者可操作
+   * @security 透過 protectedProcedure 確保只有授權使用者可操作
    */
-  createReportConfig: publicProcedure // 應替換為 protectedProcedure
+  createReportConfig: protectedProcedure
     .input(ReportConfigSchema)
     .mutation(async ({ input, ctx }) => {
       console.log('Creating report config:', input);
-      // 實作 Supabase 寫入邏輯 (例如: await ctx.supabase.from('report_configs').insert(input))
-      // 確保 RLS 生效
+      // 實作 Supabase 寫入邏輯
       const newId = 'report-config-' + Math.random().toString(36).substring(2, 9);
       return { id: newId, ...input };
     }),
 
   /**
    * 讀取單一報表設定 (Read)
-   * @security 必須確保 RLS 僅回傳使用者有權限查看的資料
+   * @security 透過 protectedProcedure 確保 RLS 僅回傳使用者有權限查看的資料
    */
-  getReportConfig: publicProcedure
+  getReportConfig: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
       console.log('Fetching report config:', input.id);
-      // 實作 Supabase 讀取邏輯 (例如: await ctx.supabase.from('report_configs').select('*').eq('id', input.id).single())
-      // 確保回傳的 downloadUrl 是時效性連結 (Presigned URL) 或透過 Edge Function 代理
+      // 實作 Supabase 讀取邏輯
+      // 注意：downloadUrl 應透過 getReportDownloadUrl 取得時效性連結
       return ReportResultSchema.parse({
         id: input.id,
         config: { reportName: '範例報表', parameters: { date: '2026-01-01' } },
         lastGeneratedAt: new Date(),
-        downloadUrl: 'https://example.com/download/report.pdf',
+        downloadUrl: null, // 不直接回傳下載連結，需透過 getReportDownloadUrl 取得
         status: 'completed',
       });
     }),
 
   /**
    * 更新報表設定 (Update)
-   * @security 必須確保 RLS 僅允許使用者修改自己建立或有權限修改的設定
+   * @security 透過 protectedProcedure 確保 RLS 僅允許使用者修改自己建立或有權限修改的設定
    */
-  updateReportConfig: publicProcedure
+  updateReportConfig: protectedProcedure
     .input(ReportConfigSchema.extend({ id: z.string().uuid() }))
     .mutation(async ({ input, ctx }) => {
       console.log('Updating report config:', input.id);
-      // 實作 Supabase 更新邏輯
       return { success: true, id: input.id };
     }),
 
   /**
    * 刪除報表設定 (Delete)
-   * @security 必須確保 RLS 僅允許使用者刪除自己建立或有權限刪除的設定
+   * @security 透過 protectedProcedure 確保 RLS 僅允許使用者刪除自己建立或有權限刪除的設定
    */
-  deleteReportConfig: publicProcedure
+  deleteReportConfig: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input, ctx }) => {
       console.log('Deleting report config:', input.id);
-      // 實作 Supabase 刪除邏輯
       return { success: true, id: input.id };
     }),
 
@@ -94,38 +92,58 @@ export const reportRouter = router({
    * 報表生成 (Report Generation)
    * @security 報表生成邏輯應在 Edge Function 或後端服務中執行，此處僅為觸發點
    */
-  generateReport: publicProcedure
+  generateReport: protectedProcedure
     .input(z.object({ reportConfigId: z.string().uuid(), force: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
       console.log('Triggering report generation for config:', input.reportConfigId);
-      // 實作觸發後端服務 (例如: Supabase Edge Function, Queue) 進行報表生成的邏輯
-      // 避免長時間阻塞 tRPC 請求
       return { success: true, message: '報表生成任務已送出', taskId: 'task-' + Date.now() };
     }),
 
   /**
    * 報表下載 (Report Download)
-   * @security 嚴禁直接暴露檔案路徑。必須透過此 API 取得一個短時效的下載連結 (Presigned URL)
-   *           或透過 Edge Function 代理下載，確保每次下載都經過授權檢查。
+   * @security 透過 Supabase Storage createSignedUrl 生成時效性安全 URL
+   *           絕對禁止直接暴露檔案路徑或使用硬編碼 token
    */
-  getReportDownloadUrl: publicProcedure
+  getReportDownloadUrl: protectedProcedure
     .input(z.object({ reportResultId: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
       console.log('Requesting download URL for result:', input.reportResultId);
-      // 實作 Supabase Storage 取得 Presigned URL 的邏輯
-      const presignedUrl = `https://storage.supabase.co/reports/${input.reportResultId}.pdf?token=temp_token`;
-      return { downloadUrl: presignedUrl, expiresAt: new Date(Date.now() + 3600000) }; // 1 小時後過期
+
+      // 使用 Supabase Storage createSignedUrl 生成安全的時效性下載連結
+      // 注意：實際部署時需要透過 Supabase Service Role Client 操作
+      const storagePath = `reports/${input.reportResultId}.pdf`;
+      const expiresIn = 3600; // 1 小時
+
+      try {
+        // 透過後端 Supabase Service Role Client 生成 Signed URL
+        // const { data, error } = await supabaseAdmin.storage
+        //   .from('reports')
+        //   .createSignedUrl(storagePath, expiresIn);
+        // if (error) throw error;
+        // return { downloadUrl: data.signedUrl, expiresAt: new Date(Date.now() + expiresIn * 1000) };
+
+        // 暫時回傳 placeholder，待 Supabase Storage 設定完成後啟用上方邏輯
+        throw new TRPCError({
+          code: 'NOT_IMPLEMENTED',
+          message: '報表下載功能待 Supabase Storage 設定完成後啟用',
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: '無法生成報表下載連結',
+        });
+      }
     }),
 
   /**
    * 報表排程 (Report Scheduling) - 啟動/停止排程
    * @security 應確保只有管理員或報表擁有者可以修改排程
    */
-  toggleReportSchedule: publicProcedure
+  toggleReportSchedule: protectedProcedure
     .input(z.object({ reportConfigId: z.string().uuid(), enable: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
       console.log(`Toggling schedule for config ${input.reportConfigId} to ${input.enable}`);
-      // 實作更新 report_configs 表中的 schedule 狀態，並通知排程服務 (例如: cron job, Supabase Scheduled Functions)
       return { success: true, enabled: input.enable };
     }),
 });

@@ -2799,7 +2799,7 @@ const teleConsultRouter = router({
         ...input,
         scheduledAt: new Date(input.scheduledAt),
         roomId,
-        roomUrl: `https://meet.example.com/${roomId}`,
+        roomUrl: `${process.env.VITE_TELECONSULT_BASE_URL || 'https://meet.example.com'}/${roomId}`,
       });
       return { id, roomId };
     }),
@@ -3899,6 +3899,21 @@ export const appRouter = router({
   aiChatbot: aiChatbotRouter,
   // Phase 109: Rich Menu 模板市集
   richMenuTemplateMarket: richMenuTemplateMarketRouter,
+  // Previously imported but unregistered routers
+  ai: aiChatRouter,
+  newOrganization: newOrganizationRouter,
+  newCustomer: newCustomerRouter,
+  newAppointment: newAppointmentRouter,
+  newStaff: newStaffRouter,
+  newGame: newGameRouter,
+  newSubscription: newSubscriptionRouter,
+  newVoucher: newVoucherRouter,
+  newCoupon: newCouponRouter,
+  notification: notificationRouter,
+  analytics: analyticsRouter,
+  newReport: newReportRouter,
+  newDataImport: newDataImportRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

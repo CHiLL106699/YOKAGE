@@ -1,1 +1,0 @@
-ALTER TABLE `attendanceRecords` ADD `staffNote` text;

@@ -1,24 +1,46 @@
 import { router, protectedProcedure } from '../_core/trpc.js';
 import { z } from 'zod';
 import { db } from '../db.js';
-import { crmTagsSystemB, customerTagsSystemB } from '../../drizzle/schema.js';
+import { crmTagsSystemB, customerTagsSystemB, organizationUsers } from '../../drizzle/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
+
+/**
+ * 取得使用者所屬的第一個 organizationId
+ * 透過 organizationUsers 表查詢，確保多租戶隔離
+ */
+async function getUserOrganizationId(userId: number): Promise<number> {
+  const result = await db
+    .select({ organizationId: organizationUsers.organizationId })
+    .from(organizationUsers)
+    .where(eq(organizationUsers.userId, userId))
+    .limit(1);
+
+  if (result.length === 0) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: '使用者未隸屬於任何組織',
+    });
+  }
+  return result[0].organizationId;
+}
 
 export const crmTagsRouter = router({
   // 列出所有標籤
   list: protectedProcedure
     .input(z.object({
-      organizationId: z.number(),
-    }))
-    .query(async ({ input }) => {
+      organizationId: z.number().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const orgId = input?.organizationId ?? await getUserOrganizationId(ctx.user.id);
       const tags = await db
         .select()
         .from(crmTagsSystemB)
-        .where(eq(crmTagsSystemB.organizationId, input.organizationId));
+        .where(eq(crmTagsSystemB.organizationId, orgId));
       return tags;
     }),
 
-  // 建立標籤
+  // 建立標籤 (M-03: 使用 .returning() 回傳真實 ID)
   create: protectedProcedure
     .input(z.object({
       name: z.string().min(1),
@@ -26,12 +48,13 @@ export const crmTagsRouter = router({
       description: z.string().optional()
     }))
     .mutation(async ({ ctx, input }) => {
+      const orgId = await getUserOrganizationId(ctx.user.id);
       const result = await db.insert(crmTagsSystemB).values({
-        organizationId: 1, // TODO: Get from ctx.user
+        organizationId: orgId,
         name: input.name,
         color: input.color || '#3B82F6'
-      });
-      return { success: true, id: 1 }; // TODO: Return actual insertId
+      }).returning({ id: crmTagsSystemB.id });
+      return { success: true, id: result[0].id };
     }),
 
   // 更新標籤
@@ -43,6 +66,7 @@ export const crmTagsRouter = router({
       description: z.string().optional()
     }))
     .mutation(async ({ ctx, input }) => {
+      const orgId = await getUserOrganizationId(ctx.user.id);
       await db
         .update(crmTagsSystemB)
         .set({
@@ -51,7 +75,7 @@ export const crmTagsRouter = router({
         })
         .where(and(
           eq(crmTagsSystemB.id, input.id),
-          eq(crmTagsSystemB.organizationId, 1) // TODO: Get from ctx.user
+          eq(crmTagsSystemB.organizationId, orgId)
         ));
       return { success: true };
     }),
@@ -60,17 +84,18 @@ export const crmTagsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      const orgId = await getUserOrganizationId(ctx.user.id);
       // 先刪除所有客戶標籤關聯
       await db
         .delete(customerTagsSystemB)
         .where(eq(customerTagsSystemB.tagId, input.id));
-      
+
       // 再刪除標籤本身
       await db
         .delete(crmTagsSystemB)
         .where(and(
           eq(crmTagsSystemB.id, input.id),
-          eq(crmTagsSystemB.organizationId, 1) // TODO: Get from ctx.user
+          eq(crmTagsSystemB.organizationId, orgId)
         ));
       return { success: true };
     }),

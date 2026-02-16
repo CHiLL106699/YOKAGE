@@ -8,7 +8,27 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // 不重試認證錯誤
+        if (error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG) return false;
+        // 不重試 FORBIDDEN
+        if (error instanceof TRPCClientError && error.data?.code === 'FORBIDDEN') return false;
+        return failureCount < 2;
+      },
+      staleTime: 30_000,
+    },
+    mutations: {
+      retry: false,
+      onError: (error) => {
+        redirectToLoginIfUnauthorized(error);
+        console.error('[API Mutation Error]', error instanceof TRPCClientError ? error.message : error);
+      },
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

@@ -1,1 +1,0 @@
-ALTER TABLE `line_rich_menus` ADD `image_key` text;

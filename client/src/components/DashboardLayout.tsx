@@ -46,7 +46,7 @@ const clinicMenuItems = [
   { icon: Users, label: "員工管理", path: "/clinic/staff" },
   { icon: Clock, label: "排班管理", path: "/clinic/schedule" },
   { icon: Clock, label: "打卡紀錄", path: "/clinic/attendance" },
-  { icon: Clock, label: "定位打卡", path: "/clinic/attendance-clock-in" },
+  { icon: Clock, label: "定位打卡", path: "/clinic/attendance" },
   { icon: Settings, label: "打卡設定", path: "/clinic/attendance-settings" },
   { icon: Heart, label: "術後關懷", path: "/clinic/aftercare" },
   { icon: Ticket, label: "優惠券", path: "/clinic/coupons" },
