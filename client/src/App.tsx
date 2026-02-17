@@ -25,6 +25,7 @@ const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSystem = React.lazy(() => import("./pages/admin/AdminSystem"));
 const AdminLogs = React.lazy(() => import("./pages/admin/AdminLogs"));
 const AdminUpgradeRequests = React.lazy(() => import("./pages/admin/AdminUpgradeRequests"));
+const AdminProducts = React.lazy(() => import("./pages/admin/AdminProducts"));
 
 // === Sprint 2: 租戶管理平台 (/dashboard/*) — 新頁面 ===
 const DashboardAppointments = React.lazy(() => import("./pages/dashboard/DashboardAppointments"));
@@ -243,6 +244,11 @@ function AppRouter() {
         <Route path="/admin/upgrades">
           <ProtectedRoute allowedRoles={["super_admin"]}>
             <AdminUpgradeRequests />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/products">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminProducts />
           </ProtectedRoute>
         </Route>
 

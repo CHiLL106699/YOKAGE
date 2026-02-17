@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { supabaseAdmin } from "./supabaseAdmin";
 import { lineSettingsRouter } from "./routers/lineSettingsRouter";
 import { dataImportRouter } from "./routers/dataImportRouter";
 import { paymentRouter } from "./routers/paymentRouter";
@@ -571,6 +572,139 @@ const superAdminRouter = router({
       }
 
       return { success: true, message: `升級請求已${input.action === 'approve' ? '批准' : '拒絕'}` };
+    }),
+
+  // ============================================
+  // Sprint 4: 產品線總覽與管理
+  // ============================================
+
+  /** 取得兩條產品線統計 */
+  getProductLineStats: adminProcedure.query(async () => {
+    const { PLAN_DISPLAY_NAMES: PDN, PLAN_PRICES: PP } = await import('../shared/shared-types');
+    // YOKAGE 產品線
+    const { data: yokageTenants } = await supabaseAdmin
+      .from('tenants')
+      .select('id, plan_type, is_active')
+      .or('source_product.eq.yokage,plan_type.like.yokage_%');
+    // YaoYouQian 產品線
+    const { data: yyqTenants } = await supabaseAdmin
+      .from('tenants')
+      .select('id, plan_type, is_active')
+      .or('source_product.eq.yaoyouqian,plan_type.like.yyq_%');
+
+    function buildStats(product: 'yokage' | 'yaoyouqian', productName: string, tenants: any[]) {
+      const planBreakdown: Record<string, number> = {
+        yokage_starter: 0, yokage_pro: 0, yyq_basic: 0, yyq_advanced: 0,
+      };
+      let activeTenants = 0;
+      let totalRevenue = 0;
+      for (const t of tenants) {
+        const plan = t.plan_type || (product === 'yokage' ? 'yokage_starter' : 'yyq_basic');
+        if (planBreakdown[plan] !== undefined) planBreakdown[plan]++;
+        if (t.is_active !== false) activeTenants++;
+        totalRevenue += (PP as any)[plan] || 0;
+      }
+      return {
+        product,
+        productName,
+        totalTenants: tenants.length,
+        activeTenants,
+        totalRevenue,
+        planBreakdown,
+      };
+    }
+
+    return [
+      buildStats('yokage', 'YOKAGE', yokageTenants || []),
+      buildStats('yaoyouqian', 'YaoYouQian', yyqTenants || []),
+    ];
+  }),
+
+  /** 跨產品線租戶搜尋 */
+  searchTenantsCrossProduct: adminProcedure
+    .input(z.object({ query: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const q = `%${input.query}%`;
+      const { data, error } = await supabaseAdmin
+        .from('tenants')
+        .select('id, name, slug, plan_type, source_product, is_active, created_at')
+        .or(`name.ilike.${q},slug.ilike.${q},email.ilike.${q}`)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+
+      return (data || []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+        subdomain: t.slug,
+        planType: t.plan_type || 'yyq_basic',
+        sourceProduct: t.source_product || 'yaoyouqian',
+        isActive: t.is_active !== false,
+        createdAt: t.created_at,
+      }));
+    }),
+
+  /** 變更租戶方案（升級/降級） */
+  changeTenantPlan: adminProcedure
+    .input(z.object({
+      tenantId: z.number(),
+      targetPlan: z.enum(['yokage_starter', 'yokage_pro', 'yyq_basic', 'yyq_advanced']),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { PLAN_MODULES, PLAN_DISPLAY_NAMES: PDN } = await import('../shared/shared-types');
+
+      // 1. 取得當前租戶
+      const { data: tenant, error: fetchErr } = await supabaseAdmin
+        .from('tenants')
+        .select('id, name, plan_type, source_product, enabled_modules')
+        .eq('id', input.tenantId)
+        .single();
+
+      if (fetchErr || !tenant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: '找不到租戶' });
+      }
+
+      const currentPlan = tenant.plan_type || 'yyq_basic';
+      const targetPlan = input.targetPlan;
+      const newSourceProduct = targetPlan.startsWith('yokage') ? 'yokage' : 'yaoyouqian';
+      const newModules = (PLAN_MODULES as any)[targetPlan] || [];
+
+      // 2. 執行更新
+      const { error: updateErr } = await supabaseAdmin
+        .from('tenants')
+        .update({
+          plan_type: targetPlan,
+          source_product: newSourceProduct,
+          enabled_modules: newModules,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.tenantId);
+
+      if (updateErr) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: updateErr.message });
+      }
+
+      // 3. 記錄日誌
+      await supabaseAdmin.from('product_upgrade_logs').insert({
+        tenant_id: input.tenantId,
+        from_plan: currentPlan,
+        to_plan: targetPlan,
+        from_product: tenant.source_product || 'yaoyouqian',
+        to_product: newSourceProduct,
+        upgrade_reason: input.reason || '超級管理員手動變更',
+        metadata: { old_modules: tenant.enabled_modules, new_modules: newModules },
+      });
+
+      return {
+        success: true,
+        tenantId: input.tenantId,
+        oldPlan: currentPlan,
+        newPlan: targetPlan,
+        message: `已將 ${tenant.name} 從 ${(PDN as any)[currentPlan]} 變更為 ${(PDN as any)[targetPlan]}`,
+      };
     }),
 
 });
