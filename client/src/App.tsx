@@ -5,14 +5,18 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 // ============================================
 // Lazy-loaded page components (Code Splitting)
 // ============================================
-const Home = React.lazy(() => import("./pages/Home"));
+
+// === 公開頁面 ===
+const LandingPage = React.lazy(() => import("./pages/LandingPage"));
+const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
-// Super Admin
+// === Super Admin (/admin/*) ===
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
 const OrganizationsPage = React.lazy(() => import("./pages/OrganizationsPage"));
 const OrganizationDetailPage = React.lazy(() => import("./pages/OrganizationDetailPage"));
@@ -24,11 +28,24 @@ const SuperAdminNotificationsPage = React.lazy(() => import("@/pages/SuperAdminN
 const SuperAdminBillingPage = React.lazy(() => import("@/pages/SuperAdminBillingPage"));
 const SuperAdminApiDocsPage = React.lazy(() => import("@/pages/SuperAdminApiDocsPage"));
 const SuperAdminWhiteLabelPage = React.lazy(() => import("@/pages/SuperAdminWhiteLabelPage"));
-const BillingPage = React.lazy(() => import("@/pages/BillingPage"));
-const ApiDocsPage = React.lazy(() => import("@/pages/ApiDocsPage"));
-const WhiteLabelPage = React.lazy(() => import("@/pages/WhiteLabelPage"));
 
-// Clinic Admin
+// === 租戶管理平台 (/dashboard/*) ===
+const DashboardHome = React.lazy(() => import("@/pages/dashboard/DashboardHome"));
+const InventoryDashboard = React.lazy(() => import("@/pages/dashboard/InventoryDashboard"));
+const LineCrmDashboard = React.lazy(() => import("@/pages/dashboard/LineCrmDashboard"));
+const BiDashboard = React.lazy(() => import("@/pages/dashboard/BiDashboard"));
+const GamificationDashboard = React.lazy(() => import("@/pages/dashboard/GamificationDashboard"));
+const HrDashboard = React.lazy(() => import("@/pages/dashboard/HrDashboard"));
+const MultiBranchDashboard = React.lazy(() => import("@/pages/dashboard/MultiBranchDashboard"));
+const CrmTagManagement = React.lazy(() => import("@/pages/dashboard/CrmTagManagement"));
+const TagRulesManagement = React.lazy(() => import("@/pages/dashboard/TagRulesManagement"));
+const LineWebhookManagement = React.lazy(() => import("@/pages/dashboard/LineWebhookManagement").then(m => ({ default: m.LineWebhookManagement })));
+const RichMenuManagement = React.lazy(() => import("@/pages/dashboard/RichMenuManagement"));
+const BroadcastCampaigns = React.lazy(() => import("@/pages/dashboard/BroadcastCampaigns"));
+const AiChatbotSettings = React.lazy(() => import("@/pages/dashboard/AiChatbotSettings"));
+const RichMenuTemplateMarket = React.lazy(() => import("@/pages/dashboard/RichMenuTemplateMarket"));
+
+// === Clinic Admin (向後相容，保留 /clinic/* 路由) ===
 const ClinicDashboard = React.lazy(() => import("./pages/ClinicDashboard"));
 const CustomersPage = React.lazy(() => import("./pages/CustomersPage"));
 const CustomerDetailPage = React.lazy(() => import("./pages/CustomerDetailPage"));
@@ -62,7 +79,7 @@ const DataImportPage = React.lazy(() => import("@/pages/DataImportPage"));
 const AnalyticsPage = React.lazy(() => import("@/pages/AnalyticsPage"));
 const SettingsPage = React.lazy(() => import("@/pages/SettingsPage"));
 
-// LIFF 顧客端
+// === LIFF 顧客端 ===
 const LiffBookingPage = React.lazy(() => import("@/pages/LiffBookingPage"));
 const LiffMemberPage = React.lazy(() => import("@/pages/LiffMemberPage"));
 const LiffShopPage = React.lazy(() => import("@/pages/LiffShopPage"));
@@ -71,20 +88,18 @@ const LiffCheckoutPage = React.lazy(() => import("@/pages/LiffCheckoutPage"));
 const LiffOrdersPage = React.lazy(() => import("@/pages/LiffOrdersPage"));
 const LiffOrderDetailPage = React.lazy(() => import("@/pages/LiffOrderDetailPage"));
 
-// LIFF 員工端
+// === LIFF 員工端 ===
 const LiffStaffClockPage = React.lazy(() => import("@/pages/LiffStaffClockPage"));
 const LiffStaffTasksPage = React.lazy(() => import("@/pages/LiffStaffTasksPage"));
 const LiffStaffSchedulePage = React.lazy(() => import("@/pages/LiffStaffSchedulePage"));
 const LiffStaffLeavePage = React.lazy(() => import("@/pages/LiffStaffLeavePage"));
 
-// Phase 26-30 超越 SUPER8 與夾客的進階功能
+// === 進階功能頁面 ===
 const AIChatbotPage = React.lazy(() => import("@/pages/AIChatbotPage"));
 const MarketingAutomationPage = React.lazy(() => import("@/pages/MarketingAutomationPage"));
 const GamificationPage = React.lazy(() => import("@/pages/GamificationPage"));
 const MemberPassportPage = React.lazy(() => import("@/pages/MemberPassportPage"));
 const MessageCenterPage = React.lazy(() => import("@/pages/MessageCenterPage"));
-
-// Phase 31-35 新增功能
 const SocialMarketingPage = React.lazy(() => import("@/pages/SocialMarketingPage"));
 const HRManagementPage = React.lazy(() => import("@/pages/HRManagementPage"));
 const SupplierManagementPage = React.lazy(() => import("@/pages/SupplierManagementPage"));
@@ -95,8 +110,6 @@ const TreatmentTrackingPage = React.lazy(() => import("@/pages/TreatmentTracking
 const RecommendationEnginePage = React.lazy(() => import("@/pages/RecommendationEnginePage"));
 const SmartSchedulingPage = React.lazy(() => import("@/pages/SmartSchedulingPage"));
 const Customer360Page = React.lazy(() => import("@/pages/Customer360Page"));
-
-// 核心功能實裝頁面
 const TreatmentRecordsPage = React.lazy(() => import("@/pages/TreatmentRecordsPage"));
 const CustomerPackagesPage = React.lazy(() => import("@/pages/CustomerPackagesPage"));
 const ConsultationManagementPage = React.lazy(() => import("@/pages/ConsultationManagementPage"));
@@ -110,8 +123,6 @@ const AttendanceTrackingPage = React.lazy(() => import("@/pages/AttendanceTracki
 const InventoryCostPage = React.lazy(() => import("@/pages/InventoryCostPage"));
 const RevenueTargetPage = React.lazy(() => import("@/pages/RevenueTargetPage"));
 const CustomerSourceROIPage = React.lazy(() => import("@/pages/CustomerSourceROIPage"));
-
-// Phase 41-48 競品分析差異化功能
 const InjectionMappingPage = React.lazy(() => import("@/pages/InjectionMappingPage"));
 const ConsentFormPage = React.lazy(() => import("@/pages/ConsentFormPage"));
 const PrescriptionPage = React.lazy(() => import("@/pages/PrescriptionPage"));
@@ -120,14 +131,10 @@ const SubscriptionPage = React.lazy(() => import("@/pages/SubscriptionPage"));
 const TeleconsultPage = React.lazy(() => import("@/pages/TeleconsultPage"));
 const ReferralPage = React.lazy(() => import("@/pages/ReferralPage"));
 const SocialIntegrationPage = React.lazy(() => import("@/pages/SocialIntegrationPage"));
-
-// Phase 56: 電子票券系統
 const VouchersPage = React.lazy(() => import("@/pages/VouchersPage"));
 const MyVouchersPage = React.lazy(() => import("@/pages/liff/MyVouchersPage"));
 const VoucherRedemptionPage = React.lazy(() => import("@/pages/VoucherRedemptionPage"));
 const VoucherReportsPage = React.lazy(() => import("@/pages/VoucherReportsPage"));
-
-// Phase 35: 定位打卡與 LINE 遊戲模組
 const AttendanceSettingsPage = React.lazy(() => import("@/pages/AttendanceSettingsPage"));
 const GameManagementPage = React.lazy(() => import("@/pages/GameManagementPage"));
 const IchibanKujiGame = React.lazy(() => import("@/pages/IchibanKujiGame"));
@@ -135,22 +142,17 @@ const SlotMachineGame = React.lazy(() => import("@/pages/SlotMachineGame"));
 const PachinkoGame = React.lazy(() => import("@/pages/PachinkoGame"));
 const UserPrizesPage = React.lazy(() => import("@/pages/UserPrizesPage"));
 const CouponManagementPage = React.lazy(() => import("@/pages/CouponManagementPage"));
+const BillingPage = React.lazy(() => import("@/pages/BillingPage"));
+const ApiDocsPage = React.lazy(() => import("@/pages/ApiDocsPage"));
+const WhiteLabelPage = React.lazy(() => import("@/pages/WhiteLabelPage"));
 
-// Phase 86: 系統 B 整合 - 6 大核心模組 Dashboard
-const DashboardHome = React.lazy(() => import("@/pages/dashboard/DashboardHome"));
-const InventoryDashboard = React.lazy(() => import("@/pages/dashboard/InventoryDashboard"));
-const LineCrmDashboard = React.lazy(() => import("@/pages/dashboard/LineCrmDashboard"));
-const BiDashboard = React.lazy(() => import("@/pages/dashboard/BiDashboard"));
-const GamificationDashboard = React.lazy(() => import("@/pages/dashboard/GamificationDashboard"));
-const HrDashboard = React.lazy(() => import("@/pages/dashboard/HrDashboard"));
-const MultiBranchDashboard = React.lazy(() => import("@/pages/dashboard/MultiBranchDashboard"));
-const CrmTagManagement = React.lazy(() => import("@/pages/dashboard/CrmTagManagement"));
-const TagRulesManagement = React.lazy(() => import("@/pages/dashboard/TagRulesManagement"));
-const LineWebhookManagement = React.lazy(() => import("@/pages/dashboard/LineWebhookManagement").then(m => ({ default: m.LineWebhookManagement })));
-const RichMenuManagement = React.lazy(() => import("@/pages/dashboard/RichMenuManagement"));
-const BroadcastCampaigns = React.lazy(() => import("@/pages/dashboard/BroadcastCampaigns"));
-const AiChatbotSettings = React.lazy(() => import("@/pages/dashboard/AiChatbotSettings"));
-const RichMenuTemplateMarket = React.lazy(() => import("@/pages/dashboard/RichMenuTemplateMarket"));
+// === 員工平台 (/staff/*) ===
+const StaffHomePage = React.lazy(() => import("@/pages/staff/StaffHome"));
+const StaffSchedulePage = React.lazy(() => import("@/pages/staff/StaffSchedule"));
+const StaffAppointmentsPage = React.lazy(() => import("@/pages/staff/StaffAppointments"));
+const StaffClockPage = React.lazy(() => import("@/pages/staff/StaffClock"));
+const StaffCustomersPage = React.lazy(() => import("@/pages/staff/StaffCustomers"));
+const StaffPerformancePage = React.lazy(() => import("@/pages/staff/StaffPerformance"));
 
 // ============================================
 // Loading Fallback
@@ -163,45 +165,196 @@ function PageLoader() {
   );
 }
 
-function Router() {
+function AppRouter() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
-        {/* Public */}
-        <Route path={"/"} component={Home} />
-        
-        {/* Phase 86: 系統 B Dashboard 路由 */}
-        <Route path={"/dashboard"} component={DashboardHome} />
-        <Route path={"/dashboard/inventory"} component={InventoryDashboard} />
-        <Route path={"/dashboard/crm"} component={LineCrmDashboard} />
-        <Route path={"/dashboard/crm/tags"} component={CrmTagManagement} />
-        <Route path={"/dashboard/crm/tag-rules"} component={TagRulesManagement} />
-        <Route path={"/dashboard/line-webhook"} component={LineWebhookManagement} />
-        <Route path={"/dashboard/rich-menu"} component={RichMenuManagement} />
-        <Route path={"/dashboard/rich-menu/market"} component={RichMenuTemplateMarket} />
-        <Route path={"/dashboard/broadcast"} component={BroadcastCampaigns} />
-        <Route path={"/dashboard/ai-chatbot"} component={AiChatbotSettings} />
-        <Route path={"/dashboard/bi"} component={BiDashboard} />
-        <Route path={"/dashboard/gamification"} component={GamificationDashboard} />
-        <Route path={"/dashboard/hr"} component={HrDashboard} />
-        <Route path={"/dashboard/multi-branch"} component={MultiBranchDashboard} />
-        
-        {/* Super Admin Routes */}
-        <Route path={"/super-admin"} component={SuperAdminDashboard} />
-        <Route path={"/super-admin/organizations"} component={OrganizationsPage} />
-        <Route path={"/super-admin/organizations/:id"} component={OrganizationDetailPage} />
-        <Route path={"/super-admin/billing"} component={SuperAdminBillingPage} />
-        <Route path={"/super-admin/api-docs"} component={SuperAdminApiDocsPage} />
-        <Route path={"/super-admin/white-label"} component={SuperAdminWhiteLabelPage} />
-        
-        {/* Clinic Admin Routes */}
-        <Route path={"/clinic"} component={ClinicDashboard} />
-        <Route path={"/clinic/customers"} component={CustomersPage} />
-        <Route path={"/clinic/customers/:id"} component={CustomerDetailPage} />
-        <Route path={"/clinic/appointments"} component={AppointmentsPage} />
-        <Route path={"/clinic/products"} component={ProductsPage} />
-        <Route path={"/clinic/staff"} component={StaffPage} />
-        <Route path={"/clinic/aftercare"} component={AftercarePage} />
+        {/* ======== 公開路由 ======== */}
+        <Route path="/" component={LandingPage} />
+        <Route path="/login" component={LoginPage} />
+
+        {/* ======== /admin/* — 超級管理員平台 ======== */}
+        <Route path="/admin">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/organizations">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <OrganizationsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/organizations/:id">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <OrganizationDetailPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/settings">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminSettingsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/vouchers">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminVouchersPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/users">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminUsersPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/monitor">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminMonitorPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/notifications">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminNotificationsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/billing">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminBillingPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/api-docs">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminApiDocsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/white-label">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminWhiteLabelPage />
+          </ProtectedRoute>
+        </Route>
+
+        {/* ======== /dashboard/* — 租戶管理平台 ======== */}
+        <Route path="/dashboard">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardHome />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/inventory">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <InventoryDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/crm">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <LineCrmDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/crm/tags">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <CrmTagManagement />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/crm/tag-rules">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <TagRulesManagement />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/line-webhook">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <LineWebhookManagement />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/rich-menu">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <RichMenuManagement />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/rich-menu/market">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <RichMenuTemplateMarket />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/broadcast">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <BroadcastCampaigns />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/ai-chatbot">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <AiChatbotSettings />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/bi">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <BiDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/gamification">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <GamificationDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/hr">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <HrDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/multi-branch">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <MultiBranchDashboard />
+          </ProtectedRoute>
+        </Route>
+
+        {/* ======== /staff/* — 員工平台 ======== */}
+        <Route path="/staff">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffHomePage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/schedule">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffSchedulePage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/appointments">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffAppointmentsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/clock">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffClockPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/customers">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffCustomersPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/performance">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffPerformancePage />
+          </ProtectedRoute>
+        </Route>
+
+        {/* ======== 向後相容：/super-admin/* (重導至 /admin/*) ======== */}
+        <Route path="/super-admin" component={SuperAdminDashboard} />
+        <Route path="/super-admin/organizations" component={OrganizationsPage} />
+        <Route path="/super-admin/organizations/:id" component={OrganizationDetailPage} />
+        <Route path="/super-admin/billing" component={BillingPage} />
+        <Route path="/super-admin/api-docs" component={ApiDocsPage} />
+        <Route path="/super-admin/white-label" component={WhiteLabelPage} />
+        <Route path="/super-admin/settings" component={SuperAdminSettingsPage} />
+        <Route path="/super-admin/vouchers" component={SuperAdminVouchersPage} />
+        <Route path="/super-admin/users" component={SuperAdminUsersPage} />
+        <Route path="/super-admin/monitor" component={SuperAdminMonitorPage} />
+        <Route path="/super-admin/notifications" component={SuperAdminNotificationsPage} />
+
+        {/* ======== 向後相容：/clinic/* 路由 ======== */}
+        <Route path="/clinic" component={ClinicDashboard} />
+        <Route path="/clinic/customers" component={CustomersPage} />
+        <Route path="/clinic/customers/:id" component={CustomerDetailPage} />
+        <Route path="/clinic/appointments" component={AppointmentsPage} />
+        <Route path="/clinic/products" component={ProductsPage} />
+        <Route path="/clinic/staff" component={StaffPage} />
+        <Route path="/clinic/aftercare" component={AftercarePage} />
         <Route path="/clinic/line-settings" component={LineSettingsPage} />
         <Route path="/clinic/schedule" component={SchedulePage} />
         <Route path="/clinic/attendance" component={AttendanceClockPage} />
@@ -214,68 +367,26 @@ function Router() {
         <Route path="/clinic/notifications" component={NotificationsPage} />
         <Route path="/clinic/inventory" component={InventoryPage} />
         <Route path="/clinic/line-integration" component={LineIntegrationPage} />
-        
-        {/* 金流管理 */}
         <Route path="/clinic/payment" component={PaymentPage} />
         <Route path="/clinic/settlement" component={SettlementPage} />
         <Route path="/clinic/marketing" component={CustomerMarketingPage} />
         <Route path="/clinic/payment-settings" component={PaymentSettingsPage} />
-        
-        {/* 資料管理 */}
         <Route path="/clinic/data-import" component={DataImportPage} />
-        
-        {/* LINE 生態整合 */}
         <Route path="/clinic/rich-menu" component={RichMenuPage} />
         <Route path="/clinic/line-rich-menu" component={LineRichMenuManagementPage} />
-        
-        {/* 請假管理系統 */}
         <Route path="/clinic/leave-request" component={LeaveRequestPage} />
         <Route path="/clinic/leave-approval" component={LeaveApprovalPage} />
         <Route path="/clinic/flex-message" component={FlexMessagePage} />
         <Route path="/clinic/webhook" component={WebhookPage} />
-        
-        {/* Super Admin 進階設定 */}
-        <Route path="/super-admin/billing" component={BillingPage} />
-        <Route path="/super-admin/api-docs" component={ApiDocsPage} />
-        <Route path="/super-admin/white-label" component={WhiteLabelPage} />
-        <Route path="/super-admin/settings" component={SuperAdminSettingsPage} />
-        <Route path="/super-admin/vouchers" component={SuperAdminVouchersPage} />
-        <Route path="/super-admin/users" component={SuperAdminUsersPage} />
-        <Route path="/super-admin/monitor" component={SuperAdminMonitorPage} />
-        <Route path="/super-admin/notifications" component={SuperAdminNotificationsPage} />
-        
-        {/* LIFF 顧客端頁面 */}
-        <Route path="/liff/booking" component={LiffBookingPage} />
-        <Route path="/liff/member" component={LiffMemberPage} />
-        <Route path="/liff/shop" component={LiffShopPage} />
-        <Route path="/liff/cart" component={LiffCartPage} />
-        <Route path="/liff/checkout" component={LiffCheckoutPage} />
-        <Route path="/liff/orders" component={LiffOrdersPage} />
-        <Route path="/liff/orders/:id" component={LiffOrderDetailPage} />
-        
-        {/* LIFF 員工端頁面 */}
-        <Route path="/liff/staff/clock" component={LiffStaffClockPage} />
-        <Route path="/liff/staff/tasks" component={LiffStaffTasksPage} />
-        <Route path="/liff/staff/schedule" component={LiffStaffSchedulePage} />
-        <Route path="/liff/staff/leave" component={LiffStaffLeavePage} />
-        
-        {/* 進階功能 */}
         <Route path="/clinic/analytics" component={AnalyticsPage} />
         <Route path="/clinic/settings" component={SettingsPage} />
-        
-        {/* Phase 26-30 超越 SUPER8 與夾客的進階功能 */}
         <Route path="/clinic/ai-chatbot" component={AIChatbotPage} />
         <Route path="/clinic/marketing-automation" component={MarketingAutomationPage} />
         <Route path="/clinic/gamification" component={GamificationPage} />
         <Route path="/clinic/member-passport" component={MemberPassportPage} />
         <Route path="/clinic/message-center" component={MessageCenterPage} />
-        {/* Phase 63: 客戶行銷自動化 */}
         <Route path="/clinic/customer-marketing" component={CustomerMarketingPage} />
-        
-        {/* Phase 31-35 新增功能 */}
         <Route path="/clinic/social-marketing" component={SocialMarketingPage} />
-        
-        {/* Phase 35: 定位打卡與 LINE 遊戲模組 */}
         <Route path="/clinic/attendance-settings" component={AttendanceSettingsPage} />
         <Route path="/clinic/game-management" component={GameManagementPage} />
         <Route path="/clinic/games/ichiban-kuji" component={IchibanKujiGame} />
@@ -292,8 +403,6 @@ function Router() {
         <Route path="/clinic/recommendation-engine" component={RecommendationEnginePage} />
         <Route path="/clinic/smart-scheduling" component={SmartSchedulingPage} />
         <Route path="/clinic/customer-360" component={Customer360Page} />
-        
-        {/* 核心功能實裝頁面 */}
         <Route path="/clinic/treatment-records" component={TreatmentRecordsPage} />
         <Route path="/clinic/customer-packages" component={CustomerPackagesPage} />
         <Route path="/clinic/consultation" component={ConsultationManagementPage} />
@@ -307,8 +416,6 @@ function Router() {
         <Route path="/clinic/inventory-cost" component={InventoryCostPage} />
         <Route path="/clinic/revenue-target" component={RevenueTargetPage} />
         <Route path="/clinic/customer-source-roi" component={CustomerSourceROIPage} />
-        
-        {/* Phase 41-48 競品分析差異化功能 */}
         <Route path="/clinic/injection-mapping" component={InjectionMappingPage} />
         <Route path="/clinic/consent-form" component={ConsentFormPage} />
         <Route path="/clinic/prescription" component={PrescriptionPage} />
@@ -317,17 +424,26 @@ function Router() {
         <Route path="/clinic/teleconsult" component={TeleconsultPage} />
         <Route path="/clinic/referral" component={ReferralPage} />
         <Route path="/clinic/social-integration" component={SocialIntegrationPage} />
-        
-        {/* Phase 56: 電子票券系統 */}
         <Route path="/clinic/vouchers" component={VouchersPage} />
         <Route path="/clinic/voucher-redemption" component={VoucherRedemptionPage} />
         <Route path="/clinic/voucher-reports" component={VoucherReportsPage} />
-        
-        {/* LIFF 票券頁面 */}
+
+        {/* ======== LIFF 路由 ======== */}
+        <Route path="/liff/booking" component={LiffBookingPage} />
+        <Route path="/liff/member" component={LiffMemberPage} />
+        <Route path="/liff/shop" component={LiffShopPage} />
+        <Route path="/liff/cart" component={LiffCartPage} />
+        <Route path="/liff/checkout" component={LiffCheckoutPage} />
+        <Route path="/liff/orders" component={LiffOrdersPage} />
+        <Route path="/liff/orders/:id" component={LiffOrderDetailPage} />
+        <Route path="/liff/staff/clock" component={LiffStaffClockPage} />
+        <Route path="/liff/staff/tasks" component={LiffStaffTasksPage} />
+        <Route path="/liff/staff/schedule" component={LiffStaffSchedulePage} />
+        <Route path="/liff/staff/leave" component={LiffStaffLeavePage} />
         <Route path="/liff/my-vouchers" component={MyVouchersPage} />
-        
-        {/* 404 */}
-        <Route path={"/404"} component={NotFound} />
+
+        {/* ======== 404 ======== */}
+        <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -340,7 +456,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AppRouter />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
