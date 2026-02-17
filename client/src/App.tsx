@@ -273,11 +273,7 @@ function AppRouter() {
             <SuperAdminVouchersPage />
           </ProtectedRoute>
         </Route>
-        <Route path="/admin/users">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminUsersPage />
-          </ProtectedRoute>
-        </Route>
+        {/* SuperAdminUsersPage 已合併至 AdminUsers，避免 /admin/users 路由重複 */}
         <Route path="/admin/monitor">
           <ProtectedRoute allowedRoles={["super_admin"]}>
             <SuperAdminMonitorPage />
