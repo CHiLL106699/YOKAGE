@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Clock, Calendar, Users, Bot, BarChart, MessageSquare, ShieldCheck, ChevronDown, Menu, X } from 'lucide-react';
 
@@ -29,7 +29,7 @@ interface FaqItem {
   answer: string;
 }
 
-// --- MOCK DATA --- //
+// --- STATIC CONTENT DATA --- //
 const testimonials: Testimonial[] = [
   { quote: 'YOChiLL 徹底改變了我們的營運方式，預約管理從未如此輕鬆。', name: '陳醫師', clinic: '亮采美學診所' },
   { quote: 'AI 對話機器人讓我們能 24/7 回應客戶，客戶滿意度大幅提升。', name: '王經理', clinic: '非凡尚水診所' },
@@ -381,42 +381,8 @@ const Footer = () => (
 // --- MAIN COMPONENT --- //
 
 const LandingPage = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Simulate data fetching
-    const timer = setTimeout(() => {
-      try {
-        // In a real app, you would fetch data here.
-        // If successful:
-        setLoading(false);
-      } catch (e) {
-        // If fetching fails:
-        setError('無法載入頁面資料，請稍後再試。');
-        setLoading(false);
-      }
-    }, 1000); // Simulate 1 second loading time
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">載入中...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-500 text-xl">{error}</div>
-      </div>
-    );
-  }
-
+  // Landing page uses static content — no API calls needed.
+  // Testimonials, features, pricing, and FAQ are marketing content.
   return (
     <div className="bg-gray-900">
       <Header />

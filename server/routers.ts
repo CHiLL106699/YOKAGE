@@ -26,6 +26,8 @@ import { subscriptionRouter as newSubscriptionRouter } from "./routers/subscript
 import { voucherRouter as newVoucherRouter } from "./routers/voucher";
 import { couponRouter as newCouponRouter } from "./routers/coupon";
 import { notificationRouter } from "./routers/notification";
+import { staffTasksRouter } from "./routers/staffTasks";
+import { cartRouter } from "./routers/cart";
 import { analyticsRouter } from "./routers/analytics";
 import { reportRouter as newReportRouter } from "./routers/report";
 import { aiChatRouter } from "./routers/aiChat";
@@ -4657,6 +4659,8 @@ export const appRouter = router({
   newReport: newReportRouter,
   newDataImport: newDataImportRouter,
   settings: settingsRouter,
+  staffTasks: staffTasksRouter,
+  cart: cartRouter,
 });
 
 export type AppRouter = typeof appRouter;

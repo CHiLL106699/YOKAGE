@@ -7,10 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  Clock, 
+import {
+  ArrowLeft,
+  CheckCircle,
+  Clock,
   AlertTriangle,
   User,
   Calendar,
@@ -20,149 +20,170 @@ import {
   Bell,
   Sparkles,
   Heart,
-  Package
+  Package,
+  Loader2,
 } from "lucide-react";
 import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { useStaffContext } from "@/hooks/useStaffContext";
+import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
 
-// 模擬任務資料
-const mockTasks = {
-  today: [
-    {
-      id: "task-001",
-      type: "appointment",
-      title: "王小美 - 玻尿酸填充",
-      time: "10:00",
-      status: "pending",
-      priority: "high",
-      customer: { name: "王小美", phone: "0912-345-678" },
-      notes: "蘋果肌填充，客戶第一次做"
-    },
-    {
-      id: "task-002",
-      type: "appointment",
-      title: "李大明 - 皮秒雷射",
-      time: "11:30",
-      status: "in_progress",
-      priority: "normal",
-      customer: { name: "李大明", phone: "0923-456-789" },
-      notes: "全臉淨膚"
-    },
-    {
-      id: "task-003",
-      type: "aftercare",
-      title: "張小華 - 術後回訪",
-      time: "14:00",
-      status: "pending",
-      priority: "normal",
-      customer: { name: "張小華", phone: "0934-567-890" },
-      notes: "肉毒術後第3天追蹤"
-    },
-    {
-      id: "task-004",
-      type: "appointment",
-      title: "陳美玲 - 美白導入",
-      time: "15:30",
-      status: "pending",
-      priority: "normal",
-      customer: { name: "陳美玲", phone: "0945-678-901" },
-      notes: "VIP 客戶"
-    },
-    {
-      id: "task-005",
-      type: "inventory",
-      title: "補充美白精華庫存",
-      time: "17:00",
-      status: "pending",
-      priority: "low",
-      notes: "目前庫存剩餘 5 瓶"
-    }
-  ],
-  completed: [
-    {
-      id: "task-006",
-      type: "appointment",
-      title: "林小芳 - 肉毒除皺",
-      time: "09:00",
-      status: "completed",
-      priority: "normal",
-      customer: { name: "林小芳", phone: "0956-789-012" },
-      notes: "前額 + 魚尾紋",
-      completedAt: "09:45"
-    }
-  ]
+const taskTypeConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+  appointment: { icon: Calendar, color: "text-pink-600", label: "預約" },
+  aftercare: { icon: Heart, color: "text-red-600", label: "術後回訪" },
+  inventory: { icon: Package, color: "text-blue-600", label: "庫存" },
+  other: { icon: Bell, color: "text-gray-600", label: "其他" },
 };
 
-const taskTypeConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
-  appointment: { icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-100" },
-  aftercare: { icon: Heart, color: "text-pink-600", bgColor: "bg-pink-100" },
-  inventory: { icon: Package, color: "text-orange-600", bgColor: "bg-orange-100" }
-};
-
-const priorityConfig: Record<string, { label: string; color: string }> = {
-  high: { label: "緊急", color: "bg-red-500" },
-  normal: { label: "一般", color: "bg-blue-500" },
-  low: { label: "低", color: "bg-gray-400" }
+const priorityConfig: Record<string, { color: string; label: string }> = {
+  high: { color: "bg-red-100 text-red-700", label: "高" },
+  normal: { color: "bg-yellow-100 text-yellow-700", label: "中" },
+  low: { color: "bg-blue-100 text-blue-700", label: "低" },
 };
 
 export default function LiffStaffTasksPage() {
+  const { organizationId, staffId, isLoading: ctxLoading } = useStaffContext();
   const [activeTab, setActiveTab] = useState("today");
-  const [selectedTask, setSelectedTask] = useState<typeof mockTasks.today[0] | null>(null);
-  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-  const [completeNotes, setCompleteNotes] = useState("");
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [noteText, setNoteText] = useState("");
 
-  const handleCompleteTask = () => {
-    toast.success("任務已完成！");
-    setShowCompleteDialog(false);
-    setSelectedTask(null);
-    setCompleteNotes("");
+  const utils = trpc.useUtils();
+
+  // Fetch staff tasks
+  const tasksQuery = trpc.staffTasks.list.useQuery(
+    { organizationId, staffId },
+    { enabled: !ctxLoading }
+  );
+
+  // Update task status mutation
+  const updateTaskStatus = trpc.staffTasks.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.staffTasks.list.invalidate();
+      toast.success("任務已更新");
+    },
+  });
+
+  // Add task note mutation
+  const addTaskNote = trpc.staffTasks.addNote.useMutation({
+    onSuccess: () => {
+      utils.staffTasks.list.invalidate();
+      setShowNoteDialog(false);
+      setNoteText("");
+      setSelectedTask(null);
+      toast.success("備註已新增");
+    },
+  });
+
+  if (ctxLoading || tasksQuery.isLoading) {
+    return <PageLoadingSkeleton message="載入任務清單..." />;
+  }
+
+  if (tasksQuery.isError) {
+    return <PageError message="無法載入任務" onRetry={() => tasksQuery.refetch()} />;
+  }
+
+  const rawTasks = tasksQuery.data;
+  const allTasks: any[] = Array.isArray(rawTasks) ? rawTasks : (rawTasks as any)?.data ?? [];
+
+  // Filter tasks by status
+  const todayTasks = allTasks.filter((t: any) => t.status === "pending" || t.status === "in_progress");
+  const completedTasks = allTasks.filter((t: any) => t.status === "completed");
+
+  const handleTaskStatusChange = (taskId: number, newStatus: string) => {
+    updateTaskStatus.mutate({
+      organizationId,
+      taskId,
+      status: newStatus,
+    });
   };
 
-  const TaskCard = ({ task }: { task: typeof mockTasks.today[0] }) => {
-    const TypeIcon = taskTypeConfig[task.type]?.icon || Calendar;
-    
+  const handleAddNote = () => {
+    if (!noteText.trim()) {
+      toast.error("請輸入備註");
+      return;
+    }
+    if (!selectedTask) return;
+
+    addTaskNote.mutate({
+      organizationId,
+      taskId: selectedTask.id,
+      note: noteText,
+    });
+  };
+
+  const renderTaskItem = (task: any) => {
+    const typeConfig = taskTypeConfig[task.taskType] ?? taskTypeConfig.other;
+    const priorityConfig_ = priorityConfig[task.priority] ?? priorityConfig.normal;
+    const TypeIcon = typeConfig.icon;
+
     return (
-      <Card 
-        className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${
-          task.status === "completed" ? "opacity-60" : ""
-        }`}
-        onClick={() => setSelectedTask(task)}
-      >
-        <CardContent className="p-0">
-          <div className="flex">
-            {/* Priority Indicator */}
-            <div className={`w-1 ${priorityConfig[task.priority]?.color}`} />
-            
-            <div className="flex-1 p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${taskTypeConfig[task.type]?.bgColor}`}>
-                    <TypeIcon className={`w-5 h-5 ${taskTypeConfig[task.type]?.color}`} />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{task.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-3 h-3 text-gray-400" />
-                      <span className="text-sm text-gray-500">{task.time}</span>
-                      {task.status === "in_progress" && (
-                        <Badge className="bg-yellow-500 text-xs">進行中</Badge>
-                      )}
-                      {task.status === "completed" && (
-                        <Badge variant="outline" className="text-green-600 border-green-200 text-xs">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          已完成
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+      <Card key={task.id} className="mb-3">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              checked={task.status === "completed"}
+              onCheckedChange={(checked) =>
+                handleTaskStatusChange(task.id, checked ? "completed" : "pending")
+              }
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <TypeIcon className={`w-4 h-4 ${typeConfig.color}`} />
+                  <h3 className={`font-medium ${task.status === "completed" ? "line-through text-gray-400" : ""}`}>
+                    {task.title}
+                  </h3>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-300" />
+                <Badge className={priorityConfig_.color}>{priorityConfig_.label}</Badge>
               </div>
-              
-              {task.notes && (
-                <p className="text-sm text-gray-500 mt-2 ml-13 line-clamp-1">
-                  {task.notes}
+
+              {task.customerName && (
+                <p className="text-sm text-gray-600 flex items-center gap-1 mb-1">
+                  <User className="w-3 h-3" />
+                  {task.customerName}
                 </p>
               )}
+
+              {task.scheduledTime && (
+                <p className="text-sm text-gray-500 flex items-center gap-1 mb-1">
+                  <Clock className="w-3 h-3" />
+                  {task.scheduledTime}
+                </p>
+              )}
+
+              {task.description && (
+                <p className="text-sm text-gray-600 mt-2">{task.description}</p>
+              )}
+
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedTask(task);
+                    setShowNoteDialog(true);
+                  }}
+                >
+                  <MessageSquare className="w-3 h-3 mr-1" />
+                  備註
+                </Button>
+                {task.status === "pending" && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleTaskStatusChange(task.id, "in_progress")}
+                    disabled={updateTaskStatus.isPending}
+                  >
+                    {updateTaskStatus.isPending ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                    )}
+                    開始執行
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -171,179 +192,94 @@ export default function LiffStaffTasksPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-6">
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-3 px-4 py-3">
-          <Link href="/liff/staff/clock">
+          <Link href="/liff/member">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
           <h1 className="text-lg font-bold">任務清單</h1>
         </div>
+      </div>
 
-        {/* Summary */}
-        <div className="px-4 pb-3 flex gap-3">
-          <div className="flex-1 bg-blue-50 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-blue-600">{mockTasks.today.length}</p>
-            <p className="text-xs text-gray-500">待處理</p>
-          </div>
-          <div className="flex-1 bg-green-50 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-green-600">{mockTasks.completed.length}</p>
-            <p className="text-xs text-gray-500">已完成</p>
-          </div>
-          <div className="flex-1 bg-yellow-50 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-yellow-600">
-              {mockTasks.today.filter(t => t.status === "in_progress").length}
-            </p>
-            <p className="text-xs text-gray-500">進行中</p>
-          </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="bg-white border-b px-4">
+          <TabsList className="w-full justify-start bg-transparent h-auto p-0">
+            <TabsTrigger
+              value="today"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            >
+              今日任務 ({todayTasks.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            >
+              已完成 ({completedTasks.length})
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="today">今日任務</TabsTrigger>
-            <TabsTrigger value="completed">已完成</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* Task List */}
-      <div className="p-4 space-y-3">
-        {activeTab === "today" && (
-          <>
-            {mockTasks.today.length === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-3" />
-                <p className="text-gray-500">今日任務已全部完成！</p>
-              </div>
-            ) : (
-              mockTasks.today.map(task => (
-                <TaskCard key={task.id} task={task} />
-              ))
-            )}
-          </>
-        )}
-
-        {activeTab === "completed" && (
-          <>
-            {mockTasks.completed.length === 0 ? (
-              <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">尚無已完成任務</p>
-              </div>
-            ) : (
-              mockTasks.completed.map(task => (
-                <TaskCard key={task.id} task={task} />
-              ))
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Task Detail Dialog */}
-      <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
-        <DialogContent className="max-w-md">
-          {selectedTask && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedTask.title}</DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                {/* Time */}
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">預定時間</p>
-                    <p className="font-medium">{selectedTask.time}</p>
-                  </div>
-                </div>
-
-                {/* Customer Info */}
-                {selectedTask.customer && (
-                  <div className="flex items-center gap-3">
-                    <User className="w-5 h-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-500">客戶資訊</p>
-                      <p className="font-medium">{selectedTask.customer.name}</p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Phone className="w-4 h-4 mr-1" />
-                      撥打
-                    </Button>
-                  </div>
-                )}
-
-                {/* Notes */}
-                {selectedTask.notes && (
-                  <div className="flex items-start gap-3">
-                    <MessageSquare className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">備註</p>
-                      <p className="text-sm">{selectedTask.notes}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Priority */}
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">優先級</p>
-                    <Badge className={priorityConfig[selectedTask.priority]?.color}>
-                      {priorityConfig[selectedTask.priority]?.label}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="flex gap-2">
-                {selectedTask.customer && (
-                  <Button variant="outline" className="flex-1">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    發送提醒
-                  </Button>
-                )}
-                {selectedTask.status !== "completed" && (
-                  <Button 
-                    className="flex-1"
-                    onClick={() => {
-                      setShowCompleteDialog(true);
-                    }}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    完成任務
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
+        {/* Today Tasks */}
+        <TabsContent value="today" className="p-4 mt-0">
+          {todayTasks.length === 0 ? (
+            <div className="text-center py-12">
+              <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">今日無任務</p>
+            </div>
+          ) : (
+            todayTasks.map((task) => renderTaskItem(task))
           )}
-        </DialogContent>
-      </Dialog>
+        </TabsContent>
 
-      {/* Complete Task Dialog */}
-      <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent>
+        {/* Completed Tasks */}
+        <TabsContent value="completed" className="p-4 mt-0">
+          {completedTasks.length === 0 ? (
+            <div className="text-center py-12">
+              <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">暫無已完成任務</p>
+            </div>
+          ) : (
+            completedTasks.map((task) => renderTaskItem(task))
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Note Dialog */}
+      <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>完成任務</DialogTitle>
+            <DialogTitle>新增備註</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-500 mb-3">請填寫完成備註（選填）</p>
-            <Textarea 
-              placeholder="例如：客戶滿意度高，建議下次預約..."
-              value={completeNotes}
-              onChange={(e) => setCompleteNotes(e.target.value)}
+          <div className="space-y-4">
+            {selectedTask && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium text-sm">{selectedTask.title}</p>
+              </div>
+            )}
+            <Textarea
+              placeholder="輸入備註內容..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className="min-h-24"
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>
+            <Button variant="outline" onClick={() => setShowNoteDialog(false)}>
               取消
             </Button>
-            <Button onClick={handleCompleteTask}>
-              確認完成
+            <Button onClick={handleAddNote} disabled={addTaskNote.isPending}>
+              {addTaskNote.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  新增中...
+                </>
+              ) : (
+                "新增備註"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

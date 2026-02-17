@@ -7,10 +7,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  CreditCard, 
+import {
+  ArrowLeft,
+  MapPin,
+  CreditCard,
   Smartphone,
   CheckCircle,
   Clock,
@@ -19,74 +19,105 @@ import {
   Phone,
   FileText,
   ChevronRight,
-  Loader2
+  Loader2,
+  ShoppingBag,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-
-// 模擬訂單資料
-const mockOrderItems = [
-  {
-    id: "item-001",
-    name: "玻尿酸填充療程",
-    specs: "1ml / 蘋果肌",
-    price: 15000,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400"
-  },
-  {
-    id: "item-002",
-    name: "皮秒雷射淨膚",
-    specs: "全臉",
-    price: 6000,
-    quantity: 2,
-    image: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400"
-  }
-];
+import { trpc } from "@/lib/trpc";
+import { useStaffContext } from "@/hooks/useStaffContext";
+import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
 
 export default function LiffCheckoutPage() {
   const [, setLocation] = useLocation();
+  const { organizationId, staffId: customerId, isLoading: ctxLoading } = useStaffContext();
   const [paymentMethod, setPaymentMethod] = useState("line_pay");
-  const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [orderId, setOrderId] = useState("");
 
-  // 表單資料
   const [formData, setFormData] = useState({
-    name: "王小明",
-    phone: "0912-345-678",
+    name: "",
+    phone: "",
     appointmentDate: "",
     appointmentTime: "",
-    notes: ""
+    notes: "",
   });
 
-  // 計算金額
-  const subtotal = mockOrderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const couponDiscount = 5400; // 模擬優惠券折扣
-  const depositAmount = Math.round((subtotal - couponDiscount) * 0.3); // 30% 訂金
-  const finalTotal = subtotal - couponDiscount;
+  // Fetch cart items for checkout
+  const cartQuery = trpc.cart.list.useQuery(
+    { organizationId, customerId },
+    { enabled: !ctxLoading }
+  );
+
+  // Create order mutation
+  const createOrder = trpc.order.create.useMutation({
+    onSuccess: (data) => {
+      const newOrderId = String(data.id);
+      setOrderId(newOrderId);
+      setShowSuccessDialog(true);
+    },
+    onError: (err) => {
+      toast.error(`訂單建立失敗: ${err.message}`);
+    },
+  });
+
+  const cartItems: any[] = Array.isArray(cartQuery.data) ? cartQuery.data : [];
+  const selectedItems = cartItems.filter((item: any) => item.selected);
+
+  // Calculate amounts
+  const subtotal = selectedItems.reduce(
+    (sum: number, item: any) => sum + (item.price ?? 0) * (item.quantity ?? 1),
+    0
+  );
+  const depositAmount = Math.round(subtotal * 0.3);
+  const finalTotal = subtotal;
 
   const handleSubmit = async () => {
     if (!formData.appointmentDate || !formData.appointmentTime) {
       toast.error("請選擇預約日期與時間");
       return;
     }
+    if (!formData.name) {
+      toast.error("請填寫姓名");
+      return;
+    }
 
-    setIsProcessing(true);
-
-    // 模擬付款處理
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // 生成訂單編號
-    const newOrderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
-    setOrderId(newOrderId);
-    setIsProcessing(false);
-    setShowSuccessDialog(true);
+    const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
+    createOrder.mutate({
+      organizationId,
+      customerId,
+      orderNumber,
+      subtotal: String(subtotal),
+      total: String(finalTotal),
+      paymentMethod,
+      notes: formData.notes || undefined,
+    });
   };
 
   const handleViewOrder = () => {
     setShowSuccessDialog(false);
     setLocation(`/liff/orders/${orderId}`);
   };
+
+  if (ctxLoading || cartQuery.isLoading) {
+    return <PageLoadingSkeleton message="載入結帳頁面..." />;
+  }
+
+  if (cartQuery.isError) {
+    return <PageError message="無法載入結帳資料" onRetry={() => cartQuery.refetch()} />;
+  }
+
+  if (selectedItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
+        <h2 className="text-lg font-medium text-gray-600 mb-2">沒有選取的商品</h2>
+        <p className="text-sm text-gray-400 mb-4">請回到購物車選擇要結帳的商品</p>
+        <Link href="/liff/cart">
+          <Button>回到購物車</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -114,16 +145,18 @@ export default function LiffCheckoutPage() {
           <CardContent className="space-y-3">
             <div className="space-y-2">
               <Label>姓名</Label>
-              <Input 
+              <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="請輸入姓名"
               />
             </div>
             <div className="space-y-2">
               <Label>手機號碼</Label>
-              <Input 
+              <Input
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="請輸入聯絡電話"
               />
             </div>
           </CardContent>
@@ -141,16 +174,16 @@ export default function LiffCheckoutPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>預約日期</Label>
-                <Input 
+                <Input
                   type="date"
                   value={formData.appointmentDate}
                   onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toISOString().split("T")[0]}
                 />
               </div>
               <div className="space-y-2">
                 <Label>預約時段</Label>
-                <select 
+                <select
                   className="w-full h-10 px-3 border rounded-md"
                   value={formData.appointmentTime}
                   onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
@@ -167,7 +200,7 @@ export default function LiffCheckoutPage() {
             </div>
             <div className="space-y-2">
               <Label>備註</Label>
-              <Textarea 
+              <Textarea
                 placeholder="如有特殊需求請在此說明..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -185,19 +218,25 @@ export default function LiffCheckoutPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {mockOrderItems.map(item => (
+            {selectedItems.map((item: any) => (
               <div key={item.id} className="flex gap-3">
-                <img 
-                  src={item.image}
-                  alt={item.name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
+                <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                  {item.productImage ? (
+                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <ShoppingBag className="w-6 h-6" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm">{item.name}</h4>
-                  <p className="text-xs text-gray-500">{item.specs}</p>
+                  <h4 className="font-medium text-sm">{item.productName}</h4>
+                  {item.specs && <p className="text-xs text-gray-500">{item.specs}</p>}
                   <div className="flex justify-between mt-1">
-                    <span className="text-xs text-gray-400">x{item.quantity}</span>
-                    <span className="text-sm font-medium">NT${(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="text-xs text-gray-400">x{item.quantity ?? 1}</span>
+                    <span className="text-sm font-medium">
+                      NT${((item.price ?? 0) * (item.quantity ?? 1)).toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -206,10 +245,6 @@ export default function LiffCheckoutPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">商品小計</span>
                 <span>NT${subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">優惠券折抵</span>
-                <span className="text-red-500">-NT${couponDiscount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>訂單總額</span>
@@ -267,7 +302,6 @@ export default function LiffCheckoutPage() {
               </div>
             </RadioGroup>
 
-            {/* 訂金說明 */}
             <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
               <div className="flex items-start gap-2">
                 <Clock className="w-4 h-4 text-yellow-600 mt-0.5" />
@@ -313,13 +347,13 @@ export default function LiffCheckoutPage() {
             餘額 NT${(finalTotal - depositAmount).toLocaleString()} 現場支付
           </p>
         </div>
-        <Button 
-          className="w-full" 
+        <Button
+          className="w-full"
           size="lg"
-          disabled={isProcessing}
+          disabled={createOrder.isPending}
           onClick={handleSubmit}
         >
-          {isProcessing ? (
+          {createOrder.isPending ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               處理中...
@@ -341,9 +375,7 @@ export default function LiffCheckoutPage() {
               <CheckCircle className="w-10 h-10 text-green-500" />
             </div>
             <DialogTitle className="text-xl mb-2">訂單成立！</DialogTitle>
-            <p className="text-gray-500 mb-4">
-              訂單編號：{orderId}
-            </p>
+            <p className="text-gray-500 mb-4">訂單編號：{orderId}</p>
             <div className="bg-gray-50 rounded-lg p-4 text-left text-sm space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-500">預約日期</span>

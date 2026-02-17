@@ -1,27 +1,71 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, ChevronRight, MapPin, Phone } from "lucide-react";
+import { Calendar, Clock, User, ChevronRight, MapPin, Phone, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { useStaffContext } from "@/hooks/useStaffContext";
+import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
 
 // LIFF 預約頁面 - 顧客端
 export default function LiffBookingPage() {
+  const { organizationId, isLoading: ctxLoading } = useStaffContext();
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedService, setSelectedService] = useState<string>("");
 
-  // Mock data for demo
-  const services = [
-    { id: "1", name: "玻尿酸注射", duration: 60, price: 15000 },
-    { id: "2", name: "肉毒桿菌", duration: 30, price: 8000 },
-    { id: "3", name: "皮秒雷射", duration: 45, price: 12000 },
-    { id: "4", name: "電波拉皮", duration: 90, price: 35000 },
-  ];
+  // Fetch real services (products)
+  const productsQuery = trpc.product.list.useQuery(
+    { organizationId, limit: 50 },
+    { enabled: !ctxLoading }
+  );
+
+  // Create appointment mutation
+  const createAppointment = trpc.appointment.create.useMutation({
+    onSuccess: () => {
+      alert("預約成功！我們會盡快與您確認。");
+      setSelectedService("");
+      setSelectedDate("");
+      setSelectedTime("");
+    },
+    onError: (err) => {
+      alert(`預約失敗: ${err.message}`);
+    },
+  });
+
+  const rawProducts = productsQuery.data;
+  const productsList: any[] = Array.isArray(rawProducts) ? rawProducts : (rawProducts as any)?.data ?? [];
+  const services = productsList.map((p: any) => ({
+    id: String(p.id),
+    name: p.name,
+    duration: p.duration ?? 60,
+    price: Number(p.price ?? 0),
+  }));
 
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
     "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
   ];
+
+  const handleConfirmBooking = () => {
+    if (!selectedService || !selectedDate || !selectedTime) return;
+    createAppointment.mutate({
+      organizationId,
+      customerId: 1, // Will be resolved from LIFF auth context in production
+      productId: Number(selectedService),
+      appointmentDate: selectedDate,
+      startTime: selectedTime,
+      source: "liff",
+    });
+  };
+
+  if (ctxLoading || productsQuery.isLoading) {
+    return <PageLoadingSkeleton message="載入預約頁面..." />;
+  }
+
+  if (productsQuery.isError) {
+    return <PageError message="無法載入服務項目" onRetry={() => productsQuery.refetch()} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white">
@@ -52,33 +96,37 @@ export default function LiffBookingPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
-            {services.map((service) => (
-              <button
-                key={service.id}
-                onClick={() => setSelectedService(service.id)}
-                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                  selectedService === service.id
-                    ? "border-pink-500 bg-pink-50"
-                    : "border-gray-100 hover:border-pink-200"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{service.name}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      <Clock className="h-3 w-3 inline mr-1" />
-                      {service.duration} 分鐘
-                    </p>
+            {services.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">目前沒有可預約的療程</p>
+            ) : (
+              services.map((service) => (
+                <button
+                  key={service.id}
+                  onClick={() => setSelectedService(service.id)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    selectedService === service.id
+                      ? "border-pink-500 bg-pink-50"
+                      : "border-gray-100 hover:border-pink-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{service.name}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {service.duration} 分鐘
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-pink-600">
+                        NT$ {service.price.toLocaleString()}
+                      </p>
+                      <ChevronRight className="h-5 w-5 text-gray-300 ml-auto mt-1" />
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-pink-600">
-                      NT$ {service.price.toLocaleString()}
-                    </p>
-                    <ChevronRight className="h-5 w-5 text-gray-300 ml-auto mt-1" />
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -101,7 +149,7 @@ export default function LiffBookingPage() {
                   const dateStr = date.toISOString().split("T")[0];
                   const dayNames = ["日", "一", "二", "三", "四", "五", "六"];
                   const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                  
+
                   return (
                     <button
                       key={dateStr}
@@ -158,8 +206,19 @@ export default function LiffBookingPage() {
         {/* Confirm Button */}
         {selectedService && selectedDate && selectedTime && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg">
-            <Button className="w-full h-12 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-lg font-bold">
-              確認預約
+            <Button
+              onClick={handleConfirmBooking}
+              disabled={createAppointment.isPending}
+              className="w-full h-12 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-lg font-bold"
+            >
+              {createAppointment.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  預約中...
+                </>
+              ) : (
+                "確認預約"
+              )}
             </Button>
           </div>
         )}

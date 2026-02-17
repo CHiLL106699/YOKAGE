@@ -1,23 +1,79 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  User, Calendar, ShoppingBag, Gift, Heart, Settings, 
-  ChevronRight, Crown, Star, Clock, CreditCard 
+import {
+  Calendar, ShoppingBag, Gift, Heart, Settings,
+  ChevronRight, Crown, Star, Clock, CreditCard,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useStaffContext } from "@/hooks/useStaffContext";
+import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
 
 // LIFF 會員中心頁面 - 顧客端
 export default function LiffMemberPage() {
-  // Mock member data
+  const { organizationId, staffId: customerId, isLoading: ctxLoading } = useStaffContext();
+
+  // Fetch customer profile
+  const customerQuery = trpc.customer.list.useQuery(
+    { organizationId, limit: 1 },
+    { enabled: !ctxLoading }
+  );
+
+  // Fetch upcoming appointments
+  const appointmentsQuery = trpc.appointment.list.useQuery(
+    { organizationId, limit: 5 },
+    { enabled: !ctxLoading }
+  );
+
+  // Fetch coupons count
+  const couponsQuery = trpc.coupon.list.useQuery(
+    { organizationId },
+    { enabled: !ctxLoading }
+  );
+
+  if (ctxLoading || customerQuery.isLoading) {
+    return <PageLoadingSkeleton message="載入會員資料..." />;
+  }
+
+  if (customerQuery.isError) {
+    return <PageError message="無法載入會員資料" onRetry={() => customerQuery.refetch()} />;
+  }
+
+  // Extract customer data
+  const rawCustomers = customerQuery.data;
+  const customerList: any[] = Array.isArray(rawCustomers) ? rawCustomers : (rawCustomers as any)?.data ?? [];
+  const customer = customerList[0];
+
   const member = {
-    name: "王小明",
-    phone: "0912-345-678",
-    level: "VIP",
-    points: 12500,
-    totalSpent: 158000,
-    upcomingAppointments: 2,
-    coupons: 3,
+    name: customer?.name ?? "會員",
+    phone: customer?.phone ?? "",
+    level: customer?.memberLevel ?? "一般",
+    points: customer?.points ?? 0,
+    totalSpent: Number(customer?.totalSpent ?? 0),
+    upcomingAppointments: 0,
+    coupons: 0,
   };
+
+  // Count appointments
+  const rawAppointments = appointmentsQuery.data;
+  const appointmentList: any[] = Array.isArray(rawAppointments) ? rawAppointments : (rawAppointments as any)?.data ?? [];
+  const upcomingAppointments = appointmentList.filter(
+    (a: any) => a.status === "confirmed" || a.status === "pending"
+  );
+  member.upcomingAppointments = upcomingAppointments.length;
+
+  // Count coupons
+  const rawCoupons = couponsQuery.data;
+  const couponList: any[] = Array.isArray(rawCoupons) ? rawCoupons : (rawCoupons as any)?.data ?? [];
+  member.coupons = couponList.length;
+
+  const recentAppointments = upcomingAppointments.slice(0, 3).map((apt: any) => ({
+    id: apt.id,
+    service: apt.productName ?? apt.product?.name ?? "療程",
+    date: apt.appointmentDate ?? "",
+    time: apt.startTime ?? "",
+    status: apt.status ?? "pending",
+  }));
 
   const levelColors: Record<string, string> = {
     一般: "bg-gray-100 text-gray-700",
@@ -36,11 +92,6 @@ export default function LiffMemberPage() {
     { icon: Settings, label: "帳戶設定", href: "/liff/settings" },
   ];
 
-  const recentAppointments = [
-    { id: 1, service: "玻尿酸注射", date: "2026/01/20", time: "14:00", status: "confirmed" },
-    { id: 2, service: "皮秒雷射", date: "2026/01/25", time: "10:30", status: "pending" },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       {/* Header with Profile */}
@@ -53,7 +104,7 @@ export default function LiffMemberPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold">{member.name}</h1>
-                <Badge className={levelColors[member.level]}>
+                <Badge className={levelColors[member.level] ?? levelColors["一般"]}>
                   <Crown className="h-3 w-3 mr-1" />
                   {member.level}
                 </Badge>
@@ -124,31 +175,37 @@ export default function LiffMemberPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentAppointments.map((apt) => (
-              <div
-                key={apt.id}
-                className="flex items-center gap-4 p-3 rounded-xl bg-gray-50"
-              >
-                <div className="h-12 w-12 rounded-xl bg-pink-100 flex items-center justify-center">
-                  <Calendar className="h-6 w-6 text-pink-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{apt.service}</p>
-                  <p className="text-sm text-gray-500">
-                    {apt.date} {apt.time}
-                  </p>
-                </div>
-                <Badge
-                  className={
-                    apt.status === "confirmed"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }
+            {appointmentsQuery.isLoading ? (
+              <div className="text-center py-4 text-gray-400">載入中...</div>
+            ) : recentAppointments.length === 0 ? (
+              <div className="text-center py-4 text-gray-400">暫無預約</div>
+            ) : (
+              recentAppointments.map((apt) => (
+                <div
+                  key={apt.id}
+                  className="flex items-center gap-4 p-3 rounded-xl bg-gray-50"
                 >
-                  {apt.status === "confirmed" ? "已確認" : "待確認"}
-                </Badge>
-              </div>
-            ))}
+                  <div className="h-12 w-12 rounded-xl bg-pink-100 flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-pink-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{apt.service}</p>
+                    <p className="text-sm text-gray-500">
+                      {apt.date} {apt.time}
+                    </p>
+                  </div>
+                  <Badge
+                    className={
+                      apt.status === "confirmed"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }
+                  >
+                    {apt.status === "confirmed" ? "已確認" : "待確認"}
+                  </Badge>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -166,9 +223,9 @@ export default function LiffMemberPage() {
                   <item.icon className="h-5 w-5 text-gray-600" />
                 </div>
                 <span className="flex-1 text-left font-medium">{item.label}</span>
-                {item.badge && (
+                {item.badge ? (
                   <Badge className="bg-pink-100 text-pink-700">{item.badge}</Badge>
-                )}
+                ) : null}
                 <ChevronRight className="h-5 w-5 text-gray-300" />
               </button>
             ))}
@@ -193,7 +250,7 @@ export default function LiffMemberPage() {
                 />
               </div>
               <p className="text-xs text-gray-500 text-center">
-                再消費 NT$ {(200000 - member.totalSpent).toLocaleString()} 即可升級至 VVIP
+                再消費 NT$ {Math.max(0, 200000 - member.totalSpent).toLocaleString()} 即可升級至 VVIP
               </p>
             </div>
           </CardContent>
