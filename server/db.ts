@@ -5013,3 +5013,19 @@ export async function batchUpdateOrderStatus(ids: number[], status: string) {
   
   return { affected: ids.length };
 }
+
+
+// ============================================
+// Sprint 4: Raw SQL Query Helper (for upgrade management)
+// ============================================
+export async function query(sqlText: string, params: any[] = []): Promise<any[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.execute(sql.raw(
+    params.reduce((text: string, param: any, i: number) => {
+      const escaped = typeof param === 'string' ? `'${param.replace(/'/g, "''")}'` : param === null ? 'NULL' : String(param);
+      return text.replace(`$${i + 1}`, escaped);
+    }, sqlText)
+  ));
+  return Array.isArray(result) ? result : (result as any).rows || [];
+}

@@ -455,6 +455,124 @@ const superAdminRouter = router({
       return { success: verification.success, error: verification.error, botInfo: verification.botInfo };
     }),
 
+  // ============================================
+  // Sprint 4: 升級請求管理 API
+  // ============================================
+
+  /**
+   * 列出升級請求
+   */
+  listUpgradeRequests: adminProcedure
+    .input(z.object({
+      status: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const page = input?.page || 1;
+      const limit = input?.limit || 50;
+      const offset = (page - 1) * limit;
+
+      // 使用 db 模組查詢（透過 service_role，不暴露給前端）
+      const result = await db.query(`
+        SELECT ur.*, t.name as tenant_name
+        FROM upgrade_requests ur
+        LEFT JOIN tenants t ON ur.tenant_id = t.id
+        ${input?.status ? "WHERE ur.status = $1" : ""}
+        ORDER BY ur.requested_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `, input?.status ? [input.status] : []);
+
+      const countResult = await db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'pending') as pending,
+          COUNT(*) FILTER (WHERE status = 'approved') as approved,
+          COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
+          COUNT(*) as total
+        FROM upgrade_requests
+      `);
+
+      const stats = countResult?.[0] || { pending: 0, approved: 0, rejected: 0, total: 0 };
+
+      return {
+        data: (result || []).map((r: any) => ({
+          id: r.id,
+          tenantId: r.tenant_id,
+          tenantName: r.tenant_name || `租戶 #${r.tenant_id}`,
+          currentPlan: r.current_plan,
+          requestedPlan: r.requested_plan,
+          status: r.status,
+          requestedAt: r.requested_at,
+          reviewedAt: r.reviewed_at,
+          notes: r.notes,
+          sourceProduct: r.source_product,
+        })),
+        stats: {
+          pending: Number(stats.pending) || 0,
+          approved: Number(stats.approved) || 0,
+          rejected: Number(stats.rejected) || 0,
+          total: Number(stats.total) || 0,
+        },
+      };
+    }),
+
+  /**
+   * 審核升級請求（批准/拒絕）
+   */
+  reviewUpgradeRequest: adminProcedure
+    .input(z.object({
+      requestId: z.number(),
+      action: z.enum(['approve', 'reject']),
+      adminNotes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const newStatus = input.action === 'approve' ? 'approved' : 'rejected';
+
+      // 1. 更新升級請求狀態
+      await db.query(`
+        UPDATE upgrade_requests
+        SET status = $1, reviewed_at = NOW(), admin_notes = $2
+        WHERE id = $3
+      `, [newStatus, input.adminNotes || null, input.requestId]);
+
+      // 2. 如果批准，更新租戶的 plan_type 和 enabled_modules
+      if (input.action === 'approve') {
+        const reqResult = await db.query(`
+          SELECT tenant_id FROM upgrade_requests WHERE id = $1
+        `, [input.requestId]);
+
+        if (reqResult && reqResult[0]) {
+          const tenantId = reqResult[0].tenant_id;
+          const allModules = JSON.stringify([
+            'ai_chat', 'ab_testing', 'vector_search', 'rich_menu_editor',
+            'multi_store', 'advanced_inventory', 'bi_dashboard', 'emr',
+            'crm_auto_tags', 'segment_broadcast', 'gamification',
+            'appointments', 'customers', 'staff', 'notifications'
+          ]);
+
+          await db.query(`
+            UPDATE tenants
+            SET plan_type = 'yokage_pro',
+                upgrade_status = 'approved',
+                enabled_modules = $1::jsonb
+            WHERE id = $2
+          `, [allModules, tenantId]);
+        }
+      } else {
+        // 拒絕時更新租戶升級狀態
+        const reqResult = await db.query(`
+          SELECT tenant_id FROM upgrade_requests WHERE id = $1
+        `, [input.requestId]);
+        if (reqResult && reqResult[0]) {
+          await db.query(`
+            UPDATE tenants SET upgrade_status = 'rejected' WHERE id = $1
+          `, [reqResult[0].tenant_id]);
+        }
+      }
+
+      return { success: true, message: `升級請求已${input.action === 'approve' ? '批准' : '拒絕'}` };
+    }),
+
 });
 
 // ============================================
