@@ -125,61 +125,67 @@ export default function RichMenuPage() {
       return;
     }
 
+    const formattedAreas = editForm.areas.map((area: any) => ({
+      bounds: { x: 0, y: 0, width: 800, height: 400 }, // Default bounds
+      action: { 
+        type: area.action === 'uri' ? 'uri' : 'message',
+        label: area.label,
+        uri: area.action === 'uri' ? area.data : undefined,
+        text: area.action === 'message' ? area.data : undefined
+      }
+    }));
+
     if (selectedMenu) {
       // 更新現有選單
-      setMenus(menus.map(m => 
-        m.id === selectedMenu.id 
-          ? { ...m, name: editForm.name, targetGroup: editForm.targetGroup, areas: editForm.areas }
-          : m
-      ));
-      toast.success("選單已更新");
+      updateMutation.mutate({
+        id: selectedMenu.id,
+        name: editForm.name,
+        chatBarText: editForm.name.substring(0, 14),
+        areas: formattedAreas as any,
+      });
     } else {
       // 新增選單
-      const newMenu = {
-        id: `rm-${Date.now()}`,
+      createMutation.mutate({
+        organizationId,
         name: editForm.name,
-        targetGroup: editForm.targetGroup,
-        isActive: false,
-        areas: editForm.areas,
-        createdAt: new Date().toISOString().split("T")[0],
-        usageCount: 0
-      };
-      setMenus([...menus, newMenu]);
-      toast.success("選單已建立");
+        chatBarText: editForm.name.substring(0, 14),
+        areas: formattedAreas as any,
+        imageBase64: "data:image/png;base64,..." // Placeholder
+      } as any);
     }
 
     setShowEditDialog(false);
   };
 
-  const handleToggleActive = (menuId: string) => {
-    setMenus(menus.map(m => 
-      m.id === menuId ? { ...m, isActive: !m.isActive } : m
-    ));
-    toast.success("選單狀態已更新");
+  const handleToggleActive = (menuId: string | number) => {
+    const menu = richMenus.find((m: any) => m.id === menuId);
+    if (menu) {
+      updateMutation.mutate({
+        id: menu.id,
+        organizationId,
+        isActive: !menu.isActive,
+      } as any);
+    }
   };
 
-  const handleDeleteMenu = (menuId: string) => {
-    setMenus(menus.filter(m => m.id !== menuId));
-    toast.success("選單已刪除");
+  const handleDeleteMenu = (menuId: string | number) => {
+    deleteMutation.mutate({ id: Number(menuId) });
   };
 
-  const handleDuplicateMenu = (menu: typeof richMenus[0]) => {
-    const newMenu = {
-      ...menu,
-      id: `rm-${Date.now()}`,
+  const handleDuplicateMenu = (menu: any) => {
+    createMutation.mutate({
+      organizationId,
       name: `${menu.name} (複製)`,
-      isActive: false,
-      createdAt: new Date().toISOString().split("T")[0],
-      usageCount: 0
-    };
-    setMenus([...menus, newMenu]);
-    toast.success("選單已複製");
+      chatBarText: menu.chatBarText || menu.name.substring(0, 14),
+      areas: menu.areas,
+      imageBase64: menu.imageBase64 || "data:image/png;base64,..."
+    } as any);
   };
 
-  const updateAreaField = (areaId: number, field: string, value: string) => {
+  const updateAreaField = (areaId: number | string, field: string, value: string) => {
     setEditForm({
       ...editForm,
-      areas: editForm.areas.map(area => 
+      areas: editForm.areas.map((area: any) => 
         area.id === areaId ? { ...area, [field]: value } : area
       )
     });
@@ -205,7 +211,7 @@ export default function RichMenuPage() {
 
       {/* 選單列表 */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {menus.map(menu => (
+        {richMenus.map((menu: any) => (
           <Card key={menu.id} className={menu.isActive ? "border-primary" : ""}>
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
@@ -227,7 +233,7 @@ export default function RichMenuPage() {
               {/* 選單預覽 */}
               <div className="bg-muted rounded-lg p-3 mb-4">
                 <div className="grid grid-cols-3 gap-2">
-                  {menu.areas.map(area => (
+                  {((menu as any).areas ?? []).map((area: any) => (
                     <div 
                       key={area.id}
                       className="bg-background rounded p-2 text-center text-xs"
@@ -339,7 +345,7 @@ export default function RichMenuPage() {
               {/* 按鈕設定 */}
               <div className="space-y-3">
                 <Label>按鈕設定</Label>
-                {editForm.areas.map((area, index) => (
+                {editForm.areas.map((area: any, index: number) => (
                   <Card key={area.id} className={editingArea === area.id ? "border-primary" : ""}>
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -426,8 +432,8 @@ export default function RichMenuPage() {
                   </div>
                   {/* Rich Menu 預覽 */}
                   <div className="bg-white border-t p-2">
-                    <div className="grid grid-cols-3 gap-1">
-                      {editForm.areas.map(area => (
+                    <div className="grid grid-cols-3 gap-2">
+                      {((editForm.areas as any[]) ?? []).map((area: any, index: number) => (
                         <div 
                           key={area.id}
                           className="bg-gray-100 rounded p-2 text-center"
@@ -475,7 +481,7 @@ export default function RichMenuPage() {
                 </div>
                 <div className="bg-white border-t p-2">
                   <div className="grid grid-cols-3 gap-1">
-                    {selectedMenu.areas.map(area => (
+                    {(selectedMenu.areas ?? []).map((area: any) => (
                       <div 
                         key={area.id}
                         className="bg-gray-100 hover:bg-gray-200 rounded p-3 text-center cursor-pointer transition-colors"

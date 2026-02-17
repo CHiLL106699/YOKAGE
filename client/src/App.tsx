@@ -61,7 +61,7 @@ const HrDashboard = React.lazy(() => import("@/pages/dashboard/HrDashboard"));
 const MultiBranchDashboard = React.lazy(() => import("@/pages/dashboard/MultiBranchDashboard"));
 const CrmTagManagement = React.lazy(() => import("@/pages/dashboard/CrmTagManagement"));
 const TagRulesManagement = React.lazy(() => import("@/pages/dashboard/TagRulesManagement"));
-const LineWebhookManagement = React.lazy(() => import("@/pages/dashboard/LineWebhookManagement").then(m => ({ default: m.LineWebhookManagement })));
+const LineWebhookManagement = React.lazy(() => import("@/pages/dashboard/LineWebhookManagement"));
 const RichMenuManagement = React.lazy(() => import("@/pages/dashboard/RichMenuManagement"));
 const BroadcastCampaigns = React.lazy(() => import("@/pages/dashboard/BroadcastCampaigns"));
 const AiChatbotSettings = React.lazy(() => import("@/pages/dashboard/AiChatbotSettings"));

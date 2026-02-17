@@ -25,12 +25,12 @@ import { useStaffContext } from "@/hooks/useStaffContext";
 import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
 
 const leaveTypes = [
-  { id: "annual", name: "特休", color: "bg-blue-500" },
-  { id: "sick", name: "病假", color: "bg-red-500" },
-  { id: "personal", name: "事假", color: "bg-orange-500" },
-  { id: "marriage", name: "婚假", color: "bg-pink-500" },
-  { id: "funeral", name: "喪假", color: "bg-gray-500" },
-  { id: "maternity", name: "產假", color: "bg-purple-500" },
+  { id: "特休", name: "特休", color: "bg-blue-500" },
+  { id: "病假", name: "病假", color: "bg-red-500" },
+  { id: "事假", name: "事假", color: "bg-orange-500" },
+  { id: "婚假", name: "婚假", color: "bg-pink-500" },
+  { id: "喪假", name: "喪假", color: "bg-gray-500" },
+  { id: "產假", name: "產假", color: "bg-purple-500" },
 ];
 
 const statusConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
@@ -54,13 +54,13 @@ export default function LiffStaffLeavePage() {
 
   // Fetch leave requests
   const leaveQuery = trpc.leaveManagement.getMyLeaveRequests.useQuery(
-    { organizationId, staffId },
+    { clinicId: String(organizationId) },
     { enabled: !ctxLoading }
   );
 
   // Fetch leave statistics
   const statsQuery = trpc.leaveManagement.getLeaveStatistics.useQuery(
-    { organizationId, staffId },
+    { clinicId: String(organizationId), year: new Date().getFullYear() },
     { enabled: !ctxLoading }
   );
 
@@ -84,9 +84,8 @@ export default function LiffStaffLeavePage() {
       return;
     }
     submitLeave.mutate({
-      organizationId,
-      staffId,
-      leaveType: formData.type,
+      clinicId: String(organizationId),
+      leaveType: formData.type as any,
       startDate: formData.startDate,
       endDate: formData.endDate,
       reason: formData.reason,

@@ -22,9 +22,9 @@ export function useStaffContext() {
   const tenant = tenantQuery.data ?? null;
 
   // Fallback for dev / unauthenticated
-  const organizationId = tenant?.id ?? 1;
-  const staffId = user?.id ?? 1;
-  const staffName = user?.name ?? '員工';
+  const organizationId = (tenant as any)?.id ?? 1;
+  const staffId = (user as any)?.id ?? (user as any)?.orgUser?.id ?? 1;
+  const staffName = (user as any)?.name ?? '員工';
   const isLoading = meQuery.isLoading || (!!meQuery.data && tenantQuery.isLoading);
 
   return {

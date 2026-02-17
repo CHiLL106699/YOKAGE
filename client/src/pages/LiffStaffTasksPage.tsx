@@ -26,6 +26,8 @@ import {
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useStaffContext } from "@/hooks/useStaffContext";
+
+type TaskStatus = "pending" | "completed" | "in_progress";
 import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
 
 const taskTypeConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
@@ -64,8 +66,8 @@ export default function LiffStaffTasksPage() {
     },
   });
 
-  // Add task note mutation
-  const addTaskNote = trpc.staffTasks.addNote.useMutation({
+  // Add task note mutation (using updateStatus to add notes)
+    const addTaskNote = trpc.staffTasks.updateStatus.useMutation({
     onSuccess: () => {
       utils.staffTasks.list.invalidate();
       setShowNoteDialog(false);
@@ -90,10 +92,9 @@ export default function LiffStaffTasksPage() {
   const todayTasks = allTasks.filter((t: any) => t.status === "pending" || t.status === "in_progress");
   const completedTasks = allTasks.filter((t: any) => t.status === "completed");
 
-  const handleTaskStatusChange = (taskId: number, newStatus: string) => {
+    const handleTaskStatusChange = (taskId: number, newStatus: TaskStatus) => {
     updateTaskStatus.mutate({
-      organizationId,
-      taskId,
+      id: taskId,
       status: newStatus,
     });
   };
@@ -106,9 +107,9 @@ export default function LiffStaffTasksPage() {
     if (!selectedTask) return;
 
     addTaskNote.mutate({
-      organizationId,
-      taskId: selectedTask.id,
-      note: noteText,
+      id: selectedTask.id,
+      status: selectedTask.status,
+      notes: noteText,
     });
   };
 

@@ -30,9 +30,6 @@ const Badge: FC<{ status: Status }> = ({ status }) => {
     '已完成': 'bg-blue-100 text-blue-800',
     '已取消': 'bg-red-100 text-red-800',
   };
-  if (isLoading) return <QueryLoading variant="skeleton-table" />;
-  if (error) return <QueryError message={error.message} onRetry={refetch} />;
-
   return (
     <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status]}`}>
       {status}

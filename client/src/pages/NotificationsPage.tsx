@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +30,7 @@ import {
   AlertCircle,
   Settings,
 } from "lucide-react";
-
-
-
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
 const typeIcons: Record<string, React.ReactNode> = {
   appointment_reminder: <Calendar className="h-4 w-4" />,
@@ -79,7 +78,8 @@ export default function NotificationsPage() {
   });
   
   const isLoading = settingsLoading || logLoading;
-  const notifications = notifLog?.logs ?? [];
+  const templates = (notifSettings as any)?.templates ?? [];
+  const notifications = (notifLog as any)?.data ?? notifLog?.logs ?? [];
 
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
@@ -140,7 +140,7 @@ export default function NotificationsPage() {
     toast.success("測試訊息已發送");
   };
 
-  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+  if (isLoading) return <QueryLoading variant="skeleton-cards" />;
 
   if (logError) return <QueryError message={logError.message} onRetry={refetchLog} />;
 
@@ -165,10 +165,10 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {[].filter(t => t.isActive).length}
+                {templates.filter((t: any) => t.isActive).length}
               </div>
               <p className="text-xs text-muted-foreground">
-                共 {[].length} 個模板
+                共 {templates.length} 個模板
               </p>
             </CardContent>
           </Card>
@@ -180,7 +180,7 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {notifications.filter(l => l.status === "sent").length}
+                {notifications.filter((l: any) => l.status === "sent").length}
               </div>
               <p className="text-xs text-muted-foreground">
                 成功發送通知
@@ -195,7 +195,7 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {notifications.filter(l => l.status === "pending").length}
+                {notifications.filter((l: any) => l.status === "pending").length}
               </div>
               <p className="text-xs text-muted-foreground">
                 排程中的通知
@@ -210,7 +210,7 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                {notifications.filter(l => l.status === "failed").length}
+                {notifications.filter((l: any) => l.status === "failed").length}
               </div>
               <p className="text-xs text-muted-foreground">
                 需要處理
@@ -239,7 +239,7 @@ export default function NotificationsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[].map((template) => (
+              {templates.map((template: any) => (
                 <Card key={template.id} className={!template.isActive ? "opacity-60" : ""}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -286,64 +286,60 @@ export default function NotificationsPage() {
           {/* 排程任務 */}
           <TabsContent value="schedules" className="space-y-4">
             <h2 className="text-lg font-semibold">排程任務管理</h2>
-
-            <div className="grid gap-4">
-              {([] as any[]).map((task) => (
-                <Card key={task.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {typeIcons[task.type]}
-                        <div>
-                          <CardTitle className="text-base">{task.name}</CardTitle>
-                          <CardDescription>{task.description}</CardDescription>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={task.isActive}
-                        onCheckedChange={(checked) => handleToggleTask(task.id, checked)}
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">排程規則</p>
-                        <p className="font-mono">{task.schedule}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">上次執行</p>
-                        <p>{task.lastRun}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">下次執行</p>
-                        <p>{task.nextRun}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>任務名稱</TableHead>
+                    <TableHead>關聯模板</TableHead>
+                    <TableHead>執行頻率</TableHead>
+                    <TableHead>下次執行時間</TableHead>
+                    <TableHead>狀態</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {((notifSettings as any)?.tasks ?? []).map((task: any) => (
+                    <TableRow key={task.id}>
+                      <TableCell className="font-medium">{task.name}</TableCell>
+                      <TableCell>{task.templateName}</TableCell>
+                      <TableCell>{task.cron}</TableCell>
+                      <TableCell>{new Date(task.nextRun).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={task.isActive ? "default" : "secondary"}>
+                          {task.isActive ? "啟用中" : "已停用"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={task.isActive}
+                          onCheckedChange={(checked) => handleToggleTask(task.id, checked)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </TabsContent>
 
           {/* 發送記錄 */}
-          <TabsContent value="logs" className="space-y-4">
-            <h2 className="text-lg font-semibold">發送記錄</h2>
-
-            <Card>
+          <TabsContent value="logs">
+            <h2 className="text-lg font-semibold mb-4">最近 50 筆發送記錄</h2>
+            <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>模板名稱</TableHead>
-                    <TableHead>客戶</TableHead>
-                    <TableHead>通道</TableHead>
+                    <TableHead>模板</TableHead>
+                    <TableHead>顧客</TableHead>
+                    <TableHead>管道</TableHead>
                     <TableHead>狀態</TableHead>
                     <TableHead>時間</TableHead>
                     <TableHead>內容</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {notifications.map((log) => (
+                  {notifications.map((log: any) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">{log.templateName}</TableCell>
                       <TableCell>{log.customerName}</TableCell>
@@ -356,230 +352,124 @@ export default function NotificationsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {log.sentAt || log.scheduledAt}
+                        {new Date(log.sentAt || log.scheduledAt).toLocaleString()}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground truncate max-w-xs">
                         {log.content}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </Card>
+            </div>
           </TabsContent>
 
           {/* 設定 */}
-          <TabsContent value="settings" className="space-y-4">
-            <h2 className="text-lg font-semibold">通知設定</h2>
+          <TabsContent value="settings" className="space-y-6 max-w-2xl">
+            <h2 className="text-lg font-semibold">通知總開關</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>全域通知設定</CardTitle>
+                <CardDescription>停用此開關將暫停所有類型的自動通知發送。</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="global-notifications"
+                    checked={(notifSettings as any)?.globalEnable ?? true}
+                    onCheckedChange={(checked) => updateSettingsMutation.mutate({ receiveLine: checked, receiveEmail: checked })}
+                  />
+                  <Label htmlFor="global-notifications">啟用全域通知</Label>
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">預約提醒設定</CardTitle>
-                  <CardDescription>設定預約提醒的發送時機</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>前一天提醒</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>當天提醒</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>當天提醒時間（預約前幾小時）</Label>
-                    <Select defaultValue="2">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 小時前</SelectItem>
-                        <SelectItem value="2">2 小時前</SelectItem>
-                        <SelectItem value="3">3 小時前</SelectItem>
-                        <SelectItem value="4">4 小時前</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">術後關懷設定</CardTitle>
-                  <CardDescription>設定術後關懷的發送時機</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>第一天關懷</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>第三天關懷</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>第七天關懷</Label>
-                    <Switch />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">生日祝福設定</CardTitle>
-                  <CardDescription>設定生日祝福的發送方式</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>啟用生日祝福</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>發送時間</Label>
-                    <Select defaultValue="8">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="8">早上 8:00</SelectItem>
-                        <SelectItem value="9">早上 9:00</SelectItem>
-                        <SelectItem value="10">早上 10:00</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>附加優惠券</Label>
-                    <Switch defaultChecked />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">回訪提醒設定</CardTitle>
-                  <CardDescription>設定回訪提醒的發送條件</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>啟用回訪提醒</Label>
-                    <Switch />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>距離上次療程天數</Label>
-                    <Select defaultValue="30">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="14">14 天</SelectItem>
-                        <SelectItem value="30">30 天</SelectItem>
-                        <SelectItem value="60">60 天</SelectItem>
-                        <SelectItem value="90">90 天</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <h2 className="text-lg font-semibold">LINE 通知設定</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>LINE Messaging API</CardTitle>
+                <CardDescription>設定用於發送 LINE 通知的憑證。</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="line-channel-secret">Channel Secret</Label>
+                  <Input id="line-channel-secret" type="password" defaultValue={(notifSettings as any)?.lineChannelSecret} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="line-channel-token">Channel Access Token</Label>
+                  <Textarea id="line-channel-token" defaultValue={(notifSettings as any)?.lineChannelToken} className="min-h-[120px]" />
+                </div>
+              </CardContent>
+              <div className="px-6 pb-6">
+                <Button 
+                  onClick={() => {
+                    const secret = (document.getElementById('line-channel-secret') as HTMLInputElement).value;
+                    const token = (document.getElementById('line-channel-token') as HTMLTextAreaElement).value;
+                    updateSettingsMutation.mutate({ receiveLine: true, receiveEmail: true } as any);
+                  }}
+                  disabled={updateSettingsMutation.isPending}
+                >
+                  儲存設定
+                </Button>
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
 
-        {/* 模板編輯對話框 */}
+        {/* 新增/編輯模板 Dialog */}
         <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>{isNewTemplate ? "新增通知模板" : "編輯通知模板"}</DialogTitle>
+              <DialogTitle>{isNewTemplate ? "新增" : "編輯"}通知模板</DialogTitle>
               <DialogDescription>
-                設定通知模板的內容與觸發條件
+                設定自動化通知的內容與觸發條件。
               </DialogDescription>
             </DialogHeader>
-
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>模板名稱</Label>
-                  <Input
-                    value={templateForm.name}
-                    onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                    placeholder="例如：預約提醒 - 前一天"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>通知類型</Label>
-                  <Select
-                    value={templateForm.type}
-                    onValueChange={(value) => setTemplateForm({ ...templateForm, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="appointment_reminder">預約提醒</SelectItem>
-                      <SelectItem value="aftercare">術後關懷</SelectItem>
-                      <SelectItem value="birthday">生日祝福</SelectItem>
-                      <SelectItem value="followup">回訪提醒</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="template-name" className="text-right">
+                  模板名稱
+                </Label>
+                <Input id="template-name" value={templateForm.name} onChange={(e) => setTemplateForm({...templateForm, name: e.target.value})} className="col-span-3" />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>發送通道</Label>
-                  <Select
-                    value={templateForm.channel}
-                    onValueChange={(value) => setTemplateForm({ ...templateForm, channel: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="line">LINE</SelectItem>
-                      <SelectItem value="sms">簡訊</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>觸發時機</Label>
-                  <Input
-                    value={templateForm.triggerTime}
-                    onChange={(e) => setTemplateForm({ ...templateForm, triggerTime: e.target.value })}
-                    placeholder="例如：1 day before"
-                  />
-                </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="template-type" className="text-right">
+                  模板類型
+                </Label>
+                <Select value={templateForm.type} onValueChange={(value) => setTemplateForm({...templateForm, type: value})}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="選擇模板類型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="appointment_reminder">預約提醒</SelectItem>
+                    <SelectItem value="aftercare">術後關懷</SelectItem>
+                    <SelectItem value="birthday">生日祝福</SelectItem>
+                    <SelectItem value="followup">回訪提醒</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label>訊息內容</Label>
-                <Textarea
-                  value={templateForm.content}
-                  onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
-                  placeholder="輸入通知內容，可使用變數如 {{customer_name}}, {{appointment_time}} 等"
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  可用變數：{"{{customer_name}}"}, {"{{appointment_time}}"}, {"{{service_name}}"}, {"{{aftercare_notes}}"}, {"{{days_since_last_visit}}"}
-                </p>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="template-trigger" className="text-right">
+                  觸發時機
+                </Label>
+                <Input id="template-trigger" value={templateForm.triggerTime} onChange={(e) => setTemplateForm({...templateForm, triggerTime: e.target.value})} className="col-span-3" placeholder="例如：預約前 1 天 09:00" />
               </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={templateForm.isActive}
-                  onCheckedChange={(checked) => setTemplateForm({ ...templateForm, isActive: checked })}
-                />
-                <Label>啟用此模板</Label>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="template-content" className="text-right">
+                  訊息內容
+                </Label>
+                <Textarea id="template-content" value={templateForm.content} onChange={(e) => setTemplateForm({...templateForm, content: e.target.value})} className="col-span-3 min-h-[150px]" placeholder="支援變數：{{顧客姓名}}, {{預約時間}}, {{診所名稱}}" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="template-active" className="text-right">
+                  啟用狀態
+                </Label>
+                <Switch id="template-active" checked={templateForm.isActive} onCheckedChange={(checked) => setTemplateForm({...templateForm, isActive: checked})} />
               </div>
             </div>
-
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleSaveTemplate}>
-                {isNewTemplate ? "建立" : "儲存"}
-              </Button>
+              <Button type="button" variant="secondary" onClick={() => setIsTemplateDialogOpen(false)}>取消</Button>
+              <Button type="submit" onClick={handleSaveTemplate}>儲存</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

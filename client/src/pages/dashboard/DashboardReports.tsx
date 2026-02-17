@@ -33,10 +33,11 @@ const StatCard: FC<{ title: string; value: string | number; icon: ReactNode; }> 
   </Card>
 );
 
-const BarChart: FC<{ data: { name: string; [key: string]: any }[]; keys: string[]; colors: string[] }> = ({ data, keys, colors }) => {
-  const maxValue = Math.max(...data.flatMap(d => keys.map(key => d[key])));
+const BarChart: FC<{ data: { name: string; [key: string]: any }[]; keys: string[]; colors: string[]; isLoading?: boolean; error?: any; onRetry?: () => void; }> = ({ data, keys, colors, isLoading, error, onRetry }) => {
   if (isLoading) return <QueryLoading variant="skeleton-cards" />;
-  if (revError) return <QueryError message={revError.message} onRetry={refetchRevenue} />;
+  if (error) return <QueryError message={error.message} onRetry={onRetry} />;
+
+  const maxValue = Math.max(...data.flatMap(d => keys.map(key => d[key] as number))) || 1;
 
   return (
     <div className="w-full h-64 flex items-end space-x-2 sm:space-x-4 pr-4">
@@ -58,7 +59,7 @@ const BarChart: FC<{ data: { name: string; [key: string]: any }[]; keys: string[
           <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">{item.name}</div>
         </div>
       ))}
-    </div>
+        </div>
   );
 };
 
@@ -90,7 +91,7 @@ const PieChart: FC<{ data: { name: string; value: number }[] }> = ({ data }) => 
           </div>
         ))}
       </div>
-    </div>
+        </div>
   );
 };
 
@@ -135,14 +136,19 @@ const DashboardLayout: FC<{ children: ReactNode }> = ({ children }) => {
         </nav>
       </aside>
       <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+        </div>
   );
 };
 
 // --- TAB COMPONENTS --- //
 
 const RevenueReportTab: FC = () => {
+  const { data: revenueData, isLoading, error: revError, refetch: refetchRevenue } = (trpc as any).dashboardB.revenueTrend.useQuery({ organizationId: 1 });
   const [timeframe, setTimeframe] = useState<'monthly' | 'weekly'>('monthly');
+    if (isLoading) return <QueryLoading variant="skeleton" />;
+  
+  if (!revenueData) return <div>No data</div>;
+
   const data = timeframe === 'monthly' ? revenueData.monthly : revenueData.weekly;
 
   return (
@@ -161,14 +167,14 @@ const RevenueReportTab: FC = () => {
             <button onClick={() => setTimeframe('weekly')} className={`px-3 py-1 text-sm rounded-md ${timeframe === 'weekly' ? 'bg-indigo-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>週</button>
           </div>
         </div>
-        <BarChart data={data} keys={['revenue']} colors={['#6366F1']} />
+        <BarChart data={data} keys={['revenue']} colors={['#6366F1']} isLoading={isLoading} error={revError} onRetry={refetchRevenue} />
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">熱門服務項目</h3>
           <div className="space-y-3">
-            {revenueData.topServices.map((service, i) => (
+            {revenueData.topServices.map((service: { name: string; revenue: number }, i: number) => (
               <div key={i} className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-300">{service.name}</span>
                 <span className="font-semibold text-gray-800 dark:text-gray-100">${service.revenue.toLocaleString()}</span>
@@ -185,8 +191,15 @@ const RevenueReportTab: FC = () => {
   );
 };
 
-const CustomerReportTab: FC = () => (
-  <div className="space-y-6">
+const CustomerReportTab: FC = () => {
+  const { data: custStats, isLoading, error, refetch } = (trpc as any).dashboardB.kpi.useQuery({ organizationId: 1 });
+
+  if (isLoading) return <QueryLoading variant="skeleton" />;
+  if (error) return <QueryError message={error.message} onRetry={refetch} />;
+  if (!custStats) return <div>No data</div>;
+
+  return (
+    <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <StatCard title="總客戶數" value={custStats.kpis.totalCustomers} icon={<Users className="w-6 h-6 text-indigo-500" />} />
       <StatCard title="新客戶數" value={custStats.kpis.newCustomers} icon={<Users className="w-6 h-6 text-indigo-500" />} />
@@ -195,7 +208,7 @@ const CustomerReportTab: FC = () => (
 
     <Card>
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">新舊客戶趨勢</h3>
-      <BarChart data={custStats.trend} keys={['new', 'returning']} colors={['#818CF8', '#4F46E5']} />
+            <BarChart data={custStats.trend} keys={['new', 'returning']} colors={['#818CF8', '#4F46E5']} isLoading={isLoading} error={error} onRetry={refetch} />
     </Card>
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -209,10 +222,18 @@ const CustomerReportTab: FC = () => (
       </Card>
     </div>
   </div>
-);
+  );
+};
 
-const EmployeeReportTab: FC = () => (
-  <div className="space-y-6">
+const EmployeeReportTab: FC = () => {
+  const { data: apptStats, isLoading, error, refetch } = (trpc as any).dashboardB.topServices.useQuery({ organizationId: 1 });
+
+  if (isLoading) return <QueryLoading variant="skeleton" />;
+  if (error) return <QueryError message={error.message} onRetry={refetch} />;
+  if (!apptStats) return <div>No data</div>;
+
+  return (
+    <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <StatCard title="總預約數" value={String(apptStats?.totalAppointments ?? 0)} icon={<Briefcase className="w-6 h-6 text-indigo-500" />} />
       <StatCard title="平均評價" value={String(apptStats?.avgRating ?? "-")} icon={<Star className="w-6 h-6 text-indigo-500" />} />
@@ -233,7 +254,7 @@ const EmployeeReportTab: FC = () => (
             </tr>
           </thead>
           <tbody>
-            {(apptStats?.ranking ?? []).map((employee, i) => (
+                                    {(apptStats?.ranking ?? []).map((employee: any, i: number) => (
               <tr key={employee.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="p-3 font-medium">{i + 1}</td>
                 <td className="p-3 flex items-center">
@@ -241,10 +262,10 @@ const EmployeeReportTab: FC = () => (
                   {employee.name}
                 </td>
                 <td className="p-3 text-right font-mono">${employee.revenue.toLocaleString()}</td>
-                <td className="p-3 text-right font-mono">{(apptStats?.appointments ?? []).find(a => a.name === employee.name)?.count}</td>
+                <td className="p-3 text-right font-mono">{((apptStats as any)?.appointments ?? []).find((a: any) => a.name === employee.name)?.count}</td>
                 <td className="p-3 text-right font-mono flex justify-end items-center">
                   <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                  {(apptStats?.ratings ?? []).find(r => r.name === employee.name)?.rating}
+                  {((apptStats as any)?.ratings ?? []).find((r: any) => r.name === employee.name)?.rating}
                 </td>
               </tr>
             ))}
@@ -253,7 +274,8 @@ const EmployeeReportTab: FC = () => (
       </div>
     </Card>
   </div>
-);
+  );
+};
 
 // --- MAIN COMPONENT --- //
 
@@ -290,17 +312,17 @@ const DashboardReportsPage: FC = () => {
   const today = new Date().toISOString().split('T')[0];
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
   
-  const { data: revenueData, isLoading: revLoading, error: revError, refetch: refetchRevenue } = trpc.report.revenue.useQuery(
+  const { data: revenueData, isLoading: revLoading, error: revError, refetch: refetchRevenue } = (trpc as any).report.revenue.useQuery(
     { organizationId, startDate: monthStart, endDate: today },
     { enabled: !!organizationId }
   );
   
-  const { data: apptStats, isLoading: apptLoading } = trpc.report.appointmentStats.useQuery(
+  const { data: apptStats, isLoading: apptLoading } = (trpc as any).report.appointmentStats.useQuery(
     { organizationId, startDate: monthStart, endDate: today },
     { enabled: !!organizationId }
   );
   
-  const { data: custStats, isLoading: custLoading } = trpc.report.customerStats.useQuery(
+  const { data: custStats, isLoading: custLoading } = (trpc as any).report.customerStats.useQuery(
     { organizationId, startDate: monthStart, endDate: today },
     { enabled: !!organizationId }
   );

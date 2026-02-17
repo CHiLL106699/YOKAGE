@@ -166,7 +166,7 @@ const CustomerDetailPanel = ({ customer }: { customer: Customer }) => {
                                 <div className="space-y-3">
                                     <h4 className="font-medium text-gray-700">管理客戶標籤</h4>
                                     <div className="flex flex-wrap gap-3">
-                                        {tags.map(tag => (
+                                        {(['VIP', '新客', '回流客', '高消費'] as TagType[]).map((tag: TagType) => (
                                             <label key={tag} className="flex items-center space-x-2 cursor-pointer p-2 border rounded-lg hover:bg-gray-50">
                                                 <input 
                                                     type="checkbox" 
@@ -231,7 +231,7 @@ const NewCustomerModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 const DashboardCustomersPage = () => {
   const organizationId = 1; // TODO: from context
   
-  const { data: customersData, isLoading, error, refetch } = trpc.customer.list.useQuery(
+  const { data: customersData, isLoading, error: queryError, refetch } = trpc.customer.list.useQuery(
     { organizationId, limit: 50 },
     { enabled: !!organizationId }
   );
@@ -256,14 +256,22 @@ const DashboardCustomersPage = () => {
     { enabled: !!organizationId }
   );
   
-  const customers = (customersData?.data ?? []).map((c: any) => ({
+  const customers: Customer[] = (customersData?.data ?? []).map((c: any) => ({
     id: c.id, name: c.name, phone: c.phone || "-", email: c.email || "-",
     gender: c.gender || "other", birthday: c.birthday || "-",
     memberLevel: c.memberLevel || "bronze", totalVisits: c.totalVisits ?? 0,
     totalSpent: Number(c.totalSpent || 0), lastVisit: c.lastVisitDate || c.createdAt || "-",
     tags: c.tags || [], notes: c.notes || "", source: c.source || "-",
+    lastConsumption: c.lastVisitDate || c.createdAt || "-",
+    totalConsumption: Number(c.totalSpent || 0),
+    visitCount: c.totalVisits ?? 0,
+    status: (c.isActive === false ? "inactive" : "active") as CustomerStatus,
+    consumptionHistory: [],
   }));
-  const tags = tagsData ?? [];
+  const tags: string[] = ((tagsData as any) ?? []).map?.((t: any) => typeof t === 'string' ? t : t?.name ?? '') ?? [];
+  const loading = isLoading;
+  const [localError, setError] = useState<string | null>(null);
+  const error = localError || (queryError ? queryError.message : null);
 
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -272,21 +280,7 @@ const DashboardCustomersPage = () => {
     const [expandedCustomerId, setExpandedCustomerId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        // Simulate API call
-        setLoading(true);
-        setError(null);
-        const timer = setTimeout(() => {
-            try {
-                setCustomers(customers);
-                setLoading(false);
-            } catch (e) {
-                setError('無法載入客戶資料，請稍後再試。');
-                setLoading(false);
-            }
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, []);
+    // Data loaded via tRPC query above
 
     const filteredCustomers = useMemo(() => {
         return customers.filter(customer => {
@@ -349,7 +343,7 @@ const DashboardCustomersPage = () => {
                                 onChange={e => setSelectedTag(e.target.value as TagType | '')}
                             >
                                 <option value="">所有標籤</option>
-                                {tags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                                {tags.map((tag: any) => <option key={String(tag)} value={String(tag)}>{String(tag)}</option>)}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
@@ -398,7 +392,7 @@ const DashboardCustomersPage = () => {
                                         <td className="p-4 text-gray-600 hidden lg:table-cell">{customer.email}</td>
                                         <td className="p-4">
                                             <div className="flex flex-wrap gap-1">
-                                                {customer.tags.map(tag => <TagBadge key={tag} tag={tag} />)}
+                                                {customer.tags.map((tag: any) => <TagBadge key={String(tag)} tag={tag} />)}
                                             </div>
                                         </td>
                                         <td className="p-4 text-gray-600 hidden lg:table-cell">{customer.lastConsumption}</td>

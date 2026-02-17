@@ -104,10 +104,10 @@ export default function DashboardSchedulePage() {
   const dayNames = ["一", "二", "三", "四", "五", "六", "日"];
 
   const getShiftsForStaffAndDate = (staffId: number, dateStr: string) => {
-    return schedules.filter((s) => s.staffId === staffId && s.date === dateStr);
+    return schedules.filter((s: Shift) => s.staffId === staffId && s.date === dateStr);
   };
 
-  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+  if (isLoading) return <QueryLoading variant="skeleton" />;
 
   if (schedError) return <QueryError message={schedError.message} onRetry={refetchSchedules} />;
 
@@ -224,7 +224,7 @@ export default function DashboardSchedulePage() {
                         const isToday = day.toDateString() === today.toDateString();
                         return (
                           <td key={i} className={`px-2 py-2 ${isToday ? "bg-indigo-900/10" : ""}`}>
-                            {shifts.map((shift) => (
+                            {shifts.map((shift: Shift) => (
                               <div key={shift.id} className={`rounded-lg border px-2 py-1.5 text-center text-xs ${shiftConfig[shift.shiftType].bg}`}>
                                 <div className={`font-medium ${shiftConfig[shift.shiftType].color}`}>{shiftConfig[shift.shiftType].label}</div>
                                 {shift.startTime && <div className="mt-0.5 text-slate-500">{shift.startTime}-{shift.endTime}</div>}

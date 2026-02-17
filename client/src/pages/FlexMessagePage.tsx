@@ -47,7 +47,7 @@ export default function FlexMessagePage() {
 
   // Fetch broadcast campaigns as templates proxy
   const { data: broadcastData, isLoading, error, refetch } = trpc.broadcast.list.useQuery(
-    { organizationId, limit: 50 },
+    { organizationId },
     { enabled: !!organizationId }
   );
 
@@ -176,7 +176,7 @@ export default function FlexMessagePage() {
     sendFlexMutation.mutate({
       organizationId,
       userId: testForm.phoneNumber,
-      flexContent,
+      contents: flexContent,
       altText: selectedTemplate.name,
     });
   };

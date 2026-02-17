@@ -68,7 +68,7 @@ export default function WebhookPage() {
   const organizationId = 1; // TODO: from context
   
   const { data: eventsData, isLoading, error, refetch } = trpc.lineWebhook.listEvents.useQuery(
-    { organizationId, page: 1, limit: 50 },
+    { organizationId, page: 1, pageSize: 50 },
     { enabled: !!organizationId }
   );
   
@@ -136,14 +136,14 @@ export default function WebhookPage() {
   };
 
   const handleToggleRule = (ruleId: string) => {
-    setRules(rules.map(r => 
+    setRules(rules.map((r: any) => 
       r.id === ruleId ? { ...r, isActive: !r.isActive } : r
     ));
     toast.success("規則狀態已更新");
   };
 
   const handleDeleteRule = (ruleId: string) => {
-    setRules(rules.filter(r => r.id !== ruleId));
+    setRules(rules.filter((r: any) => r.id !== ruleId));
     toast.success("規則已刪除");
   };
 
@@ -152,7 +152,7 @@ export default function WebhookPage() {
     toast.success("Webhook URL 已複製");
   };
 
-  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+  if (isLoading) return <QueryLoading variant="skeleton" />;
 
   if (error) return <QueryError message={error.message} onRetry={refetch} />;
 
@@ -223,7 +223,7 @@ export default function WebhookPage() {
         {/* 規則列表 */}
         <TabsContent value="rules">
           <div className="grid gap-4">
-            {rules.map(rule => (
+            {rules.map((rule: any) => (
               <Card key={rule.id} className={rule.isActive ? "" : "opacity-60"}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -305,7 +305,7 @@ export default function WebhookPage() {
             <CardContent>
               <ScrollArea className="h-[500px]">
                 <div className="space-y-2">
-                  {logs.map(log => (
+                  {logs.map((log: any) => (
                     <div 
                       key={log.id}
                       className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
@@ -330,7 +330,7 @@ export default function WebhookPage() {
                         <div className="text-muted-foreground">{log.timestamp}</div>
                         {log.ruleMatched && (
                           <div className="text-xs text-green-600">
-                            匹配規則：{rules.find(r => r.id === log.ruleMatched)?.name}
+                            匹配規則：{rules.find((r: any) => r.id === log.ruleMatched)?.name}
                           </div>
                         )}
                         {log.responseTime > 0 && (

@@ -30,7 +30,7 @@ export default function LiffStaffSchedulePage() {
 
   // Fetch schedules for the current month
   const scheduleQuery = trpc.schedule.list.useQuery(
-    { organizationId, staffId, limit: 100 },
+    { organizationId, staffId },
     { enabled: !ctxLoading }
   );
 

@@ -379,8 +379,8 @@ const ClinicInfoSection = () => {
     return <div>Loading...</div>;
   }
 
-  if (error) {
-    return <div>Error: {error}</div>;
+  if (settingsError) {
+    return <div>Error: {settingsError.message}</div>;
   }
 
   return (

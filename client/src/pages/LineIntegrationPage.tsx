@@ -649,16 +649,16 @@ export default function LineIntegrationPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {richMenus.map((menu) => (
+                    {richMenus?.map((menu) => (
                       <TableRow key={menu.id}>
                         <TableCell className="font-medium">{menu.name}</TableCell>
                         <TableCell>{menu.targetAudience}</TableCell>
                         <TableCell>
-                          <Badge className={menu.status === "active" ? "bg-green-100 text-green-800" : ""}>
-                            {menu.status === "active" ? "啟用中" : "停用"}
+                          <Badge className={menu.isActive ? "bg-green-100 text-green-800" : ""}>
+                            {menu.isActive ? "啟用中" : "停用"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{menu.createdAt}</TableCell>
+                        <TableCell>{menu.createdAt ? new Date(menu.createdAt).toLocaleDateString() : "N/A"}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm">編輯</Button>
                         </TableCell>

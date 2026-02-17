@@ -1,4 +1,3 @@
-'''
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Calendar, BarChart2, Users, CheckSquare, Briefcase, DollarSign, Menu, X, LayoutDashboard, Settings, LogOut, MoreVertical } from 'lucide-react';
@@ -245,7 +244,7 @@ const DashboardPage = () => {
   const dailyRevenue = revenueReport?.dailyRevenue ?? [];
   const dayLabels = ['日', '一', '二', '三', '四', '五', '六'];
   const chartData = dailyRevenue.length > 0
-    ? dailyRevenue.map(d => ({ day: new Date(d.date).toLocaleDateString('zh-TW', { weekday: 'short' }).replace('週', ''), amount: d.revenue }))
+    ? dailyRevenue.map((d: any) => ({ day: new Date(d.date).toLocaleDateString('zh-TW', { weekday: 'short' }).replace('週', ''), amount: d.amount ?? d.revenue ?? 0 }))
     : Array(7).fill(0).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
@@ -286,7 +285,7 @@ const DashboardPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 {statsCards.map((card) => <StatCard key={card.title} {...card} />)}
               </div>
-              <div className="mb-6'>
+              <div className="mb-6">
                 <QuickActions />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -307,4 +306,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-'''
+

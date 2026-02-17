@@ -14,7 +14,7 @@ import { Webhook, MessageSquare, Plus, Edit, Trash2, Power, PowerOff, ArrowUp, A
 
 import { QueryLoading } from '@/components/ui/query-state';
 
-export function LineWebhookManagement() {
+export default function LineWebhookManagement() {
   const [organizationId] = useState(1); // TODO: 從 context 取得
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
