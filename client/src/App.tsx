@@ -174,6 +174,16 @@ const StaffAppointmentsPage = React.lazy(() => import("@/pages/staff/StaffAppoin
 const StaffClockPage = React.lazy(() => import("@/pages/staff/StaffClock"));
 const StaffCustomersPage = React.lazy(() => import("@/pages/staff/StaffCustomers"));
 const StaffPerformancePage = React.lazy(() => import("@/pages/staff/StaffPerformance"));
+// === Sprint 5: FLOS 功能整合 ===
+const ConsentTemplatePage = React.lazy(() => import("@/pages/dashboard/ConsentTemplatePage"));
+const ConsentSignPage = React.lazy(() => import("@/pages/dashboard/ConsentSignPage"));
+const ConsentRecordsPage = React.lazy(() => import("@/pages/dashboard/ConsentRecordsPage"));
+const EmrListPage = React.lazy(() => import("@/pages/dashboard/EmrListPage"));
+const EmrDetailPage = React.lazy(() => import("@/pages/dashboard/EmrDetailPage"));
+const EmrFormPage = React.lazy(() => import("@/pages/dashboard/EmrFormPage"));
+const StaffClockEnhanced = React.lazy(() => import("@/pages/staff/StaffClockEnhanced"));
+const AttendanceCalendarPage = React.lazy(() => import("@/pages/staff/AttendanceCalendarPage"));
+const AttendanceRequestPage = React.lazy(() => import("@/pages/staff/AttendanceRequestPage"));
 
 // ============================================
 // Loading Fallback
@@ -397,6 +407,42 @@ function AppRouter() {
           </ProtectedRoute>
         </Route>
 
+        {/* ======== Sprint 5: 知情同意書 & EMR (/dashboard/*) ======== */}
+        <Route path="/dashboard/consent-templates">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <ConsentTemplatePage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/consent-sign">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <ConsentSignPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/consent-records">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <ConsentRecordsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/emr">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <EmrListPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/emr/new">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <EmrFormPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/emr/edit/:id">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <EmrFormPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/emr/:id">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <EmrDetailPage />
+          </ProtectedRoute>
+        </Route>
         {/* ======== /staff/* — 員工平台 ======== */}
         <Route path="/staff">
           <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
@@ -428,7 +474,22 @@ function AppRouter() {
             <StaffPerformancePage />
           </ProtectedRoute>
         </Route>
-
+        {/* ======== Sprint 5: 智慧打卡系統強化 ======== */}
+        <Route path="/staff/clock-enhanced">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <StaffClockEnhanced />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/attendance">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <AttendanceCalendarPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/staff/attendance-request">
+          <ProtectedRoute allowedRoles={["super_admin", "admin", "staff"]}>
+            <AttendanceRequestPage />
+          </ProtectedRoute>
+        </Route>
         {/* ======== 向後相容：/super-admin/* (重導至 /admin/*) ======== */}
         <Route path="/super-admin" component={SuperAdminDashboard} />
         <Route path="/super-admin/organizations" component={OrganizationsPage} />

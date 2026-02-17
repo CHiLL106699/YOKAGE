@@ -18,6 +18,8 @@ import { richMenuRouter } from "../richMenu";
 import { broadcastVariantsRouter } from "../broadcastVariants";
 import { biExportRouter } from "../biExport";
 import { richMenuTemplateMarketRouter } from "../richMenuTemplateMarket";
+// Sprint 5: FLOS 功能整合模組
+import { sprint5Router } from '../sprint5/index';
 
 // ============================================
 // BI Dashboard Router (Pro)
@@ -164,6 +166,8 @@ export const proRouter = router({
   multiStore: multiStoreRouter,
   // 既有的 dashboardSystemB 保持相容
   dashboardB: dashboardSystemBRouter,
+  // Sprint 5: FLOS 功能整合
+  sprint5: sprint5Router,
 });
 
 export type ProRouter = typeof proRouter;
