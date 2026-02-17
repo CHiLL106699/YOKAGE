@@ -118,16 +118,16 @@ export default function CommissionManagementPage() {
   const stats = {
     totalCommissions: commissionList.length,
     pendingAmount: commissionList
-      .filter((c: any) => c.status === "pending")
-      .reduce((sum: number, c: any) => sum + Number(c.commissionAmount), 0),
+      .filter((c: Record<string, any>) => c.status === "pending")
+      .reduce((sum: number, c: Record<string, any>) => sum + Number(c.commissionAmount), 0),
     approvedAmount: commissionList
-      .filter((c: any) => c.status === "approved")
-      .reduce((sum: number, c: any) => sum + Number(c.commissionAmount), 0),
+      .filter((c: Record<string, any>) => c.status === "approved")
+      .reduce((sum: number, c: Record<string, any>) => sum + Number(c.commissionAmount), 0),
     paidAmount: commissionList
-      .filter((c: any) => c.status === "paid")
-      .reduce((sum: number, c: any) => sum + Number(c.commissionAmount), 0),
+      .filter((c: Record<string, any>) => c.status === "paid")
+      .reduce((sum: number, c: Record<string, any>) => sum + Number(c.commissionAmount), 0),
     totalSales: commissionList
-      .reduce((sum: number, c: any) => sum + Number(c.salesAmount), 0),
+      .reduce((sum: number, c: Record<string, any>) => sum + Number(c.salesAmount), 0),
   };
 
   return (
@@ -165,7 +165,7 @@ export default function CommissionManagementPage() {
                       <SelectValue placeholder="選擇產品（選填）" />
                     </SelectTrigger>
                     <SelectContent>
-                      {products?.data?.map((p: any) => (
+                      {products?.data?.map((p: Record<string, any>) => (
                         <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -245,7 +245,7 @@ export default function CommissionManagementPage() {
                       <SelectValue placeholder="選擇員工" />
                     </SelectTrigger>
                     <SelectContent>
-                      {staffList?.data?.map((s: any) => (
+                      {staffList?.data?.map((s: Record<string, any>) => (
                         <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -368,7 +368,7 @@ export default function CommissionManagementPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部員工</SelectItem>
-                {staffList?.data?.map((s: any) => (
+                {staffList?.data?.map((s: Record<string, any>) => (
                   <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -413,8 +413,8 @@ export default function CommissionManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {commissionList.map((commission: any) => {
-                      const staff = staffList?.data?.find((s: any) => s.id === commission.staffId);
+                    {commissionList.map((commission: Record<string, any>) => {
+                      const staff = staffList?.data?.find((s: Record<string, any>) => s.id === commission.staffId);
                       const rate = Number(commission.salesAmount) > 0 
                         ? ((Number(commission.commissionAmount) / Number(commission.salesAmount)) * 100).toFixed(1)
                         : 0;
@@ -480,8 +480,8 @@ export default function CommissionManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rules.map((rule: any) => {
-                      const product = products?.data?.find((p: any) => p.id === rule.productId);
+                    {rules.map((rule: Record<string, any>) => {
+                      const product = products?.data?.find((p: Record<string, any>) => p.id === rule.productId);
                       return (
                         <TableRow key={rule.id}>
                           <TableCell className="font-medium">{rule.name}</TableCell>

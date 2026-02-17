@@ -120,7 +120,7 @@ export default function SuperAdminBillingPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreatePlanDialogOpen, setIsCreatePlanDialogOpen] = useState(false);
   const [isEditPlanDialogOpen, setIsEditPlanDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Record<string, any> | null>(null);
   const [planFormData, setPlanFormData] = useState({
     name: "",
     price: 0,
@@ -179,7 +179,7 @@ export default function SuperAdminBillingPage() {
     resetPlanForm();
   };
 
-  const handleEditPlan = (plan: any) => {
+  const handleEditPlan = (plan: Record<string, any>) => {
     setSelectedPlan(plan);
     setPlanFormData({
       name: plan.name,
@@ -202,7 +202,7 @@ export default function SuperAdminBillingPage() {
     setSelectedPlan(null);
   };
 
-  const handleDeletePlan = (plan: any) => {
+  const handleDeletePlan = (plan: Record<string, any>) => {
     toast.success(`方案「${plan.name}」已刪除`);
   };
 

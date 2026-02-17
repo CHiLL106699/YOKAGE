@@ -75,7 +75,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <div className="p-4 mt-auto">
         <div className="p-4 bg-slate-800 rounded-lg">
             <div className="flex items-center">
-                <img className="h-10 w-10 rounded-full" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User avatar" />
+                <img className="h-10 w-10 rounded-full" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User avatar"  loading="lazy" />
                 <div className="ml-3">
                     <p className="text-sm font-semibold text-white">Tech Lead</p>
                     <p className="text-xs text-slate-400">Principal Architect</p>

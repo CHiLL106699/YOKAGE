@@ -106,7 +106,7 @@ export default function SkinAnalysisPage() {
   };
 
   // 計算平均分數
-  const calculateAverageScore = (metrics: any[]) => {
+  const calculateAverageScore = (metrics: Array<Record<string, any>>) => {
     if (!metrics?.length) return 0;
     return Math.round(metrics.reduce((sum, m) => sum + (m.score || 0), 0) / metrics.length);
   };
@@ -481,11 +481,11 @@ export default function SkinAnalysisPage() {
                 <div className="space-y-6">
                   {Object.keys(metricLabels).map((metricType) => {
                     // comparison 返回的是分析記錄陣列，需要從 metrics 中提取
-                    const records = comparison.filter(c => c.metrics?.some((m: any) => m.metricType === metricType));
+                    const records = comparison.filter(c => c.metrics?.some((m: Record<string, any>) => m.metricType === metricType));
                     if (!records.length) return null;
                     
-                    const latestMetric = records[0]?.metrics?.find((m: any) => m.metricType === metricType);
-                    const previousMetric = records[1]?.metrics?.find((m: any) => m.metricType === metricType);
+                    const latestMetric = records[0]?.metrics?.find((m: Record<string, any>) => m.metricType === metricType);
+                    const previousMetric = records[1]?.metrics?.find((m: Record<string, any>) => m.metricType === metricType);
                     const latest = latestMetric?.score || 0;
                     const previous = previousMetric?.score || latest;
                     const change = latest - previous;

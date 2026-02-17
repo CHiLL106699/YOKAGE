@@ -56,7 +56,7 @@ export default function OrganizationsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<any>(null);
+  const [selectedOrg, setSelectedOrg] = useState<Record<string, any> | null>(null);
   const [formData, setFormData] = useState<OrganizationFormData>({
     name: "",
     slug: "",
@@ -133,7 +133,7 @@ export default function OrganizationsPage() {
     createMutation.mutate(formData);
   };
 
-  const handleEdit = (org: any) => {
+  const handleEdit = (org: Record<string, any>) => {
     setSelectedOrg(org);
     setFormData({
       name: org.name,
@@ -158,7 +158,7 @@ export default function OrganizationsPage() {
     });
   };
 
-  const handleToggleStatus = (org: any) => {
+  const handleToggleStatus = (org: Record<string, any>) => {
     updateMutation.mutate({
       id: org.id,
       isActive: !org.isActive,
@@ -433,7 +433,7 @@ export default function OrganizationsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {organizationsData?.data.map((org: any) => (
+                      {organizationsData?.data.map((org: Record<string, any>) => (
                         <TableRow key={org.id} className="border-slate-700 hover:bg-slate-800/50">
                           <TableCell>
                             <div className="flex items-center gap-3">

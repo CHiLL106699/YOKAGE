@@ -51,7 +51,7 @@ export default function VouchersPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isIssueOpen, setIsIssueOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Record<string, any> | null>(null);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -210,7 +210,7 @@ export default function VouchersPage() {
     }
   };
 
-  const openEditDialog = (template: any) => {
+  const openEditDialog = (template: Record<string, any>) => {
     setSelectedTemplate(template);
     setFormData({
       name: template.name,
@@ -228,7 +228,7 @@ export default function VouchersPage() {
     setIsEditOpen(true);
   };
 
-  const openIssueDialog = (template: any) => {
+  const openIssueDialog = (template: Record<string, any>) => {
     setSelectedTemplate(template);
     setIssueData({
       customerIds: [],
@@ -657,7 +657,7 @@ export default function VouchersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>票券類型</Label>
-                  <Select value={formData.type} onValueChange={(v: any) => setFormData({ ...formData, type: v })}>
+                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -684,7 +684,7 @@ export default function VouchersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>價值類型</Label>
-                  <Select value={formData.valueType} onValueChange={(v: any) => setFormData({ ...formData, valueType: v })}>
+                  <Select value={formData.valueType} onValueChange={(v) => setFormData({ ...formData, valueType: v as any })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -712,7 +712,7 @@ export default function VouchersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>有效期類型</Label>
-                  <Select value={formData.validityType} onValueChange={(v: any) => setFormData({ ...formData, validityType: v })}>
+                  <Select value={formData.validityType} onValueChange={(v) => setFormData({ ...formData, validityType: v as any })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -880,7 +880,7 @@ export default function VouchersPage() {
                 <Label>發送管道</Label>
                 <Select 
                   value={issueData.issueChannel}
-                  onValueChange={(v: any) => setIssueData({ ...issueData, issueChannel: v })}
+                  onValueChange={(v) => setIssueData({ ...issueData, issueChannel: v as any })}
                 >
                   <SelectTrigger>
                     <SelectValue />

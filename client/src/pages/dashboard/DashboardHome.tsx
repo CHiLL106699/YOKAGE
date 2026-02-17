@@ -1,3 +1,4 @@
+'''
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { Calendar, BarChart2, Users, CheckSquare, Briefcase, DollarSign, Menu, X, LayoutDashboard, Settings, LogOut, MoreVertical } from 'lucide-react';
@@ -75,6 +76,88 @@ const Sidebar: React.FC<{ isOpen: boolean; setIsOpen: (isOpen: boolean) => void 
     </>
   );
 };
+
+const WelcomeBanner = ({ tenantName }: { tenantName: string }) => (
+    <div className="p-6 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white mb-6">
+        <h2 className="text-2xl font-bold">歡迎回來, {tenantName}!</h2>
+        <p className="mt-1">這是您今天的診所營運總覽。</p>
+    </div>
+);
+
+const QuickActions = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <button className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">新增預約</button>
+        <button className="w-full bg-white text-gray-700 font-bold py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center">新增客戶</button>
+        <button className="w-full bg-white text-gray-700 font-bold py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center">查看報表</button>
+    </div>
+);
+
+const AppointmentTimeline = ({ appointments }: { appointments: any[] }) => (
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h3 className="font-bold text-lg mb-4">今日預約時間線</h3>
+        <div className="relative pl-4">
+            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+            {appointments.map((appt) => (
+                <div key={appt.id} className="relative mb-6 flex items-start">
+                    <div className="absolute left-0 top-1.5 w-3 h-3 bg-indigo-500 rounded-full z-10 border-2 border-white"></div>
+                    <p className="w-16 text-sm text-gray-500 mr-4">{appt.time}</p>
+                    <div className="flex-1 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-semibold text-gray-800">{appt.customerName}</p>
+                                <p className="text-sm text-gray-600">服務項目: {appt.service}</p>
+                                <p className="text-sm text-gray-500">負責人員: {appt.staff}</p>
+                            </div>
+                            <img src={appt.avatar} alt={appt.customerName} className="w-10 h-10 rounded-full"  loading="lazy" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const RevenueChart = ({ revenueData }: { revenueData: any[] }) => {
+    const maxAmount = Math.max(...revenueData.map(d => d.amount));
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="font-bold text-lg mb-4">近 7 日營收</h3>
+            <div className="flex justify-between items-end h-48 space-x-2">
+                {revenueData.map(data => (
+                    <div key={data.day} className="flex-1 flex flex-col items-center">
+                        <div 
+                            className="w-full bg-gradient-to-t from-indigo-400 to-violet-400 rounded-t-md transition-all duration-500" 
+                            style={{ height: `${(data.amount / maxAmount) * 100}%` }}
+                        ></div>
+                        <p className="text-xs text-gray-500 mt-2">{data.day}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const RecentCustomersList = ({ recentCustomers }: { recentCustomers: any[] }) => (
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+        <h3 className="font-bold text-lg mb-4">近期客戶</h3>
+        <ul>
+            {recentCustomers.map(customer => (
+                <li key={customer.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
+                    <div className="flex items-center">
+                        <img src={customer.avatar} alt={customer.name} className="w-10 h-10 rounded-full mr-4"  loading="lazy" />
+                        <div>
+                            <p className="font-semibold text-gray-800">{customer.name}</p>
+                            <p className="text-sm text-gray-500">最近訪問: {customer.lastVisit}</p>
+                        </div>
+                    </div>
+                    <button className="text-gray-400 hover:text-gray-600">
+                        <MoreVertical className="h-5 w-5" />
+                    </button>
+                </li>
+            ))}
+        </ul>
+    </div>
+);
 
 // --- LOADING & ERROR STATES ---
 const LoadingSkeleton = () => (
@@ -162,148 +245,66 @@ const DashboardPage = () => {
   const dailyRevenue = revenueReport?.dailyRevenue ?? [];
   const dayLabels = ['日', '一', '二', '三', '四', '五', '六'];
   const chartData = dailyRevenue.length > 0
-    ? dailyRevenue.map((d: any) => ({ day: dayLabels[new Date(d.date).getDay()], amount: d.amount }))
-    : [{ day: '-', amount: 0 }];
+    ? dailyRevenue.map(d => ({ day: new Date(d.date).toLocaleDateString('zh-TW', { weekday: 'short' }).replace('週', ''), amount: d.revenue }))
+    : Array(7).fill(0).map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return { day: dayLabels[d.getDay()], amount: 0 };
+      }).reverse();
 
-  const recentCustomers = (customersData?.data ?? []).map((c: any) => ({
-    id: String(c.id),
-    name: c.name,
-    avatar: `https://i.pravatar.cc/150?u=${c.id}`,
-    lastVisit: c.lastVisitDate || c.createdAt?.split('T')[0] || '-',
+  const recentCustomers = (customersData?.data ?? []).map((cust: any) => ({
+    id: String(cust.id),
+    name: cust.name,
+    avatar: `https://i.pravatar.cc/150?u=${cust.id}`,
+    lastVisit: cust.lastVisit ? new Date(cust.lastVisit).toLocaleDateString('zh-TW') : '新客戶',
   }));
 
-  const WelcomeBanner = () => (
-    <div className="p-6 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white mb-6">
-        <h2 className="text-2xl font-bold">歡迎回來, {tenantName}!</h2>
-        <p className="mt-1">這是您今天的診所營運總覽。</p>
-    </div>
-  );
-
-  const QuickActions = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <button className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">新增預約</button>
-        <button className="w-full bg-white text-gray-700 font-bold py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center">新增客戶</button>
-        <button className="w-full bg-white text-gray-700 font-bold py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center">查看報表</button>
-    </div>
-  );
-
-  const AppointmentTimeline = () => (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h3 className="font-bold text-lg mb-4">今日預約時間線</h3>
-        {appointments.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">今日無預約</p>
-        ) : (
-          <div className="relative pl-4">
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-            {appointments.map((appt: any) => (
-                <div key={appt.id} className="relative mb-6 flex items-start">
-                    <div className="absolute left-0 top-1.5 w-3 h-3 bg-indigo-500 rounded-full z-10 border-2 border-white"></div>
-                    <p className="w-16 text-sm text-gray-500 mr-4">{appt.time}</p>
-                    <div className="flex-1 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-semibold text-gray-800">{appt.customerName}</p>
-                                <p className="text-sm text-gray-600">服務項目: {appt.service}</p>
-                                <p className="text-sm text-gray-500">負責人員: {appt.staff}</p>
-                            </div>
-                            <img src={appt.avatar} alt={appt.customerName} className="w-10 h-10 rounded-full" />
-                        </div>
-                    </div>
-                </div>
-            ))}
-          </div>
-        )}
-    </div>
-  );
-
-  const RevenueChart = () => {
-    const maxAmount = Math.max(...chartData.map((d: any) => d.amount), 1);
-    return (
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="font-bold text-lg mb-4">近 7 日營收</h3>
-            <div className="flex justify-between items-end h-48 space-x-2">
-                {chartData.map((data: any, idx: number) => (
-                    <div key={`${data.day}-${idx}`} className="flex-1 flex flex-col items-center">
-                        <div 
-                            className="w-full bg-gradient-to-t from-indigo-400 to-violet-400 rounded-t-md transition-all duration-500" 
-                            style={{ height: `${(data.amount / maxAmount) * 100}%` }}
-                        ></div>
-                        <p className="text-xs text-gray-500 mt-2">{data.day}</p>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-  };
-
-  const RecentCustomersList = () => (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-        <h3 className="font-bold text-lg mb-4">近期客戶</h3>
-        {recentCustomers.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">暫無客戶資料</p>
-        ) : (
-          <ul>
-            {recentCustomers.map((customer: any) => (
-                <li key={customer.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
-                    <div className="flex items-center">
-                        <img src={customer.avatar} alt={customer.name} className="w-10 h-10 rounded-full mr-4" />
-                        <div>
-                            <p className="font-semibold text-gray-800">{customer.name}</p>
-                            <p className="text-sm text-gray-500">最近訪問: {customer.lastVisit}</p>
-                        </div>
-                    </div>
-                    <button className="text-gray-400 hover:text-gray-600">
-                        <MoreVertical className="h-5 w-5" />
-                    </button>
-                </li>
-            ))}
-          </ul>
-        )}
-    </div>
-  );
-
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 font-sans">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setSidebarOpen} />
-      
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 bg-gray-50/80 backdrop-blur-sm z-10 p-4 border-b md:hidden">
-            <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">YOChiLL</h1>
-                <button onClick={() => setSidebarOpen(true)} className="text-gray-600">
-                    <Menu className="h-6 w-6" />
-                </button>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white shadow-sm p-4 flex justify-between items-center md:justify-end">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden text-gray-600">
+                <Menu className="h-6 w-6" />
+            </button>
+            <div className="flex items-center space-x-4">
+                <div className="text-right">
+                    <p className="font-semibold">Tech Lead</p>
+                    <p className="text-sm text-gray-500">Principal Architect</p>
+                </div>
+                <img src="https://i.pravatar.cc/40" alt="User Avatar" className="w-10 h-10 rounded-full" />
             </div>
         </header>
-        <div className="p-4 md:p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
           {isLoading ? (
             <LoadingSkeleton />
           ) : error ? (
-            <ErrorDisplay message={error.message} onRetry={() => refetchStats()} />
+            <ErrorDisplay message={error.message} onRetry={refetchStats} />
           ) : (
             <>
-              <WelcomeBanner />
+              <WelcomeBanner tenantName={tenantName} />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                {statsCards.map(stat => <StatCard key={stat.title} {...stat} />)}
+                {statsCards.map((card) => <StatCard key={card.title} {...card} />)}
               </div>
-              <div className="mb-6">
+              <div className="mb-6'>
                 <QuickActions />
               </div>
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2">
-                    <AppointmentTimeline />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <AppointmentTimeline appointments={appointments} />
                 </div>
                 <div className="space-y-6">
-                    <RevenueChart />
-                    <RecentCustomersList />
+                  <RevenueChart revenueData={chartData} />
+                  <RecentCustomersList recentCustomers={recentCustomers} />
                 </div>
               </div>
             </>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
 
 export default DashboardPage;
+'''

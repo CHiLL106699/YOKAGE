@@ -152,7 +152,7 @@ export default function LiffStaffClockPage() {
               src={mockStaff.avatar}
               alt={mockStaff.name}
               className="w-12 h-12 rounded-full object-cover border-2 border-blue-200"
-            />
+             loading="lazy" />
             <div>
               <h1 className="font-bold text-lg">{mockStaff.name}</h1>
               <p className="text-sm text-gray-500">{mockStaff.role}</p>

@@ -1,16 +1,22 @@
-import { useState } from "react";
+
+import { useState, Fragment } from "react";
+import { trpc } from '@/lib/trpc';
+import { format } from 'date-fns';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Copy,
   Key,
-  RefreshCw,
   Eye,
   EyeOff,
   Code,
@@ -20,184 +26,60 @@ import {
   ExternalLink,
   ChevronRight,
   Play,
+  Trash2,
 } from "lucide-react";
 
-// Mock API keys
-const mockApiKeys = [
-  {
-    id: 1,
-    name: "Production API Key",
-    key: "yc_live_xxxxxxxxxxxxxxxxxxxxxxxx",
-    created: "2024-01-01",
-    lastUsed: "2024-01-15",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Development API Key",
-    key: "yc_test_xxxxxxxxxxxxxxxxxxxxxxxx",
-    created: "2024-01-05",
-    lastUsed: "2024-01-14",
-    status: "active",
-  },
-];
-
-// API Endpoints documentation
+// API Endpoints documentation (static content)
 const apiEndpoints = [
-  {
-    category: "客戶管理",
-    endpoints: [
-      {
-        method: "GET",
-        path: "/api/v1/customers",
-        description: "取得客戶列表",
-        auth: true,
-      },
-      {
-        method: "GET",
-        path: "/api/v1/customers/:id",
-        description: "取得單一客戶詳情",
-        auth: true,
-      },
-      {
-        method: "POST",
-        path: "/api/v1/customers",
-        description: "建立新客戶",
-        auth: true,
-      },
-      {
-        method: "PUT",
-        path: "/api/v1/customers/:id",
-        description: "更新客戶資料",
-        auth: true,
-      },
-      {
-        method: "DELETE",
-        path: "/api/v1/customers/:id",
-        description: "刪除客戶",
-        auth: true,
-      },
-    ],
-  },
-  {
-    category: "預約管理",
-    endpoints: [
-      {
-        method: "GET",
-        path: "/api/v1/appointments",
-        description: "取得預約列表",
-        auth: true,
-      },
-      {
-        method: "GET",
-        path: "/api/v1/appointments/:id",
-        description: "取得單一預約詳情",
-        auth: true,
-      },
-      {
-        method: "POST",
-        path: "/api/v1/appointments",
-        description: "建立新預約",
-        auth: true,
-      },
-      {
-        method: "PUT",
-        path: "/api/v1/appointments/:id",
-        description: "更新預約狀態",
-        auth: true,
-      },
-      {
-        method: "DELETE",
-        path: "/api/v1/appointments/:id",
-        description: "取消預約",
-        auth: true,
-      },
-    ],
-  },
-  {
-    category: "產品管理",
-    endpoints: [
-      {
-        method: "GET",
-        path: "/api/v1/products",
-        description: "取得產品列表",
-        auth: true,
-      },
-      {
-        method: "GET",
-        path: "/api/v1/products/:id",
-        description: "取得單一產品詳情",
-        auth: true,
-      },
-      {
-        method: "POST",
-        path: "/api/v1/products",
-        description: "建立新產品",
-        auth: true,
-      },
-      {
-        method: "PUT",
-        path: "/api/v1/products/:id",
-        description: "更新產品資料",
-        auth: true,
-      },
-    ],
-  },
-  {
-    category: "訂單管理",
-    endpoints: [
-      {
-        method: "GET",
-        path: "/api/v1/orders",
-        description: "取得訂單列表",
-        auth: true,
-      },
-      {
-        method: "GET",
-        path: "/api/v1/orders/:id",
-        description: "取得單一訂單詳情",
-        auth: true,
-      },
-      {
-        method: "POST",
-        path: "/api/v1/orders",
-        description: "建立新訂單",
-        auth: true,
-      },
-      {
-        method: "PUT",
-        path: "/api/v1/orders/:id/status",
-        description: "更新訂單狀態",
-        auth: true,
-      },
-    ],
-  },
-  {
-    category: "Webhook",
-    endpoints: [
-      {
-        method: "POST",
-        path: "/api/v1/webhooks",
-        description: "註冊 Webhook 端點",
-        auth: true,
-      },
-      {
-        method: "GET",
-        path: "/api/v1/webhooks",
-        description: "取得已註冊的 Webhook 列表",
-        auth: true,
-      },
-      {
-        method: "DELETE",
-        path: "/api/v1/webhooks/:id",
-        description: "刪除 Webhook",
-        auth: true,
-      },
-    ],
-  },
+    {
+        category: "客戶管理",
+        endpoints: [
+            { method: "GET", path: "/api/v1/customers", description: "取得客戶列表", auth: true },
+            { method: "GET", path: "/api/v1/customers/:id", description: "取得單一客戶詳情", auth: true },
+            { method: "POST", path: "/api/v1/customers", description: "建立新客戶", auth: true },
+            { method: "PUT", path: "/api/v1/customers/:id", description: "更新客戶資料", auth: true },
+            { method: "DELETE", path: "/api/v1/customers/:id", description: "刪除客戶", auth: true },
+        ],
+    },
+    {
+        category: "預約管理",
+        endpoints: [
+            { method: "GET", path: "/api/v1/appointments", description: "取得預約列表", auth: true },
+            { method: "GET", path: "/api/v1/appointments/:id", description: "取得單一預約詳情", auth: true },
+            { method: "POST", path: "/api/v1/appointments", description: "建立新預約", auth: true },
+            { method: "PUT", path: "/api/v1/appointments/:id", description: "更新預約狀態", auth: true },
+            { method: "DELETE", path: "/api/v1/appointments/:id", description: "取消預約", auth: true },
+        ],
+    },
+    {
+        category: "產品管理",
+        endpoints: [
+            { method: "GET", path: "/api/v1/products", description: "取得產品列表", auth: true },
+            { method: "GET", path: "/api/v1/products/:id", description: "取得單一產品詳情", auth: true },
+            { method: "POST", path: "/api/v1/products", description: "建立新產品", auth: true },
+            { method: "PUT", path: "/api/v1/products/:id", description: "更新產品資料", auth: true },
+        ],
+    },
+    {
+        category: "訂單管理",
+        endpoints: [
+            { method: "GET", path: "/api/v1/orders", description: "取得訂單列表", auth: true },
+            { method: "GET", path: "/api/v1/orders/:id", description: "取得單一訂單詳情", auth: true },
+            { method: "POST", path: "/api/v1/orders", description: "建立新訂單", auth: true },
+            { method: "PUT", path: "/api/v1/orders/:id/status", description: "更新訂單狀態", auth: true },
+        ],
+    },
+    {
+        category: "Webhook",
+        endpoints: [
+            { method: "POST", path: "/api/v1/webhooks", description: "註冊 Webhook 端點", auth: true },
+            { method: "GET", path: "/api/v1/webhooks", description: "取得已註冊的 Webhook 列表", auth: true },
+            { method: "DELETE", path: "/api/v1/webhooks/:id", description: "刪除 Webhook", auth: true },
+        ],
+    },
 ];
 
-// Sample code snippets
+// Sample code snippets (static content)
 const codeSnippets = {
   curl: `curl -X GET "https://api.yochill.com/v1/customers" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
@@ -228,406 +110,321 @@ customers = response.json()
 print(customers)`,
 };
 
-export default function ApiDocsPage() {
-  const [showKeys, setShowKeys] = useState<Record<number, boolean>>({});
-  const [selectedLanguage, setSelectedLanguage] = useState<"curl" | "javascript" | "python">("javascript");
-
-  const toggleKeyVisibility = (id: number) => {
-    setShowKeys(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("已複製到剪貼簿");
-  };
-
-  const regenerateKey = (id: number) => {
-    toast.success("API Key 已重新產生");
-  };
-
-  const getMethodBadgeColor = (method: string) => {
-    switch (method) {
-      case "GET":
-        return "bg-green-100 text-green-800";
-      case "POST":
-        return "bg-blue-100 text-blue-800";
-      case "PUT":
-        return "bg-yellow-100 text-yellow-800";
-      case "DELETE":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* 頁面標題 */}
-        <div>
-          <h1 className="text-3xl font-bold">API 開放平台</h1>
-          <p className="text-muted-foreground mt-1">管理 API 金鑰與查閱 API 文件</p>
+const ApiKeySkeleton = () => (
+    <div className="flex items-center justify-between p-4 border rounded-lg">
+        <div className="space-y-2 w-full">
+            <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-5 w-16" />
+            </div>
+            <Skeleton className="h-5 w-full max-w-md" />
+            <Skeleton className="h-4 w-64" />
         </div>
+        <div className="flex items-center gap-2">
+            <Skeleton className="h-9 w-24" />
+        </div>
+    </div>
+);
 
-        <Tabs defaultValue="keys" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="keys">API 金鑰</TabsTrigger>
-            <TabsTrigger value="docs">API 文件</TabsTrigger>
-            <TabsTrigger value="examples">程式範例</TabsTrigger>
-            <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          </TabsList>
+export default function ApiDocsPage() {
+    const utils = trpc.useUtils();
+    const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+    const [selectedLanguage, setSelectedLanguage] = useState<"curl" | "javascript" | "python">("javascript");
+    const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+    const [newKeyName, setNewKeyName] = useState("");
+    const [generatedKey, setGeneratedKey] = useState<{ apiKey: string; keyPrefix: string } | null>(null);
 
-          {/* API 金鑰管理 */}
-          <TabsContent value="keys" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">API 金鑰管理</CardTitle>
-                    <CardDescription>
-                      管理您的 API 金鑰，用於存取 YOChiLL API
-                    </CardDescription>
-                  </div>
-                  <Button>
-                    <Key className="h-4 w-4 mr-2" />
-                    建立新金鑰
-                  </Button>
+    const apiKeysQuery = trpc.superAdmin.listApiKeys.useQuery();
+
+    const createApiKeyMutation = trpc.superAdmin.createApiKey.useMutation({
+        onSuccess: (data) => {
+            toast.success("API 金鑰已成功建立！");
+            utils.superAdmin.listApiKeys.invalidate();
+            setGeneratedKey({ apiKey: data.apiKey, keyPrefix: data.keyPrefix });
+            setNewKeyName("");
+            // Keep the modal open to show the new key
+        },
+        onError: (error) => {
+            toast.error(`建立失敗: ${error.message}`);
+        }
+    });
+
+    const revokeApiKeyMutation = trpc.superAdmin.revokeApiKey.useMutation({
+        onSuccess: (_, variables) => {
+            toast.success("API 金鑰已成功撤銷。");
+            utils.superAdmin.listApiKeys.invalidate();
+            setShowKeys(prev => {
+                const newShowKeys = { ...prev };
+                delete newShowKeys[String(variables.apiKeyId)];
+                return newShowKeys;
+            });
+        },
+        onError: (error) => {
+            toast.error(`撤銷失敗: ${error.message}`);
+        }
+    });
+
+    const handleCreateKey = () => {
+        if (!newKeyName.trim()) {
+            toast.warning("請輸入金鑰名稱。");
+            return;
+        }
+        // organizationId is required by the API
+        createApiKeyMutation.mutate({ organizationId: 1, name: newKeyName });
+    };
+
+    const handleCloseModal = () => {
+        setCreateModalOpen(false);
+        setGeneratedKey(null);
+        setNewKeyName("");
+    }
+
+    const toggleKeyVisibility = (id: string) => {
+        setShowKeys(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const copyToClipboard = (text: string, successMessage: string = "已複製到剪貼簿") => {
+        navigator.clipboard.writeText(text);
+        toast.success(successMessage);
+    };
+
+    const getMethodBadgeColor = (method: string) => {
+        switch (method) {
+            case "GET": return "bg-green-100 text-green-800";
+            case "POST": return "bg-blue-100 text-blue-800";
+            case "PUT": return "bg-yellow-100 text-yellow-800";
+            case "DELETE": return "bg-red-100 text-red-800";
+            default: return "bg-gray-100 text-gray-800";
+        }
+    };
+
+    return (
+        <DashboardLayout>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold">API 開放平台</h1>
+                    <p className="text-muted-foreground mt-1">管理 API 金鑰與查閱 API 文件</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockApiKeys.map((apiKey) => (
-                    <div
-                      key={apiKey.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{apiKey.name}</p>
-                          <Badge className={apiKey.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                            {apiKey.status === "active" ? "啟用中" : "已停用"}
-                          </Badge>
+
+                <Tabs defaultValue="keys" className="space-y-4">
+                    <TabsList>
+                        <TabsTrigger value="keys">API 金鑰</TabsTrigger>
+                        <TabsTrigger value="docs">API 文件</TabsTrigger>
+                        <TabsTrigger value="examples">程式範例</TabsTrigger>
+                        <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="keys" className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-base">API 金鑰管理</CardTitle>
+                                        <CardDescription>管理您的 API 金鑰，用於存取 YOChiLL API</CardDescription>
+                                    </div>
+                                    <Button onClick={() => setCreateModalOpen(true)}>
+                                        <Key className="h-4 w-4 mr-2" />
+                                        建立新金鑰
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {apiKeysQuery.isLoading ? (
+                                        <>
+                                            <ApiKeySkeleton />
+                                            <ApiKeySkeleton />
+                                        </>
+                                    ) : apiKeysQuery.isError ? (
+                                        <QueryError message={apiKeysQuery.error?.message ?? '載入 API 金鑰失敗'} onRetry={() => apiKeysQuery.refetch()} />
+                                    ) : (apiKeysQuery.data ?? []).length === 0 ? (
+                                        <p className="text-center text-muted-foreground py-8">尚未建立任何 API 金鑰。</p>
+                                    ) : (
+                                        (apiKeysQuery.data ?? []).map((apiKey: any) => (
+                                            <div key={apiKey.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                                <div className="space-y-1 flex-grow">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-medium">{apiKey.name}</p>
+                                                        <Badge className={apiKey.status === 'active' ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                                                            {apiKey.status === 'active' ? "啟用中" : "已撤銷"}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 font-mono text-sm">
+                                                        <span>
+                                                            {showKeys[apiKey.id]
+                                                                ? `${apiKey.keyPrefix}...`
+                                                                : `${apiKey.keyPrefix}....................`}
+                                                        </span>
+                                                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard(apiKey.keyPrefix, "已複製金鑰前綴")}>
+                                                            <Copy className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        建立於 {format(new Date(apiKey.createdAt), 'yyyy-MM-dd')}
+                                                        {apiKey.lastUsedAt && ` · 最後使用 ${format(new Date(apiKey.lastUsedAt), 'yyyy-MM-dd HH:mm')}`}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => revokeApiKeyMutation.mutate({ apiKeyId: apiKey.id })}
+                                                        disabled={revokeApiKeyMutation.isPending || apiKey.status !== 'active'}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        撤銷
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="docs">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>API 文件</CardTitle>
+                                <CardDescription>探索可用的 API 端點</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {apiEndpoints.map((category) => (
+                                    <div key={category.category}>
+                                        <h3 className="text-lg font-semibold mb-2">{category.category}</h3>
+                                        <div className="border rounded-lg overflow-hidden">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-[100px]">Method</TableHead>
+                                                        <TableHead>Endpoint</TableHead>
+                                                        <TableHead>說明</TableHead>
+                                                        <TableHead className="text-right">需驗證</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {category.endpoints.map((endpoint) => (
+                                                        <TableRow key={endpoint.path}>
+                                                            <TableCell>
+                                                                <Badge className={`${getMethodBadgeColor(endpoint.method)} hover:${getMethodBadgeColor(endpoint.method)}`}>
+                                                                    {endpoint.method}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="font-mono text-sm">{endpoint.path}</TableCell>
+                                                            <TableCell>{endpoint.description}</TableCell>
+                                                            <TableCell className="text-right">
+                                                                {endpoint.auth ? <Lock className="h-4 w-4 inline-block text-muted-foreground" /> : <Unlock className="h-4 w-4 inline-block text-muted-foreground" />}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="examples">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>程式碼範例</CardTitle>
+                                <CardDescription>快速開始使用我們的 API</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Tabs defaultValue="javascript" onValueChange={(value) => setSelectedLanguage(value as any)}>
+                                    <TabsList>
+                                        <TabsTrigger value="javascript">JavaScript</TabsTrigger>
+                                        <TabsTrigger value="python">Python</TabsTrigger>
+                                        <TabsTrigger value="curl">cURL</TabsTrigger>
+                                    </TabsList>
+                                    <div className="mt-4 bg-gray-900 text-white rounded-lg p-4 relative font-mono text-sm">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="absolute top-2 right-2 text-white hover:bg-gray-700"
+                                            onClick={() => copyToClipboard(codeSnippets[selectedLanguage])}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                        <pre><code>{codeSnippets[selectedLanguage]}</code></pre>
+                                    </div>
+                                </Tabs>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="webhooks">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Webhooks</CardTitle>
+                                <CardDescription>設定 Webhooks 以接收即時事件通知</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <p>透過 Webhooks，您可以在特定事件發生時 (例如：新預約建立、訂單付款成功) 接收到來自我們系統的 HTTP POST 請求。</p>
+                                <Button variant="outline">
+                                    閱讀 Webhook 文件 <ExternalLink className="h-4 w-4 ml-2" />
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            <Dialog open={isCreateModalOpen} onOpenChange={handleCloseModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{generatedKey ? "API 金鑰已建立" : "建立新的 API 金鑰"}</DialogTitle>
+                        <DialogDescription>
+                            {generatedKey ? "請妥善保管您的新金鑰，此金鑰將不會再次顯示。" : "為您的新 API 金鑰命名。"}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {generatedKey ? (
+                        <div className="space-y-4 py-4">
+                            <p className="text-sm text-muted-foreground">金鑰名稱: <span className="font-medium text-primary">{newKeyName}</span></p>
+                            <div className="p-4 bg-secondary rounded-md font-mono text-sm break-all relative">
+                                {generatedKey.apiKey}
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => copyToClipboard(generatedKey.apiKey, "API 金鑰已複製！")}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">金鑰前綴: {generatedKey.keyPrefix}</p>
                         </div>
-                        <div className="flex items-center gap-2 font-mono text-sm">
-                          <span>
-                            {showKeys[apiKey.id]
-                              ? apiKey.key
-                              : apiKey.key.replace(/./g, "•").slice(0, 20) + "..."}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleKeyVisibility(apiKey.id)}
-                          >
-                            {showKeys[apiKey.id] ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(apiKey.key)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                    ) : (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="key-name" className="text-right">金鑰名稱</Label>
+                                <Input
+                                    id="key-name"
+                                    value={newKeyName}
+                                    onChange={(e) => setNewKeyName(e.target.value)}
+                                    className="col-span-3"
+                                    placeholder="例如：我的正式環境金鑰"
+                                    disabled={createApiKeyMutation.isPending}
+                                />
+                            </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          建立於 {apiKey.created} · 最後使用 {apiKey.lastUsed}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => regenerateKey(apiKey.id)}
-                        >
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          重新產生
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 使用限制 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">API 使用限制</CardTitle>
-                <CardDescription>您目前方案的 API 呼叫限制</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">每分鐘請求數</p>
-                    <p className="text-2xl font-bold">60</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">每日請求數</p>
-                    <p className="text-2xl font-bold">10,000</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">今日已使用</p>
-                    <p className="text-2xl font-bold">2,345</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* API 文件 */}
-          <TabsContent value="docs" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">API 端點文件</CardTitle>
-                <CardDescription>
-                  所有可用的 API 端點與說明
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {apiEndpoints.map((category) => (
-                    <div key={category.category}>
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <ChevronRight className="h-4 w-4" />
-                        {category.category}
-                      </h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-24">方法</TableHead>
-                            <TableHead>端點</TableHead>
-                            <TableHead>說明</TableHead>
-                            <TableHead className="w-24">認證</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {category.endpoints.map((endpoint, index) => (
-                            <TableRow key={index}>
-                              <TableCell>
-                                <Badge className={getMethodBadgeColor(endpoint.method)}>
-                                  {endpoint.method}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="font-mono text-sm">
-                                {endpoint.path}
-                              </TableCell>
-                              <TableCell>{endpoint.description}</TableCell>
-                              <TableCell>
-                                {endpoint.auth ? (
-                                  <Lock className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                  <Unlock className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 程式範例 */}
-          <TabsContent value="examples" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">程式範例</CardTitle>
-                    <CardDescription>
-                      各種程式語言的 API 呼叫範例
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={selectedLanguage === "curl" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedLanguage("curl")}
-                    >
-                      cURL
-                    </Button>
-                    <Button
-                      variant={selectedLanguage === "javascript" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedLanguage("javascript")}
-                    >
-                      JavaScript
-                    </Button>
-                    <Button
-                      variant={selectedLanguage === "python" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedLanguage("python")}
-                    >
-                      Python
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-                    <code className="text-sm">{codeSnippets[selectedLanguage]}</code>
-                  </pre>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => copyToClipboard(codeSnippets[selectedLanguage])}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* API 測試工具 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">API 測試工具</CardTitle>
-                <CardDescription>
-                  直接在瀏覽器中測試 API 端點
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <select className="border rounded-md px-3 py-2">
-                      <option>GET</option>
-                      <option>POST</option>
-                      <option>PUT</option>
-                      <option>DELETE</option>
-                    </select>
-                    <Input
-                      placeholder="https://api.yochill.com/v1/customers"
-                      className="flex-1"
-                    />
-                    <Button>
-                      <Play className="h-4 w-4 mr-2" />
-                      發送請求
-                    </Button>
-                  </div>
-                  <div className="bg-muted p-4 rounded-lg min-h-[200px]">
-                    <p className="text-sm text-muted-foreground">回應將顯示在這裡...</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Webhooks */}
-          <TabsContent value="webhooks" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base">Webhook 設定</CardTitle>
-                    <CardDescription>
-                      設定事件通知的 Webhook 端點
-                    </CardDescription>
-                  </div>
-                  <Button>
-                    新增 Webhook
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium">預約事件通知</p>
-                      <Badge className="bg-green-100 text-green-800">啟用中</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      https://your-server.com/webhooks/appointments
-                    </p>
-                    <div className="flex gap-2">
-                      <Badge variant="outline">appointment.created</Badge>
-                      <Badge variant="outline">appointment.updated</Badge>
-                      <Badge variant="outline">appointment.cancelled</Badge>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium">訂單事件通知</p>
-                      <Badge className="bg-green-100 text-green-800">啟用中</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      https://your-server.com/webhooks/orders
-                    </p>
-                    <div className="flex gap-2">
-                      <Badge variant="outline">order.created</Badge>
-                      <Badge variant="outline">order.paid</Badge>
-                      <Badge variant="outline">order.completed</Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Webhook 事件類型 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">可用的 Webhook 事件</CardTitle>
-                <CardDescription>
-                  系統支援的所有 Webhook 事件類型
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>事件類型</TableHead>
-                      <TableHead>說明</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">customer.created</TableCell>
-                      <TableCell>新客戶建立時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">customer.updated</TableCell>
-                      <TableCell>客戶資料更新時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">appointment.created</TableCell>
-                      <TableCell>新預約建立時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">appointment.confirmed</TableCell>
-                      <TableCell>預約確認時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">appointment.cancelled</TableCell>
-                      <TableCell>預約取消時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">order.created</TableCell>
-                      <TableCell>新訂單建立時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">order.paid</TableCell>
-                      <TableCell>訂單付款完成時觸發</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono text-sm">order.completed</TableCell>
-                      <TableCell>訂單完成時觸發</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </DashboardLayout>
-  );
+                    )}
+                    <DialogFooter>
+                        {generatedKey ? (
+                            <DialogClose asChild>
+                                <Button type="button">完成</Button>
+                            </DialogClose>
+                        ) : (
+                            <>
+                                <DialogClose asChild>
+                                    <Button type="button" variant="secondary" disabled={createApiKeyMutation.isPending}>取消</Button>
+                                </DialogClose>
+                                <Button onClick={handleCreateKey} disabled={createApiKeyMutation.isPending || !newKeyName.trim()}>
+                                    {createApiKeyMutation.isPending ? "建立中..." : "建立金鑰"}
+                                </Button>
+                            </>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </DashboardLayout>
+    );
 }

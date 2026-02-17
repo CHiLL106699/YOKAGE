@@ -306,7 +306,7 @@ export default function SuperAdminMonitorPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (errorLogs?.logs || []).map((log: any, index: number) => (
+                      (errorLogs?.logs || []).map((log: Record<string, any>, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="text-muted-foreground text-sm">
                             {new Date(log.timestamp).toLocaleString("zh-TW")}
@@ -360,7 +360,7 @@ export default function SuperAdminMonitorPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (auditLogs?.logs || []).map((log: any, index: number) => (
+                      (auditLogs?.logs || []).map((log: Record<string, any>, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="text-muted-foreground text-sm">
                             {new Date(log.timestamp).toLocaleString("zh-TW")}

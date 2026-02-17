@@ -90,14 +90,14 @@ export default function TeleconsultPage() {
   };
 
   // 計算統計
-  const todaySessions = sessions?.data?.filter((s: any) => {
+  const todaySessions = sessions?.data?.filter((s: Record<string, any>) => {
     const date = new Date(s.scheduledAt);
     const today = new Date();
     return date.toDateString() === today.toDateString();
   }).length || 0;
 
-  const completedSessions = sessions?.data?.filter((s: any) => s.status === 'completed').length || 0;
-  const scheduledSessions = sessions?.data?.filter((s: any) => s.status === 'scheduled').length || 0;
+  const completedSessions = sessions?.data?.filter((s: Record<string, any>) => s.status === 'completed').length || 0;
+  const scheduledSessions = sessions?.data?.filter((s: Record<string, any>) => s.status === 'scheduled').length || 0;
 
   return (
     <div className="container py-6 space-y-6">
@@ -222,7 +222,7 @@ export default function TeleconsultPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {sessions?.data?.reduce((sum: number, s: any) => sum + (s.actualDuration || s.duration || 0), 0) || 0} 分鐘
+              {sessions?.data?.reduce((sum: number, s: Record<string, any>) => sum + (s.actualDuration || s.duration || 0), 0) || 0} 分鐘
             </p>
           </CardContent>
         </Card>
@@ -263,7 +263,7 @@ export default function TeleconsultPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sessions?.data?.map((session: any) => (
+                  {sessions?.data?.map((session: Record<string, any>) => (
                     <TableRow key={session.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
@@ -344,7 +344,7 @@ export default function TeleconsultPage() {
                 {Array.from({ length: 35 }, (_, i) => {
                   const date = new Date();
                   date.setDate(date.getDate() - date.getDay() + i);
-                  const daySessions = sessions?.data?.filter((s: any) => {
+                  const daySessions = sessions?.data?.filter((s: Record<string, any>) => {
                     const sDate = new Date(s.scheduledAt);
                     return sDate.toDateString() === date.toDateString();
                   }) || [];
@@ -359,7 +359,7 @@ export default function TeleconsultPage() {
                       }`}
                     >
                       <div className="text-sm font-medium">{date.getDate()}</div>
-                      {daySessions.slice(0, 2).map((s: any) => (
+                      {daySessions.slice(0, 2).map((s: Record<string, any>) => (
                         <div 
                           key={s.id} 
                           className="text-xs bg-blue-100 text-blue-800 rounded px-1 py-0.5 mt-1 truncate"
@@ -388,7 +388,7 @@ export default function TeleconsultPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {sessions?.data?.filter((s: any) => s.status === 'completed' && s.recordingUrl).map((session: any) => (
+                {sessions?.data?.filter((s: Record<string, any>) => s.status === 'completed' && s.recordingUrl).map((session: Record<string, any>) => (
                   <Card key={session.id}>
                     <CardContent className="pt-4">
                       <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-3">
@@ -410,7 +410,7 @@ export default function TeleconsultPage() {
                     </CardContent>
                   </Card>
                 ))}
-                {!sessions?.data?.filter((s: any) => s.status === 'completed' && s.recordingUrl).length && (
+                {!sessions?.data?.filter((s: Record<string, any>) => s.status === 'completed' && s.recordingUrl).length && (
                   <div className="col-span-3 text-center text-muted-foreground py-12">
                     <Play className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>尚無錄影存檔</p>

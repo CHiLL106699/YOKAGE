@@ -6,7 +6,7 @@ import { QueryError } from '@/components/ui/query-state';
 
 const CrmTagManagement: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-  const [editingTag, setEditingTag] = React.useState<any>(null);
+  const [editingTag, setEditingTag] = React.useState<Record<string, any> | null>(null);
   const [formData, setFormData] = React.useState({
     name: '',
     color: '#3B82F6',
@@ -63,7 +63,7 @@ const CrmTagManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (tag: any) => {
+  const handleEdit = (tag: Record<string, any>) => {
     setEditingTag(tag);
     setFormData({
       name: tag.name,

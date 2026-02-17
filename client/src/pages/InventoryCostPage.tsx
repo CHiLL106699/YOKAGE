@@ -107,7 +107,7 @@ export default function InventoryCostPage() {
     return labels[type] || { label: type, color: "bg-gray-100 text-gray-800", icon: null };
   };
 
-  const selectedProduct = products?.data?.find((p: any) => p.id === selectedProductId);
+  const selectedProduct = products?.data?.find((p: Record<string, any>) => p.id === selectedProductId);
 
   return (
     <div className="space-y-6">
@@ -140,7 +140,7 @@ export default function InventoryCostPage() {
                     <SelectValue placeholder="選擇產品" />
                   </SelectTrigger>
                   <SelectContent>
-                    {products?.data?.map((product: any) => (
+                    {products?.data?.map((product: Record<string, any>) => (
                       <SelectItem key={product.id} value={product.id.toString()}>
                         {product.name}
                       </SelectItem>
@@ -213,7 +213,7 @@ export default function InventoryCostPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {products?.data?.map((product: any) => (
+            {products?.data?.map((product: Record<string, any>) => (
               <Button
                 key={product.id}
                 variant={selectedProductId === product.id ? "default" : "outline"}
@@ -305,7 +305,7 @@ export default function InventoryCostPage() {
             <CardContent>
               {transactions && transactions.length > 0 ? (
                 <div className="space-y-3">
-                  {transactions.map((tx: any) => {
+                  {transactions.map((tx: Record<string, any>) => {
                     const typeInfo = getTransactionTypeLabel(tx.transactionType);
                     return (
                       <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg">

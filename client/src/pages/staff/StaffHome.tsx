@@ -153,7 +153,7 @@ const StaffHome = () => {
           </div>
           <div className="flex items-center">
             <span className="hidden sm:inline text-sm font-medium text-gray-700 mr-3">{mockStaff.name}</span>
-            <img className="h-8 w-8 rounded-full" src={mockStaff.avatarUrl} alt="Staff Avatar" />
+            <img className="h-8 w-8 rounded-full" src={mockStaff.avatarUrl} alt="Staff Avatar"  loading="lazy" />
           </div>
         </div>
       </header>

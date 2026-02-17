@@ -156,7 +156,7 @@ export default function PaymentSettingsPage() {
   };
 
   const getProviderStatus = (providerId: PaymentProvider) => {
-    const setting = settings?.find((s: any) => s.provider === providerId);
+    const setting = settings?.find((s: Record<string, any>) => s.provider === providerId);
     return setting?.isEnabled ? "enabled" : "disabled";
   };
 

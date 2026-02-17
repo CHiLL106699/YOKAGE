@@ -34,7 +34,7 @@ export default function SuperAdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<Record<string, any> | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
@@ -75,17 +75,17 @@ export default function SuperAdminUsersPage() {
     },
   });
 
-  const handleViewUser = (user: any) => {
+  const handleViewUser = (user: Record<string, any>) => {
     setSelectedUser(user);
     setIsDetailDialogOpen(true);
   };
 
-  const handleEditUser = (user: any) => {
+  const handleEditUser = (user: Record<string, any>) => {
     setSelectedUser(user);
     setIsEditDialogOpen(true);
   };
 
-  const handleToggleStatus = (user: any) => {
+  const handleToggleStatus = (user: Record<string, any>) => {
     setSelectedUser(user);
     setIsStatusDialogOpen(true);
   };
@@ -237,7 +237,7 @@ export default function SuperAdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user: any) => {
+                  users.map((user: Record<string, any>) => {
                     const roleConfig = ROLE_CONFIG[user.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.user;
                     return (
                       <TableRow key={user.id}>

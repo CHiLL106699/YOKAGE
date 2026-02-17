@@ -136,22 +136,22 @@ export default function RFMAnalysisPage() {
   const rfmList = rfmData || [];
   const stats = {
     total: rfmList.length,
-    champions: rfmList.filter((r: any) => r.segment === "champions").length,
-    atRisk: rfmList.filter((r: any) => ["at_risk", "cant_lose_them", "about_to_sleep"].includes(r.segment)).length,
+    champions: rfmList.filter((r: Record<string, any>) => r.segment === "champions").length,
+    atRisk: rfmList.filter((r: Record<string, any>) => ["at_risk", "cant_lose_them", "about_to_sleep"].includes(r.segment)).length,
     highChurnRisk: churnRiskList?.length || 0,
     avgRecency: rfmList.length > 0 
-      ? Math.round(rfmList.reduce((sum: number, r: any) => sum + (r.recencyDays || 0), 0) / rfmList.length)
+      ? Math.round(rfmList.reduce((sum: number, r: Record<string, any>) => sum + (r.recencyDays || 0), 0) / rfmList.length)
       : 0,
     avgFrequency: rfmList.length > 0
-      ? (rfmList.reduce((sum: number, r: any) => sum + (r.frequency || 0), 0) / rfmList.length).toFixed(1)
+      ? (rfmList.reduce((sum: number, r: Record<string, any>) => sum + (r.frequency || 0), 0) / rfmList.length).toFixed(1)
       : 0,
     avgMonetary: rfmList.length > 0
-      ? Math.round(rfmList.reduce((sum: number, r: any) => sum + Number(r.monetaryValue || 0), 0) / rfmList.length)
+      ? Math.round(rfmList.reduce((sum: number, r: Record<string, any>) => sum + Number(r.monetaryValue || 0), 0) / rfmList.length)
       : 0,
   };
 
   // 分群統計
-  const segmentStats = rfmList.reduce((acc: Record<string, number>, r: any) => {
+  const segmentStats = rfmList.reduce((acc: Record<string, number>, r: Record<string, any>) => {
     acc[r.segment] = (acc[r.segment] || 0) + 1;
     return acc;
   }, {});
@@ -320,7 +320,7 @@ export default function RFMAnalysisPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {churnRiskList.slice(0, 10).map((rfm: any) => {
+                {churnRiskList.slice(0, 10).map((rfm: Record<string, any>) => {
                   const customer = customers?.data?.find(c => c.id === rfm.customerId);
                   return (
                     <TableRow key={rfm.id}>
@@ -402,7 +402,7 @@ export default function RFMAnalysisPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rfmList.slice(0, 50).map((rfm: any) => {
+                {rfmList.slice(0, 50).map((rfm: Record<string, any>) => {
                   const customer = customers?.data?.find(c => c.id === rfm.customerId);
                   return (
                     <TableRow key={rfm.id}>

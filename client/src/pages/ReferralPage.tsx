@@ -86,8 +86,8 @@ export default function ReferralPage() {
 
   // 計算統計
   const totalReferrals = referrals?.data?.length || 0;
-  const completedReferrals = referrals?.data?.filter((r: any) => r.status === 'completed' || r.status === 'rewarded').length || 0;
-  const totalRewardsIssued = referrals?.data?.filter((r: any) => r.status === 'rewarded').reduce((sum: number, r: any) => sum + (r.referrerRewardValue || 0), 0) || 0;
+  const completedReferrals = referrals?.data?.filter((r: Record<string, any>) => r.status === 'completed' || r.status === 'rewarded').length || 0;
+  const totalRewardsIssued = referrals?.data?.filter((r: Record<string, any>) => r.status === 'rewarded').reduce((sum: number, r: Record<string, any>) => sum + (r.referrerRewardValue || 0), 0) || 0;
   const conversionRate = totalReferrals > 0 ? Math.round((completedReferrals / totalReferrals) * 100) : 0;
 
   return (
@@ -224,7 +224,7 @@ export default function ReferralPage() {
 
         <TabsContent value="programs" className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {programs?.data?.map((program: any) => (
+            {programs?.data?.map((program: Record<string, any>) => (
               <Card key={program.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -297,7 +297,7 @@ export default function ReferralPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {referrals?.data?.map((referral: any) => (
+                  {referrals?.data?.map((referral: Record<string, any>) => (
                     <TableRow key={referral.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">

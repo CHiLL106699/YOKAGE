@@ -263,7 +263,7 @@ export default function LiffShopPage() {
                   src={product.image} 
                   alt={product.name}
                   className="w-full h-[120px] object-cover"
-                />
+                 loading="lazy" />
                 <button 
                   className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full"
                   onClick={() => toggleFavorite(product.id)}
@@ -313,7 +313,7 @@ export default function LiffShopPage() {
                     src={product.image} 
                     alt={product.name}
                     className="w-full h-[140px] object-cover"
-                  />
+                   loading="lazy" />
                   <button 
                     className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full"
                     onClick={(e) => {

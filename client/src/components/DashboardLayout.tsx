@@ -157,7 +157,7 @@ export default function DashboardLayout({
                 src="/logo-new.png" 
                 alt="Logo" 
                 className="w-16 h-16 rounded-full object-cover shadow-lg"
-              />
+               loading="lazy" />
               <h1 className="text-2xl font-semibold tracking-tight text-center text-gold-gradient">
                 YOChiLL Premium
               </h1>
@@ -279,7 +279,7 @@ function DashboardLayoutContent({
                     src="/logo-new.png" 
                     alt="Logo" 
                     className="w-8 h-8 rounded-lg object-cover shadow-md"
-                  />
+                   loading="lazy" />
                   <span className="font-bold tracking-tight truncate text-lg text-gold-gradient">
                     {sidebarTitle}
                   </span>

@@ -82,9 +82,9 @@ export default function SocialIntegrationPage() {
 
   // 計算統計
   const totalPosts = posts?.data?.length || 0;
-  const publishedPosts = posts?.data?.filter((p: any) => p.status === 'published').length || 0;
-  const scheduledPosts = posts?.data?.filter((p: any) => p.status === 'scheduled').length || 0;
-  const totalEngagement = posts?.data?.reduce((sum: number, p: any) => 
+  const publishedPosts = posts?.data?.filter((p: Record<string, any>) => p.status === 'published').length || 0;
+  const scheduledPosts = posts?.data?.filter((p: Record<string, any>) => p.status === 'scheduled').length || 0;
+  const totalEngagement = posts?.data?.reduce((sum: number, p: Record<string, any>) => 
     sum + (p.likes || 0) + (p.comments || 0) + (p.shares || 0), 0) || 0;
 
   return (
@@ -240,7 +240,7 @@ export default function SocialIntegrationPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {posts?.data?.map((post: any) => (
+                  {posts?.data?.map((post: Record<string, any>) => (
                     <TableRow key={post.id}>
                       <TableCell className="max-w-xs">
                         <p className="truncate">{post.content}</p>
@@ -316,7 +316,7 @@ export default function SocialIntegrationPage() {
                 {Array.from({ length: 35 }, (_, i) => {
                   const date = new Date();
                   date.setDate(date.getDate() - date.getDay() + i);
-                  const dayPosts = posts?.data?.filter((p: any) => {
+                  const dayPosts = posts?.data?.filter((p: Record<string, any>) => {
                     if (!p.scheduledAt) return false;
                     const pDate = new Date(p.scheduledAt);
                     return pDate.toDateString() === date.toDateString();
@@ -332,7 +332,7 @@ export default function SocialIntegrationPage() {
                       }`}
                     >
                       <div className="text-sm font-medium">{date.getDate()}</div>
-                      {dayPosts.slice(0, 2).map((p: any) => (
+                      {dayPosts.slice(0, 2).map((p: Record<string, any>) => (
                         <div 
                           key={p.id} 
                           className="text-xs bg-indigo-100 text-indigo-800 rounded px-1 py-0.5 mt-1 truncate"
@@ -426,7 +426,7 @@ export default function SocialIntegrationPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {accounts?.map((account: any) => {
+                {accounts?.map((account: Record<string, any>) => {
                   const Icon = platformIcons[account.platform] || Share2;
                   return (
                     <Card key={account.id}>

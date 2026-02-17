@@ -79,27 +79,27 @@ export default function SatisfactionSurveyPage() {
   const surveyList = surveys || [];
   
   // 計算統計數據
-  const completedSurveys = surveyList.filter((s: any) => s.status === "completed");
+  const completedSurveys = surveyList.filter((s: Record<string, any>) => s.status === "completed");
   const stats = {
     total: surveyList.length,
     completed: completedSurveys.length,
-    pending: surveyList.filter((s: any) => s.status === "pending").length,
+    pending: surveyList.filter((s: Record<string, any>) => s.status === "pending").length,
     responseRate: surveyList.length > 0 
       ? ((completedSurveys.length / surveyList.length) * 100).toFixed(1)
       : 0,
     avgOverallScore: completedSurveys.length > 0
-      ? (completedSurveys.reduce((sum: number, s: any) => sum + (s.overallScore || 0), 0) / completedSurveys.length).toFixed(1)
+      ? (completedSurveys.reduce((sum: number, s: Record<string, any>) => sum + (s.overallScore || 0), 0) / completedSurveys.length).toFixed(1)
       : 0,
     avgServiceScore: completedSurveys.length > 0
-      ? (completedSurveys.reduce((sum: number, s: any) => sum + (s.serviceScore || 0), 0) / completedSurveys.length).toFixed(1)
+      ? (completedSurveys.reduce((sum: number, s: Record<string, any>) => sum + (s.serviceScore || 0), 0) / completedSurveys.length).toFixed(1)
       : 0,
     avgStaffScore: completedSurveys.length > 0
-      ? (completedSurveys.reduce((sum: number, s: any) => sum + (s.staffScore || 0), 0) / completedSurveys.length).toFixed(1)
+      ? (completedSurveys.reduce((sum: number, s: Record<string, any>) => sum + (s.staffScore || 0), 0) / completedSurveys.length).toFixed(1)
       : 0,
   };
 
   // NPS 計算
-  const npsData = npsStats as any || {};
+  const npsData = (npsStats || {}) as any;
   const nps = {
     promoters: npsData.promoters || 0,
     passives: npsData.passives || 0,
@@ -269,7 +269,7 @@ export default function SatisfactionSurveyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {surveyList.map((survey: any) => {
+                {surveyList.map((survey: Record<string, any>) => {
                   const customer = customers?.data?.find(c => c.id === survey.customerId);
                   return (
                     <TableRow key={survey.id}>
@@ -320,7 +320,7 @@ export default function SatisfactionSurveyPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-6 gap-4">
-              {trend.map((item: any, index: number) => (
+              {trend.map((item: Record<string, any>, index: number) => (
                 <div key={index} className="text-center p-4 bg-muted/50 rounded-lg">
                   <div className="text-sm text-muted-foreground">{item.month}</div>
                   <div className="text-2xl font-bold mt-2">{item.avgScore?.toFixed(1) || "-"}</div>

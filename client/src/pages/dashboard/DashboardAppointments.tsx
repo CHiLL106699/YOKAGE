@@ -76,7 +76,7 @@ const DashboardLayout: FC<{ children: React.ReactNode, title: string }> = ({ chi
               <Search className="w-5 h-5" />
             </button>
             <div className="relative">
-              <img className="w-10 h-10 rounded-full" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" />
+              <img className="w-10 h-10 rounded-full" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User"  loading="lazy" />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
             </div>
           </div>

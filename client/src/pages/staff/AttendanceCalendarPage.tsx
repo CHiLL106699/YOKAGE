@@ -173,7 +173,7 @@ export default function AttendanceCalendarPage() {
                     className={`min-h-[80px] border rounded-lg p-1.5 cursor-pointer transition-colors hover:bg-muted/50 ${
                       isToday ? 'border-primary bg-primary/5' : 'border-border'
                     }`}
-                    onClick={() => record && setSelectedRecord(record as unknown as Record<string, unknown>)}
+                    onClick={() => record && setSelectedRecord(record as any as Record<string, unknown>)}
                   >
                     <div className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-foreground'}`}>
                       {dayNum}

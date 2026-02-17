@@ -237,7 +237,7 @@ const EmployeeReportTab: FC = () => (
               <tr key={employee.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="p-3 font-medium">{i + 1}</td>
                 <td className="p-3 flex items-center">
-                  <img src={employee.avatar} alt={employee.name} className="w-8 h-8 rounded-full mr-3" />
+                  <img src={employee.avatar} alt={employee.name} className="w-8 h-8 rounded-full mr-3"  loading="lazy" />
                   {employee.name}
                 </td>
                 <td className="p-3 text-right font-mono">${employee.revenue.toLocaleString()}</td>

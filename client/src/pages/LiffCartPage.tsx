@@ -202,7 +202,7 @@ export default function LiffCartPage() {
                   src={item.image} 
                   alt={item.name}
                   className="w-20 h-20 object-cover rounded-lg"
-                />
+                 loading="lazy" />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-sm line-clamp-2">{item.name}</h3>
                   <p className="text-xs text-gray-500 mt-1">{item.specs}</p>

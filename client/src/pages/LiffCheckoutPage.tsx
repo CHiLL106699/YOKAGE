@@ -191,7 +191,7 @@ export default function LiffCheckoutPage() {
                   src={item.image}
                   alt={item.name}
                   className="w-16 h-16 object-cover rounded-lg"
-                />
+                 loading="lazy" />
                 <div className="flex-1">
                   <h4 className="font-medium text-sm">{item.name}</h4>
                   <p className="text-xs text-gray-500">{item.specs}</p>
