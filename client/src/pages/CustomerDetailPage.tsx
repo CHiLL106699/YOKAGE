@@ -12,6 +12,8 @@ import {
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 
+import { QueryError } from '@/components/ui/query-state';
+
 // Member level badge colors
 const memberLevelColors: Record<string, string> = {
   regular: "bg-gray-100 text-gray-700",
@@ -69,7 +71,7 @@ export default function CustomerDetailPage() {
   // TODO: Get organizationId from context
   const organizationId = 1;
 
-  const { data: customer, isLoading: customerLoading } = trpc.customer.get.useQuery({
+  const { data: customer, isLoading: customerLoading, isError, refetch } = trpc.customer.get.useQuery({
     id: customerId,
   });
 
@@ -114,6 +116,21 @@ export default function CustomerDetailPage() {
   // Calculate total spent
   const totalSpent = orders?.data?.reduce((sum, order) => sum + parseFloat(order.subtotal || "0"), 0) || 0;
   const completedAppointments = appointments?.data?.filter(a => a.status === "completed").length || 0;
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

@@ -143,7 +143,6 @@ const AdminTenantDetailPage = () => {
 
   const handleSave = () => {
     // Simulate save API call
-    console.log('Saving data:', editData);
     setTenant(prev => ({ ...prev!, ...editData } as Tenant));
     setIsEditing(false);
   };
@@ -158,7 +157,6 @@ const AdminTenantDetailPage = () => {
         if (!prev) return null;
         const newModules = { ...prev.modules, [moduleId]: !prev.modules[moduleId] };
         // Simulate API call to update modules
-        console.log(`Toggling module ${moduleId} to ${newModules[moduleId]}`);
         return { ...prev, modules: newModules };
     });
   };

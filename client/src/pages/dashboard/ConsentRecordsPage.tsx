@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { FileCheck, Search, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const categoryLabels: Record<string, string> = {
   treatment: '療程',
   surgery: '手術',
@@ -30,7 +32,7 @@ export default function ConsentRecordsPage() {
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [detailId, setDetailId] = useState<number | null>(null);
 
-  const { data, isLoading } = trpc.pro.sprint5.consent.listSignatures.useQuery({
+  const { data, isLoading, isError, refetch } = trpc.pro.sprint5.consent.listSignatures.useQuery({
     organizationId: 1,
     customerId: filterCustomerId ? Number(filterCustomerId) : undefined,
     page,
@@ -45,6 +47,21 @@ export default function ConsentRecordsPage() {
   const records = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

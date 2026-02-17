@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { FileEdit, ListChecks, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const approvalStatusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: '待審核', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
   approved: { label: '已核准', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
@@ -48,7 +50,7 @@ export default function AttendanceRequestPage() {
     onError: (err) => toast({ title: '錯誤', description: err.message, variant: 'destructive' }),
   });
 
-  const { data: recordsData } = trpc.pro.sprint5.attendance.listRecords.useQuery({
+  const { data: recordsData, isError, refetch } = trpc.pro.sprint5.attendance.listRecords.useQuery({
     organizationId: ORG_ID,
     staffId: STAFF_ID,
     startDate,
@@ -78,6 +80,21 @@ export default function AttendanceRequestPage() {
       reason: reason.trim(),
     });
   }
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

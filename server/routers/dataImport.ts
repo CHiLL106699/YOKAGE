@@ -35,7 +35,6 @@ export const dataImportRouter = router({
     .mutation(async ({ ctx, input }) => {
       // **資安優先**: 檔案上傳的實際處理邏輯 (如 Supabase Storage) 必須在後端使用 Service Role 權限進行。
       // 前端只傳遞元數據，後端返回一個預簽名 URL 或上傳憑證。
-      console.log(`User ${ctx.user.id} is uploading file: ${input.fileName}`);
 
       // Placeholder for Supabase DB operation: Create a new import_records entry
       // const { data, error } = await ctx.supabase.from('import_records').insert({...}).select().single();
@@ -56,7 +55,6 @@ export const dataImportRouter = router({
     .mutation(async ({ ctx, input }) => {
       // **資安優先**: 確保只有記錄所有者可以觸發解析。
       // 實際的檔案讀取、解析和數據驗證邏輯應在後端執行。
-      console.log(`Processing data for record: ${input.recordId}`);
 
       // Placeholder for Supabase DB operation: Read file, parse, validate, and insert into imported_data
       // const { data, error } = await ctx.supabase.rpc('process_import_file', { record_id: input.recordId });
@@ -73,7 +71,6 @@ export const dataImportRouter = router({
     .input(FinalizeImportInput)
     .mutation(async ({ ctx, input }) => {
       // **資安優先**: 這是最高權限操作，必須嚴格檢查用戶權限，並使用 Supabase Service Role 執行。
-      console.log(`Finalizing import for record: ${input.recordId} into table: ${input.targetTable}`);
 
       // Placeholder for Supabase DB operation: Transaction to move data from imported_data to targetTable
       // const { data, error } = await ctx.supabase.rpc('finalize_data_import', { record_id: input.recordId, target_table: input.targetTable });

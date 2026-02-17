@@ -8,6 +8,8 @@ import { ChevronLeft, ChevronRight, Calendar, Clock, AlertTriangle, Timer, FileE
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const statusConfig: Record<string, { label: string; color: string }> = {
   normal: { label: '正常', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
   late: { label: '遲到', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
@@ -25,7 +27,7 @@ export default function AttendanceCalendarPage() {
   const ORG_ID = 1;
   const STAFF_ID = 1;
 
-  const { data: stats, isLoading } = trpc.pro.sprint5.attendance.monthlyStats.useQuery({
+  const { data: stats, isLoading, isError, refetch } = trpc.pro.sprint5.attendance.monthlyStats.useQuery({
     organizationId: ORG_ID,
     staffId: STAFF_ID,
     year,
@@ -65,6 +67,21 @@ export default function AttendanceCalendarPage() {
   }
 
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

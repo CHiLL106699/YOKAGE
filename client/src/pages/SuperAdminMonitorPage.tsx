@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { QueryLoading } from '@/components/ui/query-state';
+
 import { 
   Activity, Server, Database, Wifi, Clock, AlertTriangle,
   CheckCircle, XCircle, RefreshCw, Download, Cpu, HardDrive,
@@ -30,7 +32,7 @@ export default function SuperAdminMonitorPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // API 查詢
-  const { data: systemHealth, refetch: refetchHealth } = trpc.superAdmin.getSystemHealth.useQuery(
+  const { data: systemHealth, refetch: refetchHealth, isLoading } = trpc.superAdmin.getSystemHealth.useQuery(
     undefined,
     { refetchInterval: autoRefresh ? 30000 : false }
   );
@@ -76,6 +78,21 @@ export default function SuperAdminMonitorPage() {
         return <AlertTriangle className="h-5 w-5 text-gray-500" />;
     }
   };
+
+  if (isLoading) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryLoading variant="skeleton-cards" />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

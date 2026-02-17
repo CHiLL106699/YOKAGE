@@ -615,7 +615,6 @@ export async function sendNotification(
     
     case "system":
       // 系統內部通知（存入資料庫）
-      console.log(`[System Notification] ${finalTitle}: ${finalContent}`);
       return {
         success: true,
         channel: "system",
@@ -624,7 +623,6 @@ export async function sendNotification(
     
     case "push":
       // Push 通知（未來擴展）
-      console.log(`[Push Notification] ${finalTitle}: ${finalContent}`);
       return {
         success: false,
         channel: "push",

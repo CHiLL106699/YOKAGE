@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Play, CheckCircle } from "lucide-react";
 
+import { QueryError } from '@/components/ui/query-state';
+
 const ruleTypeLabels: Record<string, string> = {
   spending: "消費金額",
   visit_count: "到店次數",
@@ -42,7 +44,7 @@ export default function TagRulesManagement() {
   const organizationId = 1;
 
   // 查詢標籤規則
-  const { data: rules, isLoading } = trpc.tagRules.list.useQuery({ organizationId });
+  const { data: rules, isLoading, isError, refetch } = trpc.tagRules.list.useQuery({ organizationId });
 
   // 查詢所有標籤
   const { data: tags } = trpc.crmTags.list.useQuery({ organizationId });
@@ -128,6 +130,21 @@ export default function TagRulesManagement() {
   if (isLoading) {
     return <div className="text-center py-8">載入中...</div>;
   }
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="container mx-auto py-6 space-y-6">

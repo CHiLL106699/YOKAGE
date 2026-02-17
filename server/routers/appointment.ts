@@ -45,7 +45,6 @@ export const appointmentRouter = router({
     .mutation(async ({ input, ctx }) => {
       // **資安鐵則**: 這裡應呼叫 Supabase Edge Function 或後端 API
       // 進行資料庫操作，以確保 RLS 生效，前端不直接操作敏感 Table。
-      console.log('Creating appointment:', input);
       // 模擬資料庫操作
       const newAppointment = { id: 'mock-uuid-123', ...input, status: 'scheduled' };
       return newAppointment;
@@ -55,7 +54,6 @@ export const appointmentRouter = router({
   get: protectedProcedure
     .input(getAppointmentInput)
     .query(async ({ input, ctx }) => {
-      console.log('Getting appointment with ID:', input.id);
       // 模擬資料庫操作
       return { id: input.id, patientId: 'mock-patient-id', dateTime: new Date().toISOString(), reason: 'Checkup', status: 'scheduled' };
     }),
@@ -64,7 +62,6 @@ export const appointmentRouter = router({
   update: protectedProcedure
     .input(updateAppointmentInput)
     .mutation(async ({ input, ctx }) => {
-      console.log('Updating appointment:', input);
       // 模擬資料庫操作
       return { ...input, status: input.status || 'scheduled' };
     }),
@@ -73,7 +70,6 @@ export const appointmentRouter = router({
   delete: protectedProcedure
     .input(deleteAppointmentInput)
     .mutation(async ({ input, ctx }) => {
-      console.log('Deleting appointment with ID:', input.id);
       // 模擬資料庫操作
       return { success: true, id: input.id };
     }),
@@ -82,7 +78,6 @@ export const appointmentRouter = router({
   list: protectedProcedure
     .input(listAppointmentsInput)
     .query(async ({ input, ctx }) => {
-      console.log('Listing appointments with filters:', input);
       // 模擬資料庫操作
       const mockData = [
         { id: 'mock-uuid-1', patientId: 'p1', dateTime: new Date().toISOString(), reason: 'Follow-up', status: 'scheduled' },

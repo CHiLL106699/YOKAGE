@@ -25,7 +25,6 @@ export const analyticsRouter = router({
   getReport: publicProcedure
     .input(AnalyticsQueryInput)
     .query(async ({ input }) => {
-      console.log('Fetching analytics report with input:', input);
       // TODO: 實作實際的數據獲取邏輯 (例如, 從 Supabase 執行複雜查詢)
       // 必須確保 RLS 嚴格隔離，只返回使用者有權限的數據
       
@@ -49,7 +48,6 @@ export const analyticsRouter = router({
   logData: publicProcedure
     .input(AnalyticsDataInput)
     .mutation(async ({ input }) => {
-      console.log('Logging new analytics data:', input);
       // TODO: 實作數據寫入/插入邏輯
       // 寫入前必須進行嚴格的權限檢查
       
@@ -64,7 +62,6 @@ export const analyticsRouter = router({
   getMetricDetail: publicProcedure
     .input(z.object({ metricId: z.string() }))
     .query(async ({ input }) => {
-      console.log('Fetching single metric detail:', input.metricId);
       // TODO: 實作單一指標數據的檢索邏輯
       
       return {
@@ -80,7 +77,6 @@ export const analyticsRouter = router({
   updateData: publicProcedure
     .input(AnalyticsDataInput.extend({ id: z.string() })) // 確保 ID 存在
     .mutation(async ({ input }) => {
-      console.log('Updating analytics data:', input);
       // TODO: 實作數據更新邏輯
       
       return {
@@ -93,7 +89,6 @@ export const analyticsRouter = router({
   deleteData: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      console.log('Deleting analytics data:', input.id);
       // TODO: 實作數據刪除邏輯
       
       return {

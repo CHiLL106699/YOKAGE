@@ -61,6 +61,9 @@ import { richMenuTemplateMarketRouter } from './routers/richMenuTemplateMarket.j
 import { coreRouter } from './routers/core/index';
 import { proRouter } from './routers/pro/index';
 import { lineEnhancedRouter } from './routers/line/index';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RouterData = any;
 // ============================================
 // Super Admin Router
 // ============================================
@@ -1753,7 +1756,7 @@ const treatmentRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { treatmentDate, nextFollowUpDate, ...rest } = input;
-      const data: any = {
+      const data: RouterData = {
         ...rest,
         treatmentDate: new Date(treatmentDate),
       };
@@ -2036,7 +2039,7 @@ const followUpRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, nextFollowUpDate, ...rest } = input;
-      const data: any = { ...rest };
+      const data: RouterData = { ...rest };
       if (nextFollowUpDate) data.nextFollowUpDate = new Date(nextFollowUpDate);
       await db.updateFollowUp(id, data);
       return { success: true };
@@ -2268,7 +2271,7 @@ const commissionRouter = router({
       status: z.enum(["pending", "approved", "paid", "cancelled"]),
     }))
     .mutation(async ({ input }) => {
-      const data: any = { status: input.status };
+      const data: RouterData = { status: input.status };
       if (input.status === 'paid') data.paidAt = new Date();
       await db.updateStaffCommission(input.id, data);
       return { success: true };
@@ -2371,7 +2374,7 @@ const inventoryRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { transactionDate, expiryDate, ...rest } = input;
-      const data: any = {
+      const data: RouterData = {
         ...rest,
         transactionDate: new Date(transactionDate),
       };

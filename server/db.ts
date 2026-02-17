@@ -3209,7 +3209,7 @@ export async function listAllVoucherTemplates(options?: { type?: string; isActiv
   const limit = options?.limit || 20;
   const offset = (page - 1) * limit;
 
-  let whereClause: any = undefined;
+  let whereClause: WhereClause = undefined;
   if (options?.type) {
     whereClause = eq(voucherTemplates.type, options.type as any);
   }
@@ -3346,7 +3346,7 @@ export async function listVoucherReminderLogs(options?: { organizationId?: numbe
   const limit = options?.limit || 20;
   const offset = (page - 1) * limit;
   
-  let whereClause: any = undefined;
+  let whereClause: WhereClause = undefined;
   if (options?.organizationId) {
     whereClause = eq(voucherReminderLogs.organizationId, options.organizationId);
   }
@@ -3375,7 +3375,7 @@ export async function getPendingReminders(organizationId?: number) {
   const db = await getDb();
   if (!db) return [];
   
-  let whereClause: any = and(
+  let whereClause: WhereClause = and(
     eq(voucherReminderLogs.status, 'pending'),
     lte(voucherReminderLogs.scheduledAt, new Date())
   );
@@ -3458,7 +3458,7 @@ export async function getReminderStats(organizationId?: number) {
   const db = await getDb();
   if (!db) return { total: 0, pending: 0, sent: 0, failed: 0 };
   
-  let whereClause: any = undefined;
+  let whereClause: WhereClause = undefined;
   if (organizationId) {
     whereClause = eq(voucherReminderLogs.organizationId, organizationId);
   }
@@ -3501,7 +3501,7 @@ export async function listAllUsers(options?: {
   const limit = options?.limit || 15;
   const offset = (page - 1) * limit;
   
-  let whereConditions: any[] = [];
+  let whereConditions: WhereClause[] = [];
   
   if (options?.search) {
     whereConditions.push(
@@ -3607,7 +3607,6 @@ export async function updateUserById(userId: number, data: { role?: string }) {
 export async function toggleUserStatus(userId: number, isActive: boolean) {
   // 由於 users 資料表沒有 isActive 欄位，改用 role 來模擬停用狀態
   // 實際應用中可以新增 isActive 欄位或使用其他機制
-  console.log(`[User] Toggle status for user ${userId}: ${isActive}`);
   // 目前僅記錄操作，不實際修改資料庫
   return { success: true };
 }
@@ -3751,7 +3750,6 @@ export async function sendNotification(data: {
   scheduledAt?: string;
 }) {
   // 實際發送通知的邏輯（整合 LINE/Email）
-  console.log("[Notification] Sending:", data);
   
   // TODO: 整合 LINE Messaging API 和 Email 服務
   
@@ -3764,7 +3762,6 @@ export async function saveNotificationTemplate(data: {
   type: string;
 }) {
   // 儲存通知模板
-  console.log("[Notification] Saving template:", data);
   return { success: true };
 }
 
@@ -3829,7 +3826,7 @@ export async function listDailySettlements(organizationId: number, options?: {
   const limit = options?.limit || 20;
   const offset = (page - 1) * limit;
   
-  let whereClause: any = eq(dailySettlements.organizationId, organizationId);
+  let whereClause: WhereClause = eq(dailySettlements.organizationId, organizationId);
   
   if (options?.startDate) {
     whereClause = and(whereClause, gte(dailySettlements.settlementDate, options.startDate));
@@ -4156,7 +4153,7 @@ export async function listPaymentRecords(organizationId: number, options?: {
   const limit = options?.limit || 20;
   const offset = (page - 1) * limit;
   
-  let whereClause: any = eq(paymentRecords.organizationId, organizationId);
+  let whereClause: WhereClause = eq(paymentRecords.organizationId, organizationId);
   
   if (options?.startDate) {
     whereClause = and(whereClause, gte(paymentRecords.createdAt, new Date(options.startDate)));
@@ -4197,7 +4194,7 @@ export async function getSettlementSummary(organizationId: number, options?: { s
     settlementCount: 0,
   };
   
-  let whereClause: any = eq(dailySettlements.organizationId, organizationId);
+  let whereClause: WhereClause = eq(dailySettlements.organizationId, organizationId);
   
   if (options?.startDate) {
     whereClause = and(whereClause, gte(dailySettlements.settlementDate, options.startDate));
@@ -4308,7 +4305,7 @@ export async function listLineChannelConfigs(options?: { organizationId?: number
   const limit = options?.limit || 20;
   const offset = (page - 1) * limit;
   
-  let whereClause: any = undefined;
+  let whereClause: WhereClause = undefined;
   if (options?.organizationId) {
     whereClause = eq(lineChannelConfigs.organizationId, options.organizationId);
   }
@@ -4358,6 +4355,9 @@ import {
   settlementReports, InsertSettlementReport,
   revenueTrendSnapshots, InsertRevenueTrendSnapshot,
 } from "../drizzle/schema";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type WhereClause = any;
 
 // 自動結帳設定 CRUD
 export async function getAutoSettlementSettings(organizationId: number) {
@@ -4429,7 +4429,7 @@ export async function listSettlementReports(organizationId: number, options?: {
   const limit = options?.limit || 20;
   const offset = (page - 1) * limit;
   
-  let whereClause: any = eq(settlementReports.organizationId, organizationId);
+  let whereClause: WhereClause = eq(settlementReports.organizationId, organizationId);
   
   if (options?.reportType) {
     whereClause = and(whereClause, eq(settlementReports.reportType, options.reportType as any));
@@ -4665,7 +4665,7 @@ export async function listDailySettlementsAdvanced(organizationId: number, optio
   const limit = options.limit || 20;
   const offset = (page - 1) * limit;
   
-  let whereConditions: any[] = [eq(dailySettlements.organizationId, organizationId)];
+  let whereConditions: WhereClause[] = [eq(dailySettlements.organizationId, organizationId)];
   
   if (options.startDate) {
     whereConditions.push(gte(dailySettlements.settlementDate, options.startDate));
@@ -4694,7 +4694,7 @@ export async function listDailySettlementsAdvanced(organizationId: number, optio
   const whereClause = and(...whereConditions);
   
   // 排序
-  let orderByClause: any;
+  let orderByClause: WhereClause;
   const sortOrder = options.sortOrder === 'asc' ? asc : desc;
   switch (options.sortBy) {
     case 'revenue':

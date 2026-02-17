@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { QueryError } from '@/components/ui/query-state';
+
 import { 
   BarChart3, 
   TrendingUp, 
@@ -29,7 +31,7 @@ export default function VoucherReportsPage() {
   const [selectedType, setSelectedType] = useState<string>("all");
 
   // 獲取票券統計數據
-  const { data: stats, isLoading: statsLoading } = trpc.voucher.getStats.useQuery({ organizationId: 1 });
+  const { data: stats, isLoading: statsLoading, isError, refetch } = trpc.voucher.getStats.useQuery({ organizationId: 1 });
   
   // 獲取已發送票券列表（用於計算報表）
   const { data: instancesData } = trpc.voucher.listInstances.useQuery({
@@ -163,6 +165,21 @@ export default function VoucherReportsPage() {
   const totalVoucherValue = Object.values(typeStats).reduce((sum: number, stat: any) => sum + stat.value, 0);
   const estimatedRevenue = totalRedeemed * avgConsumptionPerVoucher;
   const roi = totalVoucherValue > 0 ? (((estimatedRevenue - totalVoucherValue) / totalVoucherValue) * 100).toFixed(1) : "0";
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

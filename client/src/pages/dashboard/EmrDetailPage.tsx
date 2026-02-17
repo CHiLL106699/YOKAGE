@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Pencil, Trash2, Star, Camera, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const TREATMENT_TYPES: Record<string, string> = {
   injection: '注射', laser: '雷射', facial: '臉部護理',
   surgery: '手術', consultation: '諮詢', other: '其他',
@@ -82,7 +84,7 @@ export default function EmrDetailPage() {
   const [, params] = useRoute('/dashboard/emr/:id');
   const recordId = params?.id ? Number(params.id) : 0;
 
-  const { data: record, isLoading } = trpc.pro.sprint5.emr.get.useQuery(
+  const { data: record, isLoading, isError, refetch } = trpc.pro.sprint5.emr.get.useQuery(
     { id: recordId },
     { enabled: recordId > 0 },
   );
@@ -109,6 +111,21 @@ export default function EmrDetailPage() {
       </div>
     );
   }
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

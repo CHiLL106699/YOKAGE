@@ -149,7 +149,6 @@ const GlobalSettingsSection: FC = () => {
     setError(null);
     setTimeout(() => {
       // Mock API call
-      console.log('Saving global settings:', settings);
       setLoading(false);
       // To test error state: setError('Failed to save settings. Please try again.');
     }, 1500);
@@ -376,7 +375,6 @@ const MaintenanceModeSection: FC = () => {
     setLoading(true);
     setError(null);
     setTimeout(() => {
-      console.log('Saving maintenance config:', config);
       setLoading(false);
     }, 1500);
   };

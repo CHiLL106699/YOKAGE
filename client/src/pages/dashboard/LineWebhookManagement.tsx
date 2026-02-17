@@ -12,6 +12,8 @@ import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { Webhook, MessageSquare, Plus, Edit, Trash2, Power, PowerOff, ArrowUp, ArrowDown } from 'lucide-react';
 
+import { QueryLoading } from '@/components/ui/query-state';
+
 export function LineWebhookManagement() {
   const [organizationId] = useState(1); // TODO: 從 context 取得
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -20,7 +22,7 @@ export function LineWebhookManagement() {
   const [editingRule, setEditingRule] = useState<any>(null);
 
   // 查詢 Webhook 事件列表
-  const { data: eventsData, refetch: refetchEvents } = trpc.lineWebhook.listEvents.useQuery({
+  const { data: eventsData, refetch: refetchEvents, isLoading } = trpc.lineWebhook.listEvents.useQuery({
     organizationId,
     page: 1,
     pageSize: 20,
@@ -97,6 +99,21 @@ export function LineWebhookManagement() {
       createRuleMutation.mutate(data);
     }
   };
+
+  if (isLoading) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryLoading variant="skeleton-cards" />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="container py-8">

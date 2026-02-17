@@ -44,7 +44,6 @@ export const aiChatRouter = router({
   listHistory: publicProcedure
     .input(z.object({ userId: z.string() })) // 實際應從 context 取得，此處為模擬
     .query(({ input }) => {
-      console.log('Fetching chat history for user:', input.userId);
       // 模擬資料庫查詢
       return [
         { id: 'h1', userId: input.userId, title: '初次對話', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -56,7 +55,6 @@ export const aiChatRouter = router({
   getHistoryMessages: publicProcedure
     .input(z.object({ historyId: z.string(), userId: z.string() })) // 實際應從 context 取得 userId
     .query(({ input }) => {
-      console.log('Fetching messages for history ID:', input.historyId);
       // 模擬資料庫查詢
       return [
         { id: 'm1', historyId: input.historyId, role: 'user', content: '你好，請介紹一下 tRPC', createdAt: new Date().toISOString() },
@@ -68,7 +66,6 @@ export const aiChatRouter = router({
   createHistory: publicProcedure
     .input(z.object({ userId: z.string(), title: z.string().optional() }))
     .mutation(({ input }) => {
-      console.log('Creating new chat history for user:', input.userId);
       // 模擬資料庫寫入
       const newHistory = { id: `h-${Date.now()}`, userId: input.userId, title: input.title || '新對話', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       return newHistory;
@@ -78,7 +75,6 @@ export const aiChatRouter = router({
   updateHistory: publicProcedure
     .input(z.object({ historyId: z.string(), userId: z.string(), title: z.string() }))
     .mutation(({ input }) => {
-      console.log('Updating chat history title:', input.historyId);
       // 模擬資料庫更新
       return { id: input.historyId, userId: input.userId, title: input.title, updatedAt: new Date().toISOString() };
     }),
@@ -87,7 +83,6 @@ export const aiChatRouter = router({
   deleteHistory: publicProcedure
     .input(z.object({ historyId: z.string(), userId: z.string() }))
     .mutation(({ input }) => {
-      console.log('Deleting chat history ID:', input.historyId);
       // 模擬資料庫刪除
       return { id: input.historyId, success: true };
     }),
@@ -105,7 +100,6 @@ export const aiChatRouter = router({
       settings: ChatSettingsSchema.partial().optional(), // 可選的設定覆蓋
     }))
     .mutation(({ input }) => {
-      console.log(`User ${input.userId} sending message to history ${input.historyId}: ${input.message}`);
       // 1. 寫入使用者訊息到資料庫 (模擬)
       const userMessage = { id: `m-u-${Date.now()}`, historyId: input.historyId, role: 'user' as const, content: input.message, createdAt: new Date().toISOString() };
 
@@ -131,7 +125,6 @@ export const aiChatRouter = router({
   getSettings: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(({ input }) => {
-      console.log('Fetching chat settings for user:', input.userId);
       // 模擬資料庫查詢
       return ChatSettingsSchema.parse({ userId: input.userId });
     }),
@@ -140,7 +133,6 @@ export const aiChatRouter = router({
   updateSettings: publicProcedure
     .input(ChatSettingsSchema.partial().extend({ userId: z.string() }))
     .mutation(({ input }) => {
-      console.log('Updating chat settings for user:', input.userId);
       // 模擬資料庫更新/新增
       return { ...ChatSettingsSchema.parse({ userId: input.userId }), ...input, updatedAt: new Date().toISOString() };
     }),

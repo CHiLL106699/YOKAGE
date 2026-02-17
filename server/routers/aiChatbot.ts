@@ -18,6 +18,9 @@ import {
   getEmbeddingModel,
 } from "../services/embedding";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AiConditions = any;
+
 /**
  * AI 對話機器人 Router
  *
@@ -216,7 +219,7 @@ ${relevantKnowledge.map((kb) => `Q: ${kb.question}\nA: ${kb.answer}`).join("\n\n
       })
     )
     .query(async ({ input }) => {
-      const conditions: any[] = [
+      const conditions: AiConditions[] = [
         eq(aiConversations.organizationId, input.organizationId),
       ];
 
@@ -413,7 +416,7 @@ ${relevantKnowledge.map((kb) => `Q: ${kb.question}\nA: ${kb.answer}`).join("\n\n
       })
     )
     .query(async ({ input }) => {
-      const conditions: any[] = [
+      const conditions: AiConditions[] = [
         eq(aiKnowledgeBase.organizationId, input.organizationId),
       ];
 

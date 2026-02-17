@@ -38,7 +38,6 @@ export const couponRouter = router({
     .mutation(async ({ input }) => {
       // 實際應用中，這裡應該呼叫一個服務層 (Service Layer) 進行業務邏輯處理和 Supabase 互動
       // 確保所有敏感操作都在後端處理，遵循資安原則
-      console.log('Creating coupon with data:', input);
       // 模擬 Supabase 插入操作後的回傳
       const newCoupon = { id: `coupon_${Date.now()}`, ...input, created_at: new Date().toISOString() };
       return { success: true, coupon: newCoupon };
@@ -48,7 +47,6 @@ export const couponRouter = router({
   getCoupon: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      console.log('Fetching coupon with ID:', input.id);
       // 模擬從 Supabase 查詢
       const mockCoupon = {
         id: input.id,
@@ -66,7 +64,6 @@ export const couponRouter = router({
   listCoupons: publicProcedure
     .input(z.object({ organization_id: z.string(), limit: z.number().default(10), offset: z.number().default(0) }))
     .query(async ({ input }) => {
-      console.log('Fetching coupons for organization:', input.organization_id);
       // 模擬從 Supabase 查詢列表
       const mockCoupons: any[] = [
         // ... 模擬資料
@@ -78,7 +75,6 @@ export const couponRouter = router({
   updateCoupon: publicProcedure
     .input(UpdateCouponInputSchema)
     .mutation(async ({ input }) => {
-      console.log('Updating coupon with ID:', input.id);
       // 模擬 Supabase 更新操作
       return { success: true, updatedCoupon: input };
     }),
@@ -87,7 +83,6 @@ export const couponRouter = router({
   deleteCoupon: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      console.log('Deleting coupon with ID:', input.id);
       // 模擬 Supabase 刪除操作
       return { success: true, id: input.id };
     }),
@@ -97,7 +92,6 @@ export const couponRouter = router({
     .input(UsageRecordFilterSchema)
     .query(async ({ input }) => {
       // 這裡的查詢應該只回傳脫敏數據，例如不包含使用者敏感個資
-      console.log('Fetching coupon usage records with filters:', input);
       // 模擬 Supabase 查詢
       const mockRecords = [
         { id: 'rec_1', coupon_id: 'coupon_1', user_id: 'user_a', used_at: new Date().toISOString(), order_id: 'order_123' },

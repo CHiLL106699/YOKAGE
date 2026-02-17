@@ -2,6 +2,8 @@ import React from 'react';
 import { Tag, Plus, Edit, Trash2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const CrmTagManagement: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
   const [editingTag, setEditingTag] = React.useState<any>(null);
@@ -11,7 +13,7 @@ const CrmTagManagement: React.FC = () => {
     description: ''
   });
 
-  const { data: tags, isLoading } = trpc.crmTags.list.useQuery({ organizationId: 1 }); // TODO: Get from context
+  const { data: tags, isLoading, isError, refetch } = trpc.crmTags.list.useQuery({ organizationId: 1 }); // TODO: Get from context
   const utils = trpc.useUtils();
 
   const createMutation = trpc.crmTags.create.useMutation({
@@ -84,6 +86,21 @@ const CrmTagManagement: React.FC = () => {
       </div>
     );
   }
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6">

@@ -33,11 +33,13 @@ export interface PaymentResult {
   transactionId?: string;
   paymentUrl?: string;
   error?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rawResponse?: any;
 }
 
 export interface VerifyPaymentParams {
   transactionId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: any;
   signature?: string;
 }

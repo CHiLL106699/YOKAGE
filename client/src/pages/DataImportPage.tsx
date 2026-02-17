@@ -21,6 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { QueryLoading } from '@/components/ui/query-state';
+
 import {
   Upload,
   FileSpreadsheet,
@@ -60,7 +62,7 @@ export default function DataImportPage() {
   const organizationId = 1;
 
   // 取得匯入記錄
-  const { data: importRecords, refetch: refetchRecords } = trpc.dataImport.getImportRecords.useQuery({
+  const { data: importRecords, refetch: refetchRecords, isLoading } = trpc.dataImport.getImportRecords.useQuery({
     organizationId,
     limit: 10,
   });
@@ -174,6 +176,21 @@ export default function DataImportPage() {
         return "員工資料";
     }
   };
+
+  if (isLoading) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryLoading variant="skeleton-cards" />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

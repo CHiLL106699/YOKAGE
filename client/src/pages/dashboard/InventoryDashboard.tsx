@@ -2,6 +2,8 @@ import React from 'react';
 import { Package, Box, AlertCircle, Plus, Settings, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const InventoryDashboard: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
@@ -15,7 +17,7 @@ const InventoryDashboard: React.FC = () => {
   // TODO: Get current organization ID from context
   const organizationId = 1;
   
-  const { data: inventoryItems, isLoading } = trpc.dashboardB.inventory.list.useQuery();
+  const { data: inventoryItems, isLoading, isError, refetch } = trpc.dashboardB.inventory.list.useQuery();
   const utils = trpc.useUtils();
   const createMutation = trpc.dashboardB.inventory.create.useMutation({
     onSuccess: () => {
@@ -58,6 +60,21 @@ const InventoryDashboard: React.FC = () => {
     if (quantity < minStock) return 'Low Stock';
     return 'In Stock';
   };
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">

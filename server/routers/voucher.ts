@@ -43,7 +43,6 @@ export const voucherRouter = router({
     .input(createVoucherInput)
     .mutation(async ({ ctx, input }) => {
       // TODO: 實作 Supabase 插入邏輯
-      console.log("Creating voucher with input:", input);
       // 範例: const { data, error } = await ctx.supabase.from('voucher').insert([input]).select().single();
       // 由於 Supabase client 尚未在 ctx 中定義，先回傳 Mock 資料
       return { id: "mock-uuid-create", ...input, message: "Voucher created successfully (MOCK)" };
@@ -54,7 +53,6 @@ export const voucherRouter = router({
     .input(listVoucherInput)
     .query(async ({ ctx, input }) => {
       // TODO: 實作 Supabase 查詢邏輯
-      console.log("Listing vouchers with input:", input);
       const mockVouchers = [
         { id: "mock-uuid-1", name: "10% Off", type: "discount", value: 10, expiry_date: new Date().toISOString() },
         { id: "mock-uuid-2", name: "Free Drink", type: "freebie", value: 0, expiry_date: new Date().toISOString() },
@@ -67,7 +65,6 @@ export const voucherRouter = router({
     .input(voucherIdInput)
     .query(async ({ ctx, input }) => {
       // TODO: 實作 Supabase 查詢單一邏輯
-      console.log("Getting voucher by ID:", input.id);
       // 範例: const { data, error } = await ctx.supabase.from('voucher').select('*').eq('id', input.id).single();
       return { id: input.id, name: "Single Mock Voucher", type: "cash", value: 100, expiry_date: new Date().toISOString(), message: "Voucher retrieved successfully (MOCK)" };
     }),
@@ -77,7 +74,6 @@ export const voucherRouter = router({
     .input(updateVoucherInput)
     .mutation(async ({ ctx, input }) => {
       // TODO: 實作 Supabase 更新邏輯
-      console.log("Updating voucher with input:", input);
       // 範例: const { data, error } = await ctx.supabase.from('voucher').update(input).eq('id', input.id).select().single();
       return { voucherId: input.id, ...input, message: "Voucher updated successfully (MOCK)" };
     }),
@@ -87,7 +83,6 @@ export const voucherRouter = router({
     .input(voucherIdInput)
     .mutation(async ({ ctx, input }) => {
       // TODO: 實作 Supabase 刪除邏輯
-      console.log("Deleting voucher with ID:", input.id);
       // 範例: const { error } = await ctx.supabase.from('voucher').delete().eq('id', input.id);
       return { id: input.id, message: "Voucher deleted successfully (MOCK)" };
     }),
@@ -100,7 +95,6 @@ export const voucherRouter = router({
       // 1. 檢查票券是否存在、是否有效、是否已核銷
       // 2. 執行核銷操作 (通常是更新狀態並記錄核銷時間/使用者)
       // 3. 確保交易原子性 (例如使用 Supabase Edge Function 或 Transaction)
-      console.log("Redeeming voucher:", input.voucherId, "for user:", input.userId);
       return { success: true, message: "Voucher redeemed successfully (STUB)" };
     }),
 
@@ -111,7 +105,6 @@ export const voucherRouter = router({
       // TODO: 實作票券統計邏輯
       // 1. 查詢已發行、已核銷、已過期等數量
       // 2. 依時間範圍、類型等進行分組統計
-      console.log("Generating voucher stats for period:", input.startDate, "to", input.endDate);
       return {
         totalIssued: 100,
         totalRedeemed: 45,

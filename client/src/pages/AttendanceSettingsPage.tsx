@@ -19,7 +19,6 @@ export default function AttendanceSettingsPage() {
 
   const updateMutation = {
     mutate: (data: any) => {
-      console.log("Update settings:", data);
       toast.success("設定已儲存");
     },
     isPending: false,
@@ -27,7 +26,6 @@ export default function AttendanceSettingsPage() {
 
   const testMutation = {
     mutate: (data: any) => {
-      console.log("Test geofence:", data);
       toast.success("測試成功！距離: 50 公尺");
     },
     isPending: false,

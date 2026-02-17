@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "wouter";
 
+import { QueryError } from '@/components/ui/query-state';
+
 // 訂閱方案配置
 const SUBSCRIPTION_PLANS = {
   free: { label: "免費版", color: "bg-gray-500", price: 0 },
@@ -27,7 +29,7 @@ export default function OrganizationDetailPage() {
   const params = useParams();
   const orgId = parseInt(params.id || "0");
   
-  const { data: org, isLoading } = trpc.superAdmin.getOrganization.useQuery(
+  const { data: org, isLoading, isError, refetch } = trpc.superAdmin.getOrganization.useQuery(
     { id: orgId },
     { enabled: orgId > 0 }
   );
@@ -70,6 +72,21 @@ export default function OrganizationDetailPage() {
     products: 45,
     treatments: 312,
   };
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

@@ -37,7 +37,6 @@ export const reportRouter = router({
   createReportConfig: protectedProcedure
     .input(ReportConfigSchema)
     .mutation(async ({ input, ctx }) => {
-      console.log('Creating report config:', input);
       // 實作 Supabase 寫入邏輯
       const newId = 'report-config-' + Math.random().toString(36).substring(2, 9);
       return { id: newId, ...input };
@@ -50,7 +49,6 @@ export const reportRouter = router({
   getReportConfig: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
-      console.log('Fetching report config:', input.id);
       // 實作 Supabase 讀取邏輯
       // 注意：downloadUrl 應透過 getReportDownloadUrl 取得時效性連結
       return ReportResultSchema.parse({
@@ -69,7 +67,6 @@ export const reportRouter = router({
   updateReportConfig: protectedProcedure
     .input(ReportConfigSchema.extend({ id: z.string().uuid() }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Updating report config:', input.id);
       return { success: true, id: input.id };
     }),
 
@@ -80,7 +77,6 @@ export const reportRouter = router({
   deleteReportConfig: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Deleting report config:', input.id);
       return { success: true, id: input.id };
     }),
 
@@ -95,7 +91,6 @@ export const reportRouter = router({
   generateReport: protectedProcedure
     .input(z.object({ reportConfigId: z.string().uuid(), force: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Triggering report generation for config:', input.reportConfigId);
       return { success: true, message: '報表生成任務已送出', taskId: 'task-' + Date.now() };
     }),
 
@@ -107,7 +102,6 @@ export const reportRouter = router({
   getReportDownloadUrl: protectedProcedure
     .input(z.object({ reportResultId: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
-      console.log('Requesting download URL for result:', input.reportResultId);
 
       // 使用 Supabase Storage createSignedUrl 生成安全的時效性下載連結
       // 注意：實際部署時需要透過 Supabase Service Role Client 操作
@@ -143,7 +137,6 @@ export const reportRouter = router({
   toggleReportSchedule: protectedProcedure
     .input(z.object({ reportConfigId: z.string().uuid(), enable: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
-      console.log(`Toggling schedule for config ${input.reportConfigId} to ${input.enable}`);
       return { success: true, enabled: input.enable };
     }),
 });

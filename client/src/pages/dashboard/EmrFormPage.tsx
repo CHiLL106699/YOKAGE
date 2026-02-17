@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Star } from 'lucide-react';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const TREATMENT_TYPES = [
   { value: 'injection', label: '注射' },
   { value: 'laser', label: '雷射' },
@@ -38,7 +40,7 @@ export default function EmrFormPage() {
   const [nextFollowUpDate, setNextFollowUpDate] = useState('');
 
   // Load existing record for edit mode
-  const { data: existingRecord } = trpc.pro.sprint5.emr.get.useQuery(
+  const { data: existingRecord, isError, refetch } = trpc.pro.sprint5.emr.get.useQuery(
     { id: editId },
     { enabled: isEdit && editId > 0 },
   );
@@ -111,6 +113,21 @@ export default function EmrFormPage() {
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

@@ -13,6 +13,8 @@ import { InteractionHistory } from '@/components/InteractionHistory';
 import { SendLineMessageDialog } from '@/components/SendLineMessageDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+import { QueryLoading } from '@/components/ui/query-state';
+
 const LineCrmDashboard: React.FC = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -26,7 +28,7 @@ const LineCrmDashboard: React.FC = () => {
   const [isSendLineMessageDialogOpen, setIsSendLineMessageDialogOpen] = useState(false);
   
   // 查詢所有標籤
-  const { data: allTags = [] } = trpc.crmTags.list.useQuery({ organizationId: 1 }); // TODO: Get from context
+  const { data: allTags = [], isLoading } = trpc.crmTags.list.useQuery({ organizationId: 1 }); // TODO: Get from context
   
   // 查詢客戶列表（支援搜尋與標籤篩選）
   const { data: customers = [], refetch: refetchCustomers } = trpc.crmCustomers.list.useQuery({
@@ -144,6 +146,21 @@ const LineCrmDashboard: React.FC = () => {
   };
   
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+
+  if (isLoading) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryLoading variant="skeleton-cards" />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">

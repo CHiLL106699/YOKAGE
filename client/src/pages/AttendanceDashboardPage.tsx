@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Users, CheckCircle, XCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+import { QueryLoading, QueryError } from '@/components/ui/query-state';
+
 /**
  * 出勤儀表板頁面
  * 團隊成員出勤狀態視覺化
@@ -17,7 +19,7 @@ export default function AttendanceDashboardPage() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   // 查詢今日所有員工出勤記錄
-  const { data: todayRecords } = trpc.attendance.listRecords.useQuery({
+  const { data: todayRecords, isLoading, isError, refetch } = trpc.attendance.listRecords.useQuery({
     organizationId,
     startDate: today,
     endDate: today,
@@ -106,6 +108,36 @@ export default function AttendanceDashboardPage() {
         !r.isWithinGeofence
     );
   }, [todayRecords]);
+
+  if (isLoading) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryLoading variant="skeleton-cards" />
+
+      </div>
+
+    );
+
+  }
+
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="container mx-auto py-8">

@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
+import { QueryLoading } from '@/components/ui/query-state';
+
 import {
   Users,
   TrendingUp,
@@ -144,6 +146,15 @@ export default function CustomerMarketingPage() {
     };
     return labels[segment] || segment;
   };
+
+  if (rfmSummary.isLoading) {
+    return (
+      <div className="p-6">
+        <QueryLoading variant="skeleton-cards" />
+      </div>
+    );
+  }
+
 
   return (
     <DashboardLayout>

@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { PenTool, RotateCcw, Check, FileText } from 'lucide-react';
 
+import { QueryError } from '@/components/ui/query-state';
+
 export default function ConsentSignPage() {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -20,7 +22,7 @@ export default function ConsentSignPage() {
   const [witnessName, setWitnessName] = useState('');
   const [signed, setSigned] = useState(false);
 
-  const { data: templates } = trpc.pro.sprint5.consent.listTemplates.useQuery({
+  const { data: templates, isError, refetch } = trpc.pro.sprint5.consent.listTemplates.useQuery({
     organizationId: 1,
     isActive: true,
     page: 1,
@@ -142,6 +144,21 @@ export default function ConsentSignPage() {
       </div>
     );
   }
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

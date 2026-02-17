@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { zhTW } from "date-fns/locale";
+import { QueryError } from '@/components/ui/query-state';
+
 import {
   BarChart,
   Bar,
@@ -62,7 +64,7 @@ export default function ReportsPage() {
   const range = getDateRange();
 
   // 查詢報表數據
-  const { data: revenueData, isLoading: revenueLoading } = trpc.report.revenue.useQuery({
+  const { data: revenueData, isLoading: revenueLoading, isError, refetch } = trpc.report.revenue.useQuery({
     organizationId: 1, // TODO: 從 context 取得
     startDate: range.start.toISOString(),
     endDate: range.end.toISOString(),
@@ -105,8 +107,22 @@ export default function ReportsPage() {
   // 匯出報表
   const handleExport = async (type: "excel" | "pdf") => {
     // TODO: 實作匯出功能
-    console.log(`Exporting ${type}...`);
   };
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

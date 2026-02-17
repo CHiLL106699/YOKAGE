@@ -6,7 +6,7 @@ const LEMONSQUEEZY_API_BASE = 'https://api.lemonsqueezy.com/v1';
 
 interface LemonSqueezyApiOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
-  body?: any;
+  body?: Record<string, unknown>;
 }
 
 /**

@@ -6,9 +6,11 @@ import { trpc } from "@/lib/trpc";
 import { Building2, Users, Calendar, UserCheck, Plus, TrendingUp, Activity } from "lucide-react";
 import { Link } from "wouter";
 
+import { QueryError } from '@/components/ui/query-state';
+
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
-  const { data: stats, isLoading } = trpc.superAdmin.stats.useQuery();
+  const { data: stats, isLoading, isError, refetch } = trpc.superAdmin.stats.useQuery();
 
   const statCards = [
     {
@@ -44,6 +46,21 @@ export default function SuperAdminDashboard() {
       bgColor: "bg-orange-50",
     },
   ];
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

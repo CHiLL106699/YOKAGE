@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, LogIn, LogOut, CheckCircle2, Navigation } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { QueryError } from '@/components/ui/query-state';
+
 export default function StaffClockEnhanced() {
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -25,7 +27,7 @@ export default function StaffClockEnhanced() {
 
   const utils = trpc.useUtils();
 
-  const { data: todayStatus, isLoading } = trpc.pro.sprint5.attendance.todayStatus.useQuery({
+  const { data: todayStatus, isLoading, isError, refetch } = trpc.pro.sprint5.attendance.todayStatus.useQuery({
     organizationId: ORG_ID,
     staffId: STAFF_ID,
   });
@@ -125,6 +127,21 @@ export default function StaffClockEnhanced() {
 
   const hasClockedIn = !!todayStatus?.clockIn;
   const hasClockedOut = !!todayStatus?.clockOut;
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6 max-w-lg mx-auto">

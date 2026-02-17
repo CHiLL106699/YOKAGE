@@ -47,7 +47,6 @@ export const customerRouter = router({
       // if (error) throw new Error(error.message);
       
       // 模擬回傳
-      console.log('Creating customer with data:', input);
       return { message: '客戶建立成功', customer: { id: 'simulated-uuid-123', ...input } };
     }),
 
@@ -96,7 +95,6 @@ export const customerRouter = router({
       // if (error) throw new Error(error.message);
 
       // 模擬回傳
-      console.log(`Updating customer ${input.id} with data:`, input);
       return { message: `客戶 ${input.id} 更新成功`, customer: input };
     }),
 

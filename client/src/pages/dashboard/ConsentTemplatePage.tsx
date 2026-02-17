@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Pencil, Trash2, FileText, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const CATEGORIES = [
   { value: 'treatment', label: '療程' },
   { value: 'surgery', label: '手術' },
@@ -45,7 +47,7 @@ export default function ConsentTemplatePage() {
 
   const utils = trpc.useUtils();
 
-  const { data, isLoading } = trpc.pro.sprint5.consent.listTemplates.useQuery({
+  const { data, isLoading, isError, refetch } = trpc.pro.sprint5.consent.listTemplates.useQuery({
     organizationId: 1,
     category: filterCategory !== 'all' ? filterCategory as Category : undefined,
     isActive: true,
@@ -122,6 +124,21 @@ export default function ConsentTemplatePage() {
   const filtered = searchTerm
     ? templates.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : templates;
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

@@ -140,7 +140,6 @@ const AdminUsersPage = () => {
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
 
   const handleAction = (action: string, userId: string) => {
-    console.log(`Performing action "${action}" on user ${userId}`);
     // In a real app, you'd dispatch an action to your state management library or make an API call.
     setActiveDropdown(null); // Close dropdown after action
   };

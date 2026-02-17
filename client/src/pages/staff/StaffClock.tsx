@@ -216,7 +216,6 @@ const StaffClockPage = () => {
   const handleClockIn = () => {
     setLoading(true);
     setError(null);
-    console.log('Clocking in...');
     setTimeout(() => {
       if (Math.random() > 0.1) { // 90% success rate
         setStatus('已上班');
@@ -239,7 +238,6 @@ const StaffClockPage = () => {
   const handleClockOut = () => {
     setLoading(true);
     setError(null);
-    console.log('Clocking out...');
     setTimeout(() => {
       if (Math.random() > 0.1) { // 90% success rate
         setStatus('已下班');

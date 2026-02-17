@@ -206,7 +206,6 @@ const BusinessHoursSection = () => {
     setIsSaving(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
-    console.log('Saved Hours:', hours);
   };
 
   return (
@@ -289,7 +288,6 @@ const ClinicInfoSection = () => {
     setIsSaving(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
-    console.log('Saved:', info);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

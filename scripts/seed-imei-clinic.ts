@@ -24,7 +24,6 @@ import { eq } from 'drizzle-orm';
  */
 
 async function seedImeiClinic() {
-  console.log('🚀 開始建立「伊美秘書」測試診所初始資料...');
 
   const db = await getDb();
   if (!db) {
@@ -33,7 +32,6 @@ async function seedImeiClinic() {
 
   try {
     // 1. 建立診所
-    console.log('📍 Step 1: 建立診所資訊...');
     
     // 檢查診所是否已存在
     let [clinic] = await db.select().from(organizations).where(eq(organizations.slug, 'imei-secretary')).limit(1);
@@ -65,13 +63,10 @@ async function seedImeiClinic() {
       });
       
       [clinic] = await db.select().from(organizations).where(eq(organizations.slug, 'imei-secretary')).limit(1);
-      console.log(`✅ 診所建立成功：${clinic.name} (ID: ${clinic.id})`);
     } else {
-      console.log(`ℹ️ 診所已存在：${clinic.name} (ID: ${clinic.id})，跳過建立`);
     };
 
     // 2. 建立訂閱方案
-    console.log('💳 Step 2: 建立訂閱方案...');
     const plans = [
       {
         name: '基礎版',
@@ -122,10 +117,8 @@ async function seedImeiClinic() {
 
     const createdPlans = await db.select().from(lemonsqueezyPlans).where(eq(lemonsqueezyPlans.organizationId, clinic.id));
 
-    console.log(`✅ 訂閱方案建立成功：${createdPlans.length} 個方案`);
 
     // 3. 建立員工
-    console.log('👥 Step 3: 建立員工資料...');
     const staffData = [
       { name: '王醫師', role: 'doctor', email: 'dr.wang@imei-secretary.com', phone: '0912-345-001' },
       { name: '李醫師', role: 'doctor', email: 'dr.lee@imei-secretary.com', phone: '0912-345-002' },
@@ -151,10 +144,8 @@ async function seedImeiClinic() {
 
     const createdStaff = await db.select().from(staff).where(eq(staff.organizationId, clinic.id));
 
-    console.log(`✅ 員工建立成功：${createdStaff.length} 位員工`);
 
     // 4. 建立客戶
-    console.log('👤 Step 4: 建立客戶資料...');
     const customerData = [
       // VIP 客戶 (diamond/platinum)
       { name: '陳小姐', phone: '0912-111-001', email: 'chen@example.com', memberLevel: 'diamond' },
@@ -190,10 +181,8 @@ async function seedImeiClinic() {
 
     const createdCustomers = await db.select().from(customers).where(eq(customers.organizationId, clinic.id));
 
-    console.log(`✅ 客戶建立成功：${createdCustomers.length} 位客戶（VIP: 5, 一般: 10）`);
 
     // 5. 建立預約
-    console.log('📅 Step 5: 建立預約資料...');
     const now = new Date();
     const appointmentData = [
       // 過去預約（10 個）
@@ -235,10 +224,8 @@ async function seedImeiClinic() {
 
     const createdAppointments = await db.select().from(appointments).where(eq(appointments.organizationId, clinic.id));
 
-    console.log(`✅ 預約建立成功：${createdAppointments.length} 個預約（過去: 10, 未來: 5）`);
 
     // 6. 配置 LINE Channel 設定
-    console.log('📱 Step 6: 配置 LINE Channel 設定...');
     const lineChannelId = process.env.LINE_CHANNEL_ID;
     const lineChannelSecret = process.env.LINE_CHANNEL_SECRET;
     const lineChannelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
@@ -259,17 +246,8 @@ async function seedImeiClinic() {
 
       const [lineChannel] = await db.select().from(lineChannels).where(eq(lineChannels.organizationId, clinic.id)).limit(1);
 
-      console.log(`✅ LINE Channel 設定成功 (Channel ID: ${lineChannel.channelId})`);
     }
 
-    console.log('\n🎉 「伊美秘書」測試診所初始資料建立完成！');
-    console.log('\n📊 資料摘要：');
-    console.log(`- 診所：1 個（${clinic.name}）`);
-    console.log(`- 訂閱方案：${createdPlans.length} 個`);
-    console.log(`- 員工：${createdStaff.length} 位`);
-    console.log(`- 客戶：${createdCustomers.length} 位（VIP: 5, 一般: 10）`);
-    console.log(`- 預約：${createdAppointments.length} 個（過去: 10, 未來: 5）`);
-    console.log(`- LINE Channel：${lineChannelId ? '已配置' : '未配置'}`);
 
   } catch (error) {
     console.error('❌ 建立測試資料失敗：', error);
@@ -280,7 +258,6 @@ async function seedImeiClinic() {
 // 執行腳本
 seedImeiClinic()
   .then(() => {
-    console.log('\n✅ 腳本執行成功');
     process.exit(0);
   })
   .catch((error) => {

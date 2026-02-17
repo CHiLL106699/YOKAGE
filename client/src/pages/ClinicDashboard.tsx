@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 
+import { QueryError } from '@/components/ui/query-state';
+
 export default function ClinicDashboard() {
   const { user } = useAuth();
   // 這裡需要從 context 或 URL 取得當前診所 ID
   const organizationId = 1; // TODO: 從 context 取得
   
-  const { data: stats, isLoading } = trpc.clinic.stats.useQuery({ organizationId });
+  const { data: stats, isLoading, isError, refetch } = trpc.clinic.stats.useQuery({ organizationId });
 
   const statCards = [
     {
@@ -58,6 +60,21 @@ export default function ClinicDashboard() {
     { label: "商品管理", icon: Package, href: "/clinic/products" },
     { label: "訂單管理", icon: ShoppingCart, href: "/clinic/orders" },
   ];
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <DashboardLayout>

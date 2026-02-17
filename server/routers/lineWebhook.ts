@@ -157,7 +157,6 @@ async function processLineEvent(organizationId: number, event: LineWebhookEvent)
       await handleUnfollowEvent(organizationId, event);
       break;
     default:
-      console.log(`Unhandled event type: ${event.type}`);
   }
 
   // 3. 標記事件為已處理
@@ -193,7 +192,6 @@ async function handleMessageEvent(organizationId: number, event: LineWebhookEven
     .limit(1);
 
   if (!customer) {
-    console.log(`Customer not found for LINE User ID: ${event.source.userId}`);
     return;
   }
 
@@ -323,7 +321,6 @@ async function checkAutoReplyRules(organizationId: number, messageText: string, 
 
     if (isMatch) {
       // 發送自動回覆（這裡需要整合 LINE Messaging API）
-      console.log(`Auto-reply rule matched: ${rule.name}`);
       // TODO: 實作自動回覆發送邏輯
       break; // 只觸發第一個匹配的規則
     }

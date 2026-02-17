@@ -39,7 +39,6 @@ export const settingsRouter = router({
       //   .eq('user_id', ctx.user.id) // RLS 輔助，確保安全性
       //   .single();
 
-      console.log('Fetching setting with input:', input);
       // 模擬回傳結果
       return {
         id: input.id || 'mock-uuid-1',
@@ -59,7 +58,6 @@ export const settingsRouter = router({
     .input(z.object({ is_global: z.boolean().optional() }).optional())
     .query(async ({ ctx, input }) => {
       // 這裡應實作 Supabase 查詢邏輯
-      console.log('Listing settings with filter:', input);
       // 模擬回傳結果
       return [
         { id: 'mock-uuid-1', key: 'default_theme', value: 'dark', is_global: false, user_id: 'mock-user-id' },
@@ -76,7 +74,6 @@ export const settingsRouter = router({
     .input(createSettingSchema)
     .mutation(async ({ ctx, input }) => {
       // 這裡應實作 Supabase 插入邏輯
-      console.log('Creating setting:', input);
       // 模擬回傳結果
       return { ...input, id: 'mock-new-uuid', user_id: 'mock-user-id' };
     }),
@@ -90,7 +87,6 @@ export const settingsRouter = router({
     .input(updateSettingSchema)
     .mutation(async ({ ctx, input }) => {
       // 這裡應實作 Supabase 更新邏輯
-      console.log('Updating setting:', input);
       // 模擬回傳結果
       return input;
     }),
@@ -104,7 +100,6 @@ export const settingsRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // 這裡應實作 Supabase 刪除邏輯
-      console.log('Deleting setting with id:', input.id);
       // 模擬回傳結果
       return { success: true, id: input.id };
     }),

@@ -17,7 +17,6 @@ const gameManagementRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       // 實作 Supabase 寫入邏輯，應透過 Edge Function 或 Service Role 處理敏感操作
-      console.log('Creating game:', input);
       // 這裡僅為邏輯驗證，實際應回傳 Supabase 寫入結果
       return { success: true, gameId: `game-${Date.now()}` };
     }),
@@ -31,7 +30,6 @@ const gameManagementRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       // 實作 Supabase 查詢邏輯 (RLS 應確保資料安全)
-      console.log('Fetching game list with filter:', input);
       return {
         total: 1,
         games: [{
@@ -48,7 +46,6 @@ const gameManagementRouter = router({
     .input(z.object({ id: z.string().uuid('遊戲 ID 格式錯誤') }))
     .query(async ({ input, ctx }) => {
       // 實作 Supabase 查詢邏輯
-      console.log('Fetching single game:', input.id);
       return {
         id: input.id,
         name: 'LINE 遊戲範例',
@@ -68,7 +65,6 @@ const gameManagementRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       // 實作 Supabase 更新邏輯
-      console.log('Updating game:', input);
       return { success: true };
     }),
 
@@ -77,7 +73,6 @@ const gameManagementRouter = router({
     .input(z.object({ id: z.string().uuid('遊戲 ID 格式錯誤') }))
     .mutation(async ({ input, ctx }) => {
       // 實作 Supabase 刪除邏輯
-      console.log('Deleting game:', input.id);
       return { success: true };
     }),
 });
@@ -96,7 +91,6 @@ const prizeManagementRouter = router({
       probability: z.number().min(0).max(1, '機率必須在 0 到 1 之間'),
     }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Creating prize:', input);
       return { success: true, prizeId: `prize-${Date.now()}` };
     }),
 
@@ -104,7 +98,6 @@ const prizeManagementRouter = router({
   listByGame: publicProcedure
     .input(z.object({ gameId: z.string().uuid('遊戲 ID 格式錯誤') }))
     .query(async ({ input, ctx }) => {
-      console.log('Fetching prizes for game:', input.gameId);
       return [{ id: 'prize-1', name: '一等獎', quantity: 10 }];
     }),
 
@@ -117,7 +110,6 @@ const prizeManagementRouter = router({
       probability: z.number().min(0).max(1, '機率必須在 0 到 1 之間').optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Updating prize:', input);
       return { success: true };
     }),
 
@@ -125,7 +117,6 @@ const prizeManagementRouter = router({
   delete: publicProcedure
     .input(z.object({ id: z.string().uuid('獎品 ID 格式錯誤') }))
     .mutation(async ({ input, ctx }) => {
-      console.log('Deleting prize:', input.id);
       return { success: true };
     }),
 });
@@ -144,7 +135,6 @@ const gameRecordRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       // 實作 Supabase 查詢邏輯 (RLS 應確保用戶只能查詢自己的記錄)
-      console.log('Fetching records for user:', input.userId);
       return {
         total: 1,
         records: [{
@@ -165,7 +155,6 @@ const gameRecordRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       // **資安提醒**: 此 API 應僅限後台或 Service Role 呼叫，前端嚴禁直接呼叫
-      console.log('Fetching winners for game:', input.gameId);
       return {
         total: 1,
         winners: [{

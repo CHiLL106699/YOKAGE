@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, FileText, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
+import { QueryError } from '@/components/ui/query-state';
+
 const TREATMENT_TYPES = [
   { value: 'injection', label: '注射' },
   { value: 'laser', label: '雷射' },
@@ -37,7 +39,7 @@ export default function EmrListPage() {
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [filterType, setFilterType] = useState('all');
 
-  const { data, isLoading } = trpc.pro.sprint5.emr.list.useQuery({
+  const { data, isLoading, isError, refetch } = trpc.pro.sprint5.emr.list.useQuery({
     organizationId: 1,
     customerId: filterCustomerId ? Number(filterCustomerId) : undefined,
     treatmentType: filterType !== 'all' ? filterType : undefined,
@@ -48,6 +50,21 @@ export default function EmrListPage() {
   const records = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 20);
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="p-6 space-y-6">

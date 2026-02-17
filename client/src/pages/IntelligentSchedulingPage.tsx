@@ -2,11 +2,28 @@ import React from 'react';
 import { PageTemplate } from '@/components/PageTemplate'; 
 import { trpc } from '@/lib/trpc'; 
 
+import { QueryError } from '@/components/ui/query-state';
+
 const IntelligentSchedulingPage: React.FC = () => {
-  const { data, isLoading, error } = trpc.staff.list.useQuery({ organizationId: 1 });
+  const { data, isLoading, error, isError, refetch } = trpc.staff.list.useQuery({ organizationId: 1 });
 
   const pageTitle = "智能排程中心";
   const pageDescription = "透過 AI 演算法優化您的資源分配與時間表。所有敏感操作均在後端處理，確保資安。";
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <PageTemplate

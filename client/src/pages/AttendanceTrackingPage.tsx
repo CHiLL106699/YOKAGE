@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { QueryError } from '@/components/ui/query-state';
+
 import { 
   CalendarCheck, 
   CalendarX, 
@@ -26,7 +28,7 @@ export default function AttendanceTrackingPage() {
   });
 
   // 到診率統計
-  const { data: attendanceStats, isLoading: statsLoading } = trpc.appointment.getAttendanceStats.useQuery({
+  const { data: attendanceStats, isLoading: statsLoading, isError, refetch } = trpc.appointment.getAttendanceStats.useQuery({
     organizationId,
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
@@ -55,6 +57,21 @@ export default function AttendanceTrackingPage() {
     if (rate <= 10) return "text-yellow-600";
     return "text-red-600";
   };
+
+  if (isError) {
+
+    return (
+
+      <div className="p-6">
+
+        <QueryError message="載入資料時發生錯誤，請稍後再試" onRetry={refetch} />
+
+      </div>
+
+    );
+
+  }
+
 
   return (
     <div className="space-y-6">
