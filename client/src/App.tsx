@@ -68,15 +68,14 @@ const AiChatbotSettings = React.lazy(() => import("@/pages/dashboard/AiChatbotSe
 const RichMenuTemplateMarket = React.lazy(() => import("@/pages/dashboard/RichMenuTemplateMarket"));
 
 // === Clinic Admin (向後相容，保留 /clinic/* 路由) ===
-const ClinicDashboard = React.lazy(() => import("./pages/ClinicDashboard"));
-const CustomersPage = React.lazy(() => import("./pages/CustomersPage"));
+
 const CustomerDetailPage = React.lazy(() => import("./pages/CustomerDetailPage"));
 const AppointmentsPage = React.lazy(() => import("./pages/AppointmentsPage"));
 const ProductsPage = React.lazy(() => import("./pages/ProductsPage"));
 const StaffPage = React.lazy(() => import("./pages/StaffPage"));
 const AftercarePage = React.lazy(() => import("./pages/AftercarePage"));
 const LineSettingsPage = React.lazy(() => import("@/pages/LineSettingsPage"));
-const SchedulePage = React.lazy(() => import("@/pages/SchedulePage"));
+
 const AttendanceClockPage = React.lazy(() => import("@/pages/AttendanceClockPage"));
 const AttendanceRecordsListPage = React.lazy(() => import("@/pages/AttendanceRecordsListPage"));
 const AttendanceDashboardPage = React.lazy(() => import("@/pages/AttendanceDashboardPage"));
@@ -541,15 +540,14 @@ function AppRouter() {
         </Route>
 
         {/* ======== 向後相容：/clinic/* 路由 ======== */}
-        <Route path="/clinic"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ClinicDashboard /></ProtectedRoute></Route>
-        <Route path="/clinic/customers"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomersPage /></ProtectedRoute></Route>
+
         <Route path="/clinic/customers/:id"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerDetailPage /></ProtectedRoute></Route>
         <Route path="/clinic/appointments"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AppointmentsPage /></ProtectedRoute></Route>
         <Route path="/clinic/products"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ProductsPage /></ProtectedRoute></Route>
         <Route path="/clinic/staff"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><StaffPage /></ProtectedRoute></Route>
         <Route path="/clinic/aftercare"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AftercarePage /></ProtectedRoute></Route>
         <Route path="/clinic/line-settings"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><LineSettingsPage /></ProtectedRoute></Route>
-        <Route path="/clinic/schedule"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SchedulePage /></ProtectedRoute></Route>
+
         <Route path="/clinic/attendance"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceClockPage /></ProtectedRoute></Route>
         <Route path="/clinic/attendance/records"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceRecordsListPage /></ProtectedRoute></Route>
         <Route path="/clinic/attendance/dashboard"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceDashboardPage /></ProtectedRoute></Route>
