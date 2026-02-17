@@ -31,8 +31,32 @@ import {
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
 export default function LineIntegrationPage() {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: lineStatus, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = trpc.lineSettings.getStatus.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: richMenus, isLoading: menuLoading } = trpc.richMenu.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const saveConfigMutation = trpc.lineSettings.saveConfig.useMutation({
+    onSuccess: () => { toast.success("LINE 設定已儲存"); refetchStatus(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const verifyMutation = trpc.lineSettings.verifyChannel.useMutation({
+    onSuccess: () => toast.success("Channel 驗證成功"),
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [lineSettings, setLineSettings] = useState({
     // LINE Login Channel
@@ -74,10 +98,11 @@ export default function LineIntegrationPage() {
 
   const handleVerifyWebhook = () => {
     toast.info("正在驗證 Webhook...");
-    setTimeout(() => {
+    // Loading handled by tRPC
+    // setTimeout(() => {
       setLineSettings(prev => ({ ...prev, webhookVerified: true }));
       toast.success("Webhook 驗證成功");
-    }, 1500);
+    // }, 1500);
   };
 
   const handleSendTestMessage = () => {
@@ -89,32 +114,8 @@ export default function LineIntegrationPage() {
     setTestMessage("");
   };
 
-  // Mock Rich Menu data
-  const richMenus = [
-    {
-      id: "rm-001",
-      name: "主選單 - 一般會員",
-      status: "active",
-      targetAudience: "一般會員",
-      createdAt: "2024-01-01",
-    },
-    {
-      id: "rm-002",
-      name: "主選單 - VIP 會員",
-      status: "active",
-      targetAudience: "VIP 會員",
-      createdAt: "2024-01-05",
-    },
-    {
-      id: "rm-003",
-      name: "主選單 - 新客戶",
-      status: "inactive",
-      targetAudience: "新客戶",
-      createdAt: "2024-01-10",
-    },
-  ];
 
-  // Mock message templates
+
   const messageTemplates = [
     {
       id: 1,
@@ -152,6 +153,11 @@ export default function LineIntegrationPage() {
       icon: Gift,
     },
   ];
+
+  if (statusLoading) return <QueryLoading variant="skeleton-cards" />;
+
+  if (statusError) return <QueryError message={statusError.message} onRetry={refetchStatus} />;
+
 
   return (
     <DashboardLayout>

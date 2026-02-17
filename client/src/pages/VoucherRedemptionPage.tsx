@@ -125,7 +125,7 @@ export default function VoucherRedemptionPage() {
 
     const result = await lookupMutation.refetch();
     if (result.data) {
-      setScannedVoucher(result.data as unknown as VoucherInfo);
+      setScannedVoucher(result.data as any as VoucherInfo);
       setShowConfirmDialog(true);
     } else {
       toast.error("找不到此票券");

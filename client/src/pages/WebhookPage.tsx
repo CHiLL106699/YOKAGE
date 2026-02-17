@@ -37,153 +37,10 @@ import {
   Settings,
   Activity
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
-// 模擬 Webhook 事件處理規則
-const mockWebhookRules = [
-  {
-    id: "rule-001",
-    name: "預約關鍵字回覆",
-    eventType: "message",
-    messageType: "text",
-    trigger: {
-      type: "keyword",
-      keywords: ["預約", "我要預約", "想預約"]
-    },
-    action: {
-      type: "flex_message",
-      templateId: "tpl-001",
-      fallbackText: "請點擊下方連結進行預約"
-    },
-    isActive: true,
-    triggerCount: 1256,
-    lastTriggered: "2024-01-15 14:32:15"
-  },
-  {
-    id: "rule-002",
-    name: "營業時間查詢",
-    eventType: "message",
-    messageType: "text",
-    trigger: {
-      type: "keyword",
-      keywords: ["營業時間", "幾點開", "幾點關"]
-    },
-    action: {
-      type: "text",
-      content: "我們的營業時間為：\n週一至週五 10:00-21:00\n週六 10:00-18:00\n週日公休\n\n如需預約請點擊選單中的「立即預約」"
-    },
-    isActive: true,
-    triggerCount: 523,
-    lastTriggered: "2024-01-15 11:20:45"
-  },
-  {
-    id: "rule-003",
-    name: "新好友歡迎訊息",
-    eventType: "follow",
-    messageType: null,
-    trigger: {
-      type: "event"
-    },
-    action: {
-      type: "flex_message",
-      templateId: "welcome-001",
-      fallbackText: "歡迎加入 YOChiLL 醫美診所！"
-    },
-    isActive: true,
-    triggerCount: 89,
-    lastTriggered: "2024-01-15 09:15:30"
-  },
-  {
-    id: "rule-004",
-    name: "位置分享回覆",
-    eventType: "message",
-    messageType: "location",
-    trigger: {
-      type: "event"
-    },
-    action: {
-      type: "text",
-      content: "感謝您分享位置！\n\n我們的診所地址：\n台北市大安區忠孝東路四段123號5樓\n\n距離您約 {{distance}} 公里\n預計車程 {{duration}} 分鐘"
-    },
-    isActive: true,
-    triggerCount: 45,
-    lastTriggered: "2024-01-14 16:45:00"
-  },
-  {
-    id: "rule-005",
-    name: "圖片訊息自動回覆",
-    eventType: "message",
-    messageType: "image",
-    trigger: {
-      type: "event"
-    },
-    action: {
-      type: "text",
-      content: "感謝您傳送圖片！我們的客服人員會盡快為您回覆。\n\n如需緊急諮詢，請撥打客服專線：02-1234-5678"
-    },
-    isActive: false,
-    triggerCount: 128,
-    lastTriggered: "2024-01-13 15:30:00"
-  }
-];
 
-// 模擬 Webhook 事件日誌
-const mockEventLogs = [
-  {
-    id: "log-001",
-    timestamp: "2024-01-15 14:32:15",
-    eventType: "message",
-    userId: "U1234567890abcdef",
-    userName: "王小明",
-    content: "我想預約",
-    ruleMatched: "rule-001",
-    status: "success",
-    responseTime: 125
-  },
-  {
-    id: "log-002",
-    timestamp: "2024-01-15 14:30:45",
-    eventType: "message",
-    userId: "U9876543210fedcba",
-    userName: "李小華",
-    content: "請問營業時間？",
-    ruleMatched: "rule-002",
-    status: "success",
-    responseTime: 89
-  },
-  {
-    id: "log-003",
-    timestamp: "2024-01-15 14:28:30",
-    eventType: "follow",
-    userId: "Uabcdef1234567890",
-    userName: "新用戶",
-    content: null,
-    ruleMatched: "rule-003",
-    status: "success",
-    responseTime: 156
-  },
-  {
-    id: "log-004",
-    timestamp: "2024-01-15 14:25:00",
-    eventType: "message",
-    userId: "U5555555555555555",
-    userName: "陳大文",
-    content: "[圖片]",
-    ruleMatched: null,
-    status: "no_match",
-    responseTime: 0
-  },
-  {
-    id: "log-005",
-    timestamp: "2024-01-15 14:20:15",
-    eventType: "message",
-    userId: "U1234567890abcdef",
-    userName: "王小明",
-    content: "你好",
-    ruleMatched: null,
-    status: "no_match",
-    responseTime: 0
-  }
-];
 
 const eventTypeLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   message: { label: "訊息", icon: <MessageSquare className="w-4 h-4" />, color: "bg-blue-100 text-blue-800" },
@@ -208,9 +65,18 @@ const statusLabels: Record<string, { label: string; icon: React.ReactNode; color
 };
 
 export default function WebhookPage() {
-  const [rules, setRules] = useState(mockWebhookRules);
-  const [logs, setLogs] = useState(mockEventLogs);
-  const [selectedRule, setSelectedRule] = useState<typeof mockWebhookRules[0] | null>(null);
+  const organizationId = 1; // TODO: from context
+  
+  const { data: eventsData, isLoading, error, refetch } = trpc.lineWebhook.listEvents.useQuery(
+    { organizationId, page: 1, limit: 50 },
+    { enabled: !!organizationId }
+  );
+  
+  const webhookEvents = (eventsData as any)?.data ?? eventsData ?? [];
+
+  const [rules, setRules] = useState(webhookEvents);
+  const [logs, setLogs] = useState(webhookEvents);
+  const [selectedRule, setSelectedRule] = useState<typeof webhookEvents[0] | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("rules");
 
@@ -244,7 +110,7 @@ export default function WebhookPage() {
     setShowEditDialog(true);
   };
 
-  const handleEditRule = (rule: typeof mockWebhookRules[0]) => {
+  const handleEditRule = (rule: typeof webhookEvents[0]) => {
     setEditForm({
       name: rule.name,
       eventType: rule.eventType,
@@ -285,6 +151,11 @@ export default function WebhookPage() {
     navigator.clipboard.writeText(webhookUrl);
     toast.success("Webhook URL 已複製");
   };
+
+  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+
+  if (error) return <QueryError message={error.message} onRetry={refetch} />;
+
 
   return (
     <div className="container py-8">

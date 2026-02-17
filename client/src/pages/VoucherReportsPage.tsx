@@ -52,26 +52,26 @@ export default function VoucherReportsPage() {
 
   // 計算核銷率
   const totalSent = instances.length;
-  const totalRedeemed = instances.filter((i: any) => i.status === "redeemed").length;
+  const totalRedeemed = instances.filter((i: Record<string, any>) => i.status === "redeemed").length;
   const redemptionRate = totalSent > 0 ? ((totalRedeemed / totalSent) * 100).toFixed(1) : "0";
 
   // 計算過期率
-  const totalExpired = instances.filter((i: any) => i.status === "expired").length;
+  const totalExpired = instances.filter((i: Record<string, any>) => i.status === "expired").length;
   const expiredRate = totalSent > 0 ? ((totalExpired / totalSent) * 100).toFixed(1) : "0";
 
   // 按類型統計
-  const typeStats = templates.reduce((acc: any, template: any) => {
+  const typeStats = templates.reduce((acc: Record<string, any>, template: Record<string, any>) => {
     const type = template.type || "unknown";
-    const templateInstances = instances.filter((i: any) => i.templateId === template.id);
-    const redeemed = templateInstances.filter((i: any) => i.status === "redeemed").length;
+    const templateInstances = instances.filter((i: Record<string, any>) => i.templateId === template.id);
+    const redeemed = templateInstances.filter((i: Record<string, any>) => i.status === "redeemed").length;
     
     if (!acc[type]) {
       acc[type] = { total: 0, redeemed: 0, value: 0 };
     }
     acc[type].total += templateInstances.length;
     acc[type].redeemed += redeemed;
-    acc[type].value += templateInstances.reduce((sum: number, i: any) => {
-      const tpl = templates.find((t: any) => t.id === i.templateId);
+    acc[type].value += templateInstances.reduce((sum: number, i: Record<string, any>) => {
+      const tpl = templates.find((t: Record<string, any>) => t.id === i.templateId);
       return sum + (Number(tpl?.value) || 0);
     }, 0);
     
@@ -80,9 +80,9 @@ export default function VoucherReportsPage() {
 
   // 熱門票券排行
   const popularVouchers = templates
-    .map((template: any) => {
-      const templateInstances = instances.filter((i: any) => i.templateId === template.id);
-      const redeemed = templateInstances.filter((i: any) => i.status === "redeemed").length;
+    .map((template: Record<string, any>) => {
+      const templateInstances = instances.filter((i: Record<string, any>) => i.templateId === template.id);
+      const redeemed = templateInstances.filter((i: Record<string, any>) => i.status === "redeemed").length;
       return {
         ...template,
         sentCount: templateInstances.length,
@@ -92,11 +92,11 @@ export default function VoucherReportsPage() {
           : "0",
       };
     })
-    .sort((a: any, b: any) => b.sentCount - a.sentCount)
+    .sort((a: Record<string, any>, b: Record<string, any>) => b.sentCount - a.sentCount)
     .slice(0, 10);
 
   // 客戶使用行為分析
-  const customerBehavior = instances.reduce((acc: any, instance: any) => {
+  const customerBehavior = instances.reduce((acc: Record<string, any>, instance: Record<string, any>) => {
     const customerId = instance.customerId;
     if (!acc[customerId]) {
       acc[customerId] = { 
@@ -110,7 +110,7 @@ export default function VoucherReportsPage() {
     if (instance.status === "redeemed") {
       acc[customerId].redeemed += 1;
     }
-    const template = templates.find((t: any) => t.id === instance.templateId);
+    const template = templates.find((t: Record<string, any>) => t.id === instance.templateId);
     if (template?.type) {
       acc[customerId].types.add(template.type);
     }
@@ -162,7 +162,7 @@ export default function VoucherReportsPage() {
 
   // 計算 ROI（假設每張票券帶來的平均消費）
   const avgConsumptionPerVoucher = 3500; // 假設平均消費 3500 元
-  const totalVoucherValue = Object.values(typeStats).reduce((sum: number, stat: any) => sum + stat.value, 0);
+  const totalVoucherValue = Object.values(typeStats).reduce((sum: number, stat: Record<string, any>) => sum + stat.value, 0);
   const estimatedRevenue = totalRedeemed * avgConsumptionPerVoucher;
   const roi = totalVoucherValue > 0 ? (((estimatedRevenue - totalVoucherValue) / totalVoucherValue) * 100).toFixed(1) : "0";
 
@@ -191,7 +191,7 @@ export default function VoucherReportsPage() {
             <p className="text-gray-400 mt-1">追蹤票券核銷率、熱門類型與客戶行為分析</p>
           </div>
           <div className="flex items-center gap-3">
-            <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
+            <Select value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
               <SelectTrigger className="w-[140px] bg-slate-800/50 border-slate-700">
                 <Calendar className="w-4 h-4 mr-2 text-amber-500" />
                 <SelectValue />
@@ -378,7 +378,7 @@ export default function VoucherReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {popularVouchers.map((voucher: any, index: number) => (
+                    {popularVouchers.map((voucher: Record<string, any>, index: number) => (
                       <TableRow key={voucher.id} className="border-slate-700/30">
                         <TableCell>
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
@@ -441,7 +441,7 @@ export default function VoucherReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topCustomers.map((customer: any) => (
+                    {topCustomers.map((customer: Record<string, any>) => (
                       <TableRow key={customer.customerId} className="border-slate-700/30">
                         <TableCell>
                           <div className="flex items-center gap-3">

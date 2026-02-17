@@ -39,7 +39,7 @@ const TARGET_SCOPES = {
 export default function SuperAdminNotificationsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [selectedNotification, setSelectedNotification] = useState<Record<string, any> | null>(null);
   
   // 新通知表單
   const [newNotification, setNewNotification] = useState({
@@ -105,7 +105,7 @@ export default function SuperAdminNotificationsPage() {
     sendNotificationMutation.mutate(newNotification);
   };
 
-  const handleUseTemplate = (template: any) => {
+  const handleUseTemplate = (template: Record<string, any>) => {
     setNewNotification({
       ...newNotification,
       title: template.title,
@@ -199,7 +199,7 @@ export default function SuperAdminNotificationsPage() {
                             <SelectValue placeholder="選擇診所..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {((organizations as any)?.organizations || []).map((org: any) => (
+                            {((organizations as any)?.organizations || []).map((org: Record<string, any>) => (
                               <SelectItem key={org.id} value={org.id.toString()}>
                                 {org.name}
                               </SelectItem>
@@ -208,7 +208,7 @@ export default function SuperAdminNotificationsPage() {
                         </Select>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {newNotification.targetOrganizations.map((orgId) => {
-                            const org = ((organizations as any)?.organizations || []).find((o: any) => o.id === orgId);
+                            const org = ((organizations as any)?.organizations || []).find((o: Record<string, any>) => o.id === orgId);
                             return (
                               <Badge key={orgId} variant="secondary" className="gap-1">
                                 {org?.name || orgId}
@@ -360,7 +360,7 @@ export default function SuperAdminNotificationsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (notifications?.notifications || []).map((notification: any) => {
+                      (notifications?.notifications || []).map((notification: Record<string, any>) => {
                         const typeConfig = NOTIFICATION_TYPES[notification.type as keyof typeof NOTIFICATION_TYPES] || NOTIFICATION_TYPES.announcement;
                         return (
                           <TableRow key={notification.id}>
@@ -423,7 +423,7 @@ export default function SuperAdminNotificationsPage() {
                     { id: 1, title: "系統維護通知", content: "親愛的用戶，系統將於 {date} 進行維護...", type: "maintenance" },
                     { id: 2, title: "新功能上線", content: "我們很高興地宣布，{feature} 功能已正式上線！", type: "feature" },
                     { id: 3, title: "重要公告", content: "親愛的用戶，{content}", type: "announcement" },
-                  ]).map((template: any) => {
+                  ]).map((template: Record<string, any>) => {
                     const typeConfig = NOTIFICATION_TYPES[template.type as keyof typeof NOTIFICATION_TYPES] || NOTIFICATION_TYPES.announcement;
                     return (
                       <Card key={template.id} className="cursor-pointer hover:border-primary transition-colors">

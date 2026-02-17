@@ -2,6 +2,9 @@
 import React, { useState, useMemo, FC, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Calendar, Plus, List, Filter, X, ChevronLeft, ChevronRight, Search, MoreVertical, Clock, User, Briefcase, Tag, CheckCircle, AlertCircle, Clock4, XCircle } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { toast } from "sonner";
 
 // --- TYPES --- //
 type Status = '已確認' | '待確認' | '已完成' | '已取消';
@@ -17,25 +20,6 @@ type Appointment = {
   status: Status;
 };
 
-// --- MOCK DATA --- //
-const mockAppointments: Appointment[] = [
-  ...Array.from({ length: 20 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() + (i - 10));
-    date.setHours(9 + (i % 8), (i % 4) * 15, 0, 0);
-    const statuses: Status[] = ['已確認', '待確認', '已完成', '已取消'];
-    return {
-      id: `APT${1001 + i}`,
-      customerName: `客戶 ${String.fromCharCode(65 + i)}`,
-      service: ['深層筋膜放鬆', '運動按摩', '產後恢復', '姿勢矯正'][i % 4],
-      staff: ['治療師A', '治療師B', '治療師C'][i % 3],
-      start: date,
-      duration: [60, 90, 120][i % 3],
-      notes: `這是預約 #${i + 1} 的備註。`,
-      status: statuses[i % 4],
-    };
-  }),
-];
 
 // --- HELPER COMPONENTS --- //
 
@@ -46,6 +30,9 @@ const Badge: FC<{ status: Status }> = ({ status }) => {
     '已完成': 'bg-blue-100 text-blue-800',
     '已取消': 'bg-red-100 text-red-800',
   };
+  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+  if (error) return <QueryError message={error.message} onRetry={refetch} />;
+
   return (
     <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status]}`}>
       {status}
@@ -89,7 +76,7 @@ const DashboardLayout: FC<{ children: React.ReactNode, title: string }> = ({ chi
               <Search className="w-5 h-5" />
             </button>
             <div className="relative">
-              <img className="w-10 h-10 rounded-full" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" />
+              <img className="w-10 h-10 rounded-full" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User"  loading="lazy" />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
             </div>
           </div>
@@ -119,6 +106,35 @@ const CalendarView: FC<{ appointments: Appointment[], currentDate: Date, setCurr
   }, [appointments]);
 
   const handlePrevMonth = () => {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: appointmentsData, isLoading, error, refetch } = trpc.appointment.list.useQuery(
+    { organizationId, limit: 50 },
+    { enabled: !!organizationId }
+  );
+  
+  const createMutation = trpc.appointment.create.useMutation({
+    onSuccess: () => { toast.success("預約已建立"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const updateMutation = trpc.appointment.update.useMutation({
+    onSuccess: () => { toast.success("預約已更新"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const { data: staffData } = trpc.staff.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const appointments = (appointmentsData?.data ?? []).map((a: any) => ({
+    id: a.id, customerName: a.customerName || `客戶 #${a.customerId}`,
+    service: a.productName || "一般診療", staff: a.staffName || `醫師 #${a.staffId || ""}`,
+    date: a.appointmentDate, startTime: a.startTime || "09:00", endTime: a.endTime || "10:00",
+    status: a.status || "pending", notes: a.notes || "", source: a.source || "walk_in",
+  }));
+
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
@@ -337,7 +353,7 @@ const DashboardAppointments: FC = () => {
   useState(() => {
     setTimeout(() => {
       try {
-        setAppointments(mockAppointments);
+        setAppointments(appointments);
         setIsLoading(false);
       } catch (e) {
         setError('無法載入預約資料。');

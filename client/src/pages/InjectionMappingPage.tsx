@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Syringe, Plus, History, Eye, MapPin, User } from "lucide-react";
 
 // 臉部 SVG 模板
-const FaceFrontSVG = ({ points, onAddPoint }: { points: any[]; onAddPoint: (x: number, y: number) => void }) => {
+const FaceFrontSVG = ({ points, onAddPoint }: { points: Array<Record<string, any>>; onAddPoint: (x: number, y: number) => void }) => {
   const handleClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();

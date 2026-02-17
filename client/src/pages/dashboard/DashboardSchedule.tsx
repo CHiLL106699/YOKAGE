@@ -23,6 +23,9 @@ import {
   Menu,
   ClipboardList,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { toast } from "sonner";
 
 type ShiftType = "morning" | "evening" | "fullday" | "off";
 
@@ -44,43 +47,8 @@ const shiftConfig: Record<ShiftType, { label: string; color: string; bg: string 
   off: { label: "休假", color: "text-slate-400", bg: "bg-slate-500/20 border-slate-500/30" },
 };
 
-const mockStaff = [
-  { id: 1, name: "王醫師" },
-  { id: 2, name: "李護理師" },
-  { id: 3, name: "張美容師" },
-  { id: 4, name: "陳諮詢師" },
-  { id: 5, name: "林助理" },
-  { id: 6, name: "黃醫師" },
-  { id: 7, name: "吳護理師" },
-  { id: 8, name: "劉美容師" },
-];
 
-const generateMockShifts = (): Shift[] => {
-  const shifts: Shift[] = [];
-  let id = 1;
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay() + 1);
 
-  for (let d = 0; d < 7; d++) {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + d);
-    const dateStr = date.toISOString().split("T")[0];
-
-    mockStaff.forEach((staff) => {
-      if (d === 6 && staff.id % 3 === 0) {
-        shifts.push({ id: id++, staffId: staff.id, staffName: staff.name, date: dateStr, shiftType: "off", startTime: "", endTime: "" });
-      } else if (staff.id % 2 === 0) {
-        shifts.push({ id: id++, staffId: staff.id, staffName: staff.name, date: dateStr, shiftType: "morning", startTime: "09:00", endTime: "14:00" });
-      } else {
-        shifts.push({ id: id++, staffId: staff.id, staffName: staff.name, date: dateStr, shiftType: d % 2 === 0 ? "morning" : "evening", startTime: d % 2 === 0 ? "09:00" : "14:00", endTime: d % 2 === 0 ? "14:00" : "21:00" });
-      }
-    });
-  }
-  return shifts;
-};
-
-const mockShifts = generateMockShifts();
 
 const sidebarItems = [
   { name: "總覽", path: "/dashboard", icon: LayoutDashboard },
@@ -96,6 +64,27 @@ const sidebarItems = [
 ];
 
 export default function DashboardSchedulePage() {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: schedulesData, isLoading: schedLoading, error: schedError, refetch: refetchSchedules } = trpc.schedule.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: staffData, isLoading: staffLoading } = trpc.staff.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const createScheduleMutation = trpc.schedule.create.useMutation({
+    onSuccess: () => { toast.success("排班已建立"); refetchSchedules(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const isLoading = schedLoading || staffLoading;
+  const schedules = (schedulesData as any)?.data ?? schedulesData ?? [];
+  const staffList = staffData?.data ?? [];
+
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
@@ -115,8 +104,13 @@ export default function DashboardSchedulePage() {
   const dayNames = ["一", "二", "三", "四", "五", "六", "日"];
 
   const getShiftsForStaffAndDate = (staffId: number, dateStr: string) => {
-    return mockShifts.filter((s) => s.staffId === staffId && s.date === dateStr);
+    return schedules.filter((s) => s.staffId === staffId && s.date === dateStr);
   };
+
+  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+
+  if (schedError) return <QueryError message={schedError.message} onRetry={refetchSchedules} />;
+
 
   return (
     <div className="flex h-screen bg-slate-950 text-white">
@@ -216,7 +210,7 @@ export default function DashboardSchedulePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockStaff.map((staff) => (
+                  {staffList.map((staff) => (
                     <tr key={staff.id} className="border-b border-slate-800/50 hover:bg-slate-800/20">
                       <td className="sticky left-0 z-10 bg-slate-950 px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -296,7 +290,7 @@ export default function DashboardSchedulePage() {
                 <div>
                   <label className="mb-1 block text-sm text-slate-400">員工</label>
                   <select className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-white">
-                    {mockStaff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {staffList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>

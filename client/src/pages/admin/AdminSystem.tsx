@@ -1,7 +1,9 @@
-
-import React, { useState, FC, PropsWithChildren } from 'react';
+import React, { useState, FC, PropsWithChildren, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Settings, Annoyed, Wrench, ChevronRight, Plus, Search, Edit, Trash2, X, Loader2, AlertCircle, Building, Languages, Clock, Users, CalendarDays, Info, ShieldAlert, Skull } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { QueryLoading, QueryError } from '@/components/ui/query-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- TYPESCRIPT INTERFACES ---
 type GlobalSettings = {
@@ -30,49 +32,6 @@ interface MaintenanceConfig {
   endTime: string;
   message: string;
 }
-
-// --- MOCK DATA ---
-const mockSettings: GlobalSettings = {
-  platformName: 'YOChiLL',
-  defaultLanguage: 'zh-TW',
-  timezone: 'Asia/Taipei',
-  maxTenants: 100,
-  trialDays: 14,
-};
-
-const mockAnnouncements: Announcement[] = [
-  {
-    id: 'anno-1',
-    title: 'New Feature: Dark Mode',
-    content: 'We have now implemented a new dark mode. You can enable it in your user settings.',
-    type: 'info',
-    targetAudience: 'all',
-    publishDate: '2026-02-15',
-  },
-  {
-    id: 'anno-2',
-    title: 'Scheduled Maintenance',
-    content: 'The platform will be down for scheduled maintenance on Feb 20, 2026, from 2:00 AM to 4:00 AM UTC.',
-    type: 'warning',
-    targetAudience: 'all',
-    publishDate: '2026-02-12',
-  },
-    {
-    id: 'anno-3',
-    title: 'Critical Security Update',
-    content: 'A critical security patch has been applied. Please log out and log back in to ensure your session is secure.',
-    type: 'critical',
-    targetAudience: 'admins',
-    publishDate: '2026-01-30',
-  },
-];
-
-const mockMaintenanceConfig: MaintenanceConfig = {
-  isEnabled: false,
-  startTime: '',
-  endTime: '',
-  message: 'The system is currently undergoing scheduled maintenance. We expect to be back online shortly. Thank you for your patience.',
-};
 
 // --- HELPER & LAYOUT COMPONENTS ---
 
@@ -125,14 +84,17 @@ const LoadingSpinner: FC = () => (
   </div>
 );
 
-const ErrorMessage: FC<{ message: string }> = ({ message }) => (
-  <div className="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-md" role="alert">
-    <div className="flex">
-      <AlertCircle className="h-5 w-5 mr-3" />
-      <div>
-        <p className="font-bold">Error</p>
-        <p>{message}</p>
-      </div>
+const ErrorMessage: FC<{ message: string, onRetry?: () => void }> = ({ message, onRetry }) => (
+  <div className="bg-red-100 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-md my-4" role="alert">
+    <div className="flex justify-between items-center">
+        <div className="flex">
+            <AlertCircle className="h-5 w-5 mr-3" />
+            <div>
+                <p className="font-bold">Error</p>
+                <p>{message}</p>
+            </div>
+        </div>
+        {onRetry && <button onClick={onRetry} className="px-3 py-1 border border-red-500 text-red-500 rounded-md text-sm hover:bg-red-200 dark:hover:bg-red-900/30">Retry</button>}
     </div>
   </div>
 );
@@ -140,29 +102,59 @@ const ErrorMessage: FC<{ message: string }> = ({ message }) => (
 // --- SECTION COMPONENTS ---
 
 const GlobalSettingsSection: FC = () => {
-  const [settings, setSettings] = useState<GlobalSettings>(mockSettings);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const { data: settingsData, isLoading, error, refetch } = trpc.superAdmin.getSystemSettingsByCategory.useQuery({ category: 'system' });
+
+  const [settings, setSettings] = useState<GlobalSettings | null>(null);
+
+  useEffect(() => {
+    if (settingsData) {
+      const formattedSettings = settingsData.reduce<Record<string, any>>((acc, item) => {
+        let value: any = item.value ?? '';
+        if (item.key === 'maxTenants' || item.key === 'trialDays') {
+          value = parseInt(value as string, 10) || 0;
+        }
+        return { ...acc, [item.key]: value };
+      }, {}) as unknown as GlobalSettings;
+      setSettings(formattedSettings);
+    }
+  }, [settingsData]);
+
+  const updateSettingMutation = trpc.superAdmin.saveSystemSetting.useMutation({
+    onSuccess: (data, variables) => {
+        // Invalidate the specific category query to refetch
+        utils.superAdmin.getSystemSettingsByCategory.invalidate({ category: 'system' });
+    },
+    // Optional: onError handling
+  });
 
   const handleSave = () => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      // Mock API call
-      setLoading(false);
-      // To test error state: setError('Failed to save settings. Please try again.');
-    }, 1500);
+    if (!settings) return;
+
+    const originalSettings = settingsData?.reduce<Record<string, string>>((acc, item) => ({ ...acc, [item.key]: item.value ?? '' }), {}) || {};
+
+    Object.entries(settings).forEach(([key, value]) => {
+        const originalValue = (originalSettings as Record<string, string>)[key];
+        const currentValue = String(value);
+        if (originalValue !== currentValue) {
+            updateSettingMutation.mutate({ key, value: currentValue, category: 'system' });
+        }
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setSettings(prev => ({ ...prev, [name]: name === 'maxTenants' || name === 'trialDays' ? parseInt(value, 10) : value }));
+    setSettings(prev => prev ? ({ ...prev, [name]: name === 'maxTenants' || name === 'trialDays' ? parseInt(value, 10) : value }) : null);
   };
+
+  if (isLoading) return <Card><h2 className="text-xl font-bold mb-4 flex items-center"><Building className="mr-2"/>全域參數</h2><QueryLoading/></Card>;
+  if (error) return <Card><h2 className="text-xl font-bold mb-4 flex items-center"><Building className="mr-2"/>全域參數</h2><QueryError message={error.message} onRetry={() => refetch()} /></Card>;
+  if (!settings) return null;
 
   return (
     <Card>
       <h2 className="text-xl font-bold mb-4 flex items-center"><Building className="mr-2"/>全域參數</h2>
-      {error && <ErrorMessage message={error} />}
+      {updateSettingMutation.error && <ErrorMessage message={updateSettingMutation.error.message} />}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label htmlFor="platformName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Platform Name</label>
@@ -190,8 +182,8 @@ const GlobalSettingsSection: FC = () => {
         </div>
       </div>
       <div className="mt-6 flex justify-end">
-        <button onClick={handleSave} disabled={loading} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 dark:disabled:bg-gray-600">
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
+        <button onClick={handleSave} disabled={updateSettingMutation.isPending} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 dark:disabled:bg-gray-600">
+          {updateSettingMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
         </button>
       </div>
     </Card>
@@ -199,11 +191,20 @@ const GlobalSettingsSection: FC = () => {
 };
 
 const AnnouncementsSection: FC = () => {
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const { data: announcementsData, isLoading, error, refetch } = trpc.superAdmin.getSystemSettingsByCategory.useQuery({ category: 'notification' });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentAnnouncement, setCurrentAnnouncement] = useState<Announcement | null>(null);
+
+  const announcements: Announcement[] = announcementsData?.map(item => { try { return JSON.parse(item.value ?? '{}') as Announcement; } catch { return null; } }).filter((a): a is Announcement => a !== null) || [];
+
+  const saveMutation = trpc.superAdmin.saveSystemSetting.useMutation({
+    onSuccess: () => {
+      utils.superAdmin.getSystemSettingsByCategory.invalidate({ category: 'notification' });
+      closeModal();
+    }
+  });
 
   const openModal = (announcement: Announcement | null = null) => {
     setCurrentAnnouncement(announcement);
@@ -216,25 +217,20 @@ const AnnouncementsSection: FC = () => {
   };
 
   const handleSave = (announcement: Announcement) => {
-    setLoading(true);
-    closeModal();
-    setTimeout(() => {
-      if (announcement.id) {
-        setAnnouncements(prev => prev.map(a => a.id === announcement.id ? announcement : a));
-      } else {
-        setAnnouncements(prev => [...prev, { ...announcement, id: `anno-${Date.now()}` }]);
-      }
-      setLoading(false);
-    }, 1000);
+    const id = announcement.id || `anno-${Date.now()}`;
+    const finalAnnouncement = { ...announcement, id };
+    saveMutation.mutate({ 
+        key: `announcement_${id}`,
+        value: JSON.stringify(finalAnnouncement),
+        category: 'notification',
+        description: `Announcement: ${finalAnnouncement.title}`
+    });
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this announcement?')) {
-      setLoading(true);
-      setTimeout(() => {
-        setAnnouncements(prev => prev.filter(a => a.id !== id));
-        setLoading(false);
-      }, 1000);
+        // To delete, we save an empty value. A dedicated delete mutation would be better.
+        saveMutation.mutate({ key: `announcement_${id}`, value: 'DELETED', category: 'notification' });
     }
   };
 
@@ -255,13 +251,15 @@ const AnnouncementsSection: FC = () => {
   return (
     <Card className="mt-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-        <h2 className="text-xl font-bold mb-2 sm:mb-0 flex items-center"><Annoyed className="mr-2"/>公告管理</h2>
+        <h2 className="text-xl font-bold mb-4 sm:mb-0 flex items-center"><CalendarDays className="mr-2"/>系統公告</h2>
         <button onClick={() => openModal()} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
           <Plus className="-ml-1 mr-2 h-5 w-5" /> Create Announcement
         </button>
       </div>
-      {loading && <LoadingSpinner />}
-      {error && <ErrorMessage message={error} />}
+      {isLoading && <QueryLoading />}
+      {error && <QueryError message={error.message} onRetry={() => refetch()} />}
+      {saveMutation.isPending && <LoadingSpinner />}
+      {saveMutation.error && <ErrorMessage message={saveMutation.error.message} />}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
@@ -274,7 +272,7 @@ const AnnouncementsSection: FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {announcements.map((ann) => (
+            {!isLoading && announcements.filter(a => a.id).map((ann) => (
               <tr key={ann.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{ann.title}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm"><Badge type={ann.type} /></td>
@@ -289,12 +287,12 @@ const AnnouncementsSection: FC = () => {
           </tbody>
         </table>
       </div>
-      {isModalOpen && <AnnouncementModal announcement={currentAnnouncement} onSave={handleSave} onClose={closeModal} />}
+      {isModalOpen && <AnnouncementModal announcement={currentAnnouncement} onSave={handleSave} onClose={closeModal} isSaving={saveMutation.isPending} />}
     </Card>
   );
 };
 
-const AnnouncementModal: FC<{ announcement: Announcement | null, onSave: (announcement: Announcement) => void, onClose: () => void }> = ({ announcement, onSave, onClose }) => {
+const AnnouncementModal: FC<{ announcement: Announcement | null, onSave: (announcement: Announcement) => void, onClose: () => void, isSaving: boolean }> = ({ announcement, onSave, onClose, isSaving }) => {
   const [formState, setFormState] = useState<Omit<Announcement, 'id'>>({
     title: announcement?.title || '',
     content: announcement?.content || '',
@@ -356,8 +354,8 @@ const AnnouncementModal: FC<{ announcement: Announcement | null, onSave: (announ
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
               Cancel
             </button>
-            <button type="submit" className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Save
+            <button type="submit" disabled={isSaving} className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 dark:disabled:bg-gray-600">
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save
             </button>
           </div>
         </form>
@@ -367,31 +365,57 @@ const AnnouncementModal: FC<{ announcement: Announcement | null, onSave: (announ
 };
 
 const MaintenanceModeSection: FC = () => {
-  const [config, setConfig] = useState<MaintenanceConfig>(mockMaintenanceConfig);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const { data: maintenanceData, isLoading, error, refetch } = trpc.superAdmin.getSystemSettingsByCategory.useQuery({ category: 'platform' });
+
+  const [config, setConfig] = useState<MaintenanceConfig | null>(null);
+
+  useEffect(() => {
+    if (maintenanceData) {
+      const formattedConfig = maintenanceData.reduce<Record<string, any>>((acc, item) => {
+        let value: any = item.value ?? '';
+        if (item.key === 'isEnabled') {
+          value = value === 'true';
+        }
+        return { ...acc, [item.key]: value };
+      }, {}) as unknown as MaintenanceConfig;
+      setConfig(formattedConfig);
+    }
+  }, [maintenanceData]);
+
+  const saveMutation = trpc.superAdmin.saveSystemSettings.useMutation({
+      onSuccess: () => {
+          utils.superAdmin.getSystemSettingsByCategory.invalidate({ category: 'platform' });
+      }
+  });
 
   const handleSave = () => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      setLoading(false);
-    }, 1500);
+    if (!config) return;
+    const settingsToSave = Object.entries(config).map(([key, value]) => ({
+        key,
+        value: String(value),
+        category: 'platform' as const
+    }));
+    saveMutation.mutate(settingsToSave); // Type assertion due to mismatch in function signature expectation
   };
 
   const handleToggle = () => {
-    setConfig(prev => ({ ...prev, isEnabled: !prev.isEnabled }));
+    setConfig(prev => prev ? ({ ...prev, isEnabled: !prev.isEnabled }) : null);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setConfig(prev => ({ ...prev, [name]: value }));
+    setConfig(prev => prev ? ({ ...prev, [name]: value }) : null);
   };
+
+  if (isLoading) return <Card className="mt-8"><h2 className="text-xl font-bold mb-4 flex items-center"><Wrench className="mr-2"/>維護模式</h2><QueryLoading/></Card>;
+  if (error) return <Card className="mt-8"><h2 className="text-xl font-bold mb-4 flex items-center"><Wrench className="mr-2"/>維護模式</h2><QueryError message={error.message} onRetry={() => refetch()} /></Card>;
+  if (!config) return null;
 
   return (
     <Card className="mt-8">
       <h2 className="text-xl font-bold mb-4 flex items-center"><Wrench className="mr-2"/>維護模式</h2>
-      {error && <ErrorMessage message={error} />}
+      {saveMutation.error && <ErrorMessage message={saveMutation.error.message} />}
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Maintenance Mode</span>
         <button
@@ -426,8 +450,8 @@ const MaintenanceModeSection: FC = () => {
         </div>
       )}
       <div className="mt-6 flex justify-end">
-        <button onClick={handleSave} disabled={loading} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 dark:disabled:bg-gray-600">
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
+        <button onClick={handleSave} disabled={saveMutation.isPending} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 dark:disabled:bg-gray-600">
+          {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes
         </button>
       </div>
     </Card>

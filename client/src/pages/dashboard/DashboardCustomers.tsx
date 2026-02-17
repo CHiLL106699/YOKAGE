@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Search, X, Tag, ChevronDown, ChevronUp, PlusCircle, Star, User, Zap, Coffee, Loader2, AlertTriangle } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { toast } from "sonner";
 
 // --- TYPES ---
 export type TagType = 'VIP' | '新客' | '回流客' | '高消費';
@@ -28,28 +31,7 @@ export interface Customer {
   consumptionHistory: ConsumptionRecord[];
 }
 
-// --- MOCK DATA ---
-export const mockTags: TagType[] = ['VIP', '新客', '回流客', '高消費'];
 
-const generateMockCustomers = (): Customer[] => Array.from({ length: 20 }, (_, i) => ({
-  id: `CUST${1001 + i}`,
-  name: `客戶 ${String.fromCharCode(65 + i)}`,
-  phone: `0912-345-6${String(i).padStart(2, '0')}`,
-  email: `customer${i + 1}@example.com`,
-  tags: mockTags.filter(() => Math.random() > 0.5).slice(0, 2) as TagType[],
-  lastConsumption: `2026-02-${17 - (i % 10)}`,
-  totalConsumption: Math.floor(Math.random() * 50000) + 1000,
-  visitCount: Math.floor(Math.random() * 50) + 1,
-  status: Math.random() > 0.2 ? 'active' : 'inactive',
-  notes: i % 3 === 0 ? `這是一個關於客戶 ${String.fromCharCode(65 + i)} 的備註。` : '',
-  consumptionHistory: Array.from({ length: Math.floor(Math.random() * 10) + 1 }, (__, j) => ({
-    id: `CONS${1001 + i}-${j}`,
-    date: `2025-12-${28 - j}`,
-    service: ['剪髮', '染髮', '燙髮', '護髮'][j % 4],
-    amount: Math.floor(Math.random() * 2000) + 500,
-    staff: ['設計師A', '設計師B', '設計師C'][j % 3],
-  })),
-}));
 
 // --- HELPER COMPONENTS ---
 
@@ -60,6 +42,8 @@ const TagBadge = ({ tag }: { tag: TagType }) => {
     '回流客': 'bg-green-200 text-green-800',
     '高消費': 'bg-purple-200 text-purple-800',
   };
+  
+
   return (
     <span className={`px-2 py-1 text-xs font-medium rounded-full ${tagColors[tag]}`}>
       {tag}
@@ -102,7 +86,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                     <p className="font-semibold">Tech Lead</p>
                     <p className="text-sm text-gray-500">Principal Architect</p>
                 </div>
-                <img src="https://i.pravatar.cc/40" alt="User Avatar" className="w-10 h-10 rounded-full" />
+                <img src="https://i.pravatar.cc/40" alt="User Avatar" className="w-10 h-10 rounded-full"  loading="lazy" />
             </div>
         </header>
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-8">
@@ -182,7 +166,7 @@ const CustomerDetailPanel = ({ customer }: { customer: Customer }) => {
                                 <div className="space-y-3">
                                     <h4 className="font-medium text-gray-700">管理客戶標籤</h4>
                                     <div className="flex flex-wrap gap-3">
-                                        {mockTags.map(tag => (
+                                        {tags.map(tag => (
                                             <label key={tag} className="flex items-center space-x-2 cursor-pointer p-2 border rounded-lg hover:bg-gray-50">
                                                 <input 
                                                     type="checkbox" 
@@ -245,9 +229,43 @@ const NewCustomerModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
 
 // --- MAIN COMPONENT ---
 const DashboardCustomersPage = () => {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [customers, setCustomers] = useState<Customer[]>([]);
+  const organizationId = 1; // TODO: from context
+  
+  const { data: customersData, isLoading, error, refetch } = trpc.customer.list.useQuery(
+    { organizationId, limit: 50 },
+    { enabled: !!organizationId }
+  );
+  
+  const createMutation = trpc.customer.create.useMutation({
+    onSuccess: () => { toast.success("客戶已建立"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const updateMutation = trpc.customer.update.useMutation({
+    onSuccess: () => { toast.success("客戶已更新"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const deleteMutation = trpc.customer.delete.useMutation({
+    onSuccess: () => { toast.success("客戶已刪除"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const { data: tagsData } = trpc.customer.tags.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const customers = (customersData?.data ?? []).map((c: any) => ({
+    id: c.id, name: c.name, phone: c.phone || "-", email: c.email || "-",
+    gender: c.gender || "other", birthday: c.birthday || "-",
+    memberLevel: c.memberLevel || "bronze", totalVisits: c.totalVisits ?? 0,
+    totalSpent: Number(c.totalSpent || 0), lastVisit: c.lastVisitDate || c.createdAt || "-",
+    tags: c.tags || [], notes: c.notes || "", source: c.source || "-",
+  }));
+  const tags = tagsData ?? [];
+
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTag, setSelectedTag] = useState<TagType | ''>('');
     const [statusFilter, setStatusFilter] = useState<'all' | CustomerStatus>('all');
@@ -260,7 +278,7 @@ const DashboardCustomersPage = () => {
         setError(null);
         const timer = setTimeout(() => {
             try {
-                setCustomers(generateMockCustomers());
+                setCustomers(customers);
                 setLoading(false);
             } catch (e) {
                 setError('無法載入客戶資料，請稍後再試。');
@@ -331,7 +349,7 @@ const DashboardCustomersPage = () => {
                                 onChange={e => setSelectedTag(e.target.value as TagType | '')}
                             >
                                 <option value="">所有標籤</option>
-                                {mockTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                                {tags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>

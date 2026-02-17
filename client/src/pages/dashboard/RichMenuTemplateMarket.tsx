@@ -283,7 +283,7 @@ export default function RichMenuTemplateMarket() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {templates.map((template: any) => (
+          {templates.map((template: Record<string, any>) => (
             <Card
               key={template.id}
               className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
@@ -459,7 +459,7 @@ export default function RichMenuTemplateMarket() {
                   src={templateDetail.imageUrl}
                   alt={templateDetail.name}
                   className="w-full object-contain"
-                />
+                 loading="lazy" />
                 {/* 按鈕區域標示 */}
                 {(Array.isArray(templateDetail.areas) ? (templateDetail.areas as any[]) : []).map(
                     (area: any, idx: number) => {

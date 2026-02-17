@@ -6,106 +6,140 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Trash2,
-  Plus,
+import { 
+  ArrowLeft, 
+  Trash2, 
+  Plus, 
   Minus,
   Tag,
   Ticket,
   ChevronRight,
   ShoppingBag,
-  AlertCircle,
-  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { useStaffContext } from "@/hooks/useStaffContext";
-import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
+
+// 模擬購物車資料
+const mockCartItems = [
+  {
+    id: "cart-001",
+    productId: "prod-001",
+    name: "玻尿酸填充療程",
+    image: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400",
+    price: 15000,
+    originalPrice: 18000,
+    quantity: 1,
+    selected: true,
+    specs: "1ml / 蘋果肌"
+  },
+  {
+    id: "cart-002",
+    productId: "prod-003",
+    name: "皮秒雷射淨膚",
+    image: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=400",
+    price: 6000,
+    originalPrice: 8000,
+    quantity: 2,
+    selected: true,
+    specs: "全臉"
+  },
+  {
+    id: "cart-003",
+    productId: "prod-005",
+    name: "美白導入精華",
+    image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400",
+    price: 2500,
+    originalPrice: 3000,
+    quantity: 1,
+    selected: false,
+    specs: "30ml"
+  }
+];
+
+// 模擬優惠券
+const mockCoupons = [
+  {
+    id: "coupon-001",
+    code: "WELCOME20",
+    name: "新客 8 折券",
+    discount: 0.2,
+    discountType: "percentage",
+    minAmount: 10000,
+    validUntil: "2024-02-28",
+    description: "首次消費滿 NT$10,000 可用"
+  },
+  {
+    id: "coupon-002",
+    code: "SAVE500",
+    name: "滿額折 500",
+    discount: 500,
+    discountType: "fixed",
+    minAmount: 5000,
+    validUntil: "2024-01-31",
+    description: "消費滿 NT$5,000 折 NT$500"
+  },
+  {
+    id: "coupon-003",
+    code: "BIRTHDAY",
+    name: "生日禮金",
+    discount: 1000,
+    discountType: "fixed",
+    minAmount: 0,
+    validUntil: "2024-01-31",
+    description: "生日當月專屬禮金"
+  }
+];
 
 export default function LiffCartPage() {
   const [, setLocation] = useLocation();
-  const { organizationId, staffId: customerId, isLoading: ctxLoading } = useStaffContext();
+  const [cartItems, setCartItems] = useState(mockCartItems);
   const [showCouponDialog, setShowCouponDialog] = useState(false);
-  const [selectedCoupon, setSelectedCoupon] = useState<any | null>(null);
+  const [selectedCoupon, setSelectedCoupon] = useState<typeof mockCoupons[0] | null>(null);
   const [couponCode, setCouponCode] = useState("");
 
-  const utils = trpc.useUtils();
-
-  // --- tRPC Queries ---
-  const cartQuery = trpc.cart.list.useQuery(
-    { organizationId, customerId },
-    { enabled: !ctxLoading }
-  );
-
-  const couponsQuery = trpc.coupon.list.useQuery(
-    { organizationId },
-    { enabled: !ctxLoading && showCouponDialog }
-  );
-
-  // --- tRPC Mutations ---
-  const updateQuantityMut = trpc.cart.updateQuantity.useMutation({
-    onSuccess: () => utils.cart.list.invalidate(),
-  });
-  const toggleSelectMut = trpc.cart.toggleSelect.useMutation({
-    onSuccess: () => utils.cart.list.invalidate(),
-  });
-  const removeMut = trpc.cart.remove.useMutation({
-    onSuccess: () => {
-      utils.cart.list.invalidate();
-      toast.success("已從購物車移除");
-    },
-  });
-  const clearMut = trpc.cart.clear.useMutation({
-    onSuccess: () => {
-      utils.cart.list.invalidate();
-      toast.success("購物車已清空");
-    },
-  });
-
-  // --- Derived Data ---
-  const cartItems: any[] = Array.isArray(cartQuery.data) ? cartQuery.data : [];
-
-  const selectedItems = cartItems.filter((item: any) => item.selected);
-  const subtotal = selectedItems.reduce((sum: number, item: any) => sum + (item.price ?? 0) * (item.quantity ?? 1), 0);
-  const originalTotal = selectedItems.reduce((sum: number, item: any) => sum + (item.originalPrice ?? item.price ?? 0) * (item.quantity ?? 1), 0);
+  const selectedItems = cartItems.filter(item => item.selected);
+  const subtotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const originalTotal = selectedItems.reduce((sum, item) => sum + item.originalPrice * item.quantity, 0);
   const savedAmount = originalTotal - subtotal;
 
-  const couponDiscount = selectedCoupon
+  // 計算優惠券折扣
+  const couponDiscount = selectedCoupon 
     ? selectedCoupon.discountType === "percentage"
       ? Math.round(subtotal * selectedCoupon.discount)
       : selectedCoupon.discount
     : 0;
-  const finalTotal = Math.max(0, subtotal - couponDiscount);
 
-  // --- Handlers ---
+  const finalTotal = subtotal - couponDiscount;
+
   const toggleSelectAll = () => {
-    const allSelected = cartItems.every((item: any) => item.selected);
-    cartItems.forEach((item: any) => {
-      toggleSelectMut.mutate({ id: item.id, selected: !allSelected });
-    });
+    const allSelected = cartItems.every(item => item.selected);
+    setCartItems(cartItems.map(item => ({ ...item, selected: !allSelected })));
   };
 
-  const toggleSelect = (id: number) => {
-    const item = cartItems.find((i: any) => i.id === id);
-    if (item) toggleSelectMut.mutate({ id, selected: !item.selected });
+  const toggleSelect = (id: string) => {
+    setCartItems(cartItems.map(item => 
+      item.id === id ? { ...item, selected: !item.selected } : item
+    ));
   };
 
-  const updateQuantity = (id: number, delta: number) => {
-    const item = cartItems.find((i: any) => i.id === id);
-    if (item) {
-      const newQty = Math.max(1, (item.quantity ?? 1) + delta);
-      updateQuantityMut.mutate({ id, quantity: newQty });
-    }
+  const updateQuantity = (id: string, delta: number) => {
+    setCartItems(cartItems.map(item => {
+      if (item.id === id) {
+        const newQuantity = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQuantity };
+      }
+      return item;
+    }));
   };
 
-  const removeItem = (id: number) => {
-    removeMut.mutate({ id });
+  const removeItem = (id: string) => {
+    setCartItems(cartItems.filter(item => item.id !== id));
+    toast.success("已從購物車移除");
   };
 
-  const applyCoupon = (coupon: any) => {
-    if (subtotal < (coupon.minAmount ?? 0)) {
-      toast.error(`需消費滿 NT$${(coupon.minAmount ?? 0).toLocaleString()} 才能使用此優惠券`);
+  const applyCoupon = (coupon: typeof mockCoupons[0]) => {
+    if (subtotal < coupon.minAmount) {
+      toast.error(`需消費滿 NT$${coupon.minAmount.toLocaleString()} 才能使用此優惠券`);
       return;
     }
     setSelectedCoupon(coupon);
@@ -121,15 +155,6 @@ export default function LiffCartPage() {
     setLocation("/liff/checkout");
   };
 
-  // --- Loading / Error ---
-  if (ctxLoading || cartQuery.isLoading) {
-    return <PageLoadingSkeleton message="載入購物車..." />;
-  }
-
-  if (cartQuery.isError) {
-    return <PageError message="無法載入購物車" onRetry={() => cartQuery.refetch()} />;
-  }
-
   if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -142,8 +167,6 @@ export default function LiffCartPage() {
       </div>
     );
   }
-
-  const rawCoupons: any[] = Array.isArray(couponsQuery.data) ? couponsQuery.data : (couponsQuery.data as any)?.data ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32">
@@ -158,13 +181,7 @@ export default function LiffCartPage() {
             </Link>
             <h1 className="text-lg font-bold">購物車 ({cartItems.length})</h1>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-500"
-            onClick={() => clearMut.mutate({ organizationId, customerId })}
-            disabled={clearMut.isPending}
-          >
+          <Button variant="ghost" size="sm" className="text-red-500">
             清空
           </Button>
         </div>
@@ -172,49 +189,45 @@ export default function LiffCartPage() {
 
       {/* Cart Items */}
       <div className="p-4 space-y-3">
-        {cartItems.map((item: any) => (
+        {cartItems.map(item => (
           <Card key={item.id}>
             <CardContent className="p-3">
               <div className="flex gap-3">
-                <Checkbox
+                <Checkbox 
                   checked={item.selected}
                   onCheckedChange={() => toggleSelect(item.id)}
                   className="mt-8"
                 />
-                <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                  {item.productImage ? (
-                    <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <ShoppingBag className="w-8 h-8" />
-                    </div>
-                  )}
-                </div>
+                <img 
+                  src={item.image} 
+                  alt={item.name}
+                  className="w-20 h-20 object-cover rounded-lg"
+                 loading="lazy" />
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-sm line-clamp-2">{item.productName}</h3>
-                  {item.specs && <p className="text-xs text-gray-500 mt-1">{item.specs}</p>}
+                  <h3 className="font-medium text-sm line-clamp-2">{item.name}</h3>
+                  <p className="text-xs text-gray-500 mt-1">{item.specs}</p>
                   <div className="flex items-center justify-between mt-2">
                     <div>
-                      <span className="text-red-500 font-bold">NT${(item.price ?? 0).toLocaleString()}</span>
-                      {item.originalPrice && item.originalPrice > item.price && (
+                      <span className="text-red-500 font-bold">NT${item.price.toLocaleString()}</span>
+                      {item.originalPrice > item.price && (
                         <span className="text-xs text-gray-400 line-through ml-1">
-                          ${(item.originalPrice ?? 0).toLocaleString()}
+                          ${item.originalPrice.toLocaleString()}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
                         className="h-7 w-7"
                         onClick={() => updateQuantity(item.id, -1)}
                       >
                         <Minus className="w-3 h-3" />
                       </Button>
-                      <span className="w-8 text-center">{item.quantity ?? 1}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
                         className="h-7 w-7"
                         onClick={() => updateQuantity(item.id, 1)}
                       >
@@ -223,9 +236,9 @@ export default function LiffCartPage() {
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
                   className="text-gray-400"
                   onClick={() => removeItem(item.id)}
                 >
@@ -241,7 +254,7 @@ export default function LiffCartPage() {
       <div className="px-4">
         <Card>
           <CardContent className="p-3">
-            <button
+            <button 
               className="w-full flex items-center justify-between"
               onClick={() => setShowCouponDialog(true)}
             >
@@ -294,18 +307,22 @@ export default function LiffCartPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Checkbox
-              checked={cartItems.length > 0 && cartItems.every((item: any) => item.selected)}
+            <Checkbox 
+              checked={cartItems.every(item => item.selected)}
               onCheckedChange={toggleSelectAll}
             />
             <span className="text-sm">全選</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-sm text-gray-500">已選 {selectedItems.length} 件</p>
-              <p className="font-bold text-lg text-red-500">NT${finalTotal.toLocaleString()}</p>
+              <p className="text-sm text-gray-500">
+                已選 {selectedItems.length} 件
+              </p>
+              <p className="font-bold text-lg text-red-500">
+                NT${finalTotal.toLocaleString()}
+              </p>
             </div>
-            <Button
+            <Button 
               className="px-8"
               disabled={selectedItems.length === 0}
               onClick={handleCheckout}
@@ -322,9 +339,10 @@ export default function LiffCartPage() {
           <DialogHeader>
             <DialogTitle>選擇優惠券</DialogTitle>
           </DialogHeader>
-
+          
+          {/* Coupon Code Input */}
           <div className="flex gap-2 mb-4">
-            <Input
+            <Input 
               placeholder="輸入優惠碼"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
@@ -332,50 +350,43 @@ export default function LiffCartPage() {
             <Button variant="outline">兌換</Button>
           </div>
 
+          {/* Available Coupons */}
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {couponsQuery.isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-              </div>
-            ) : rawCoupons.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">暫無可用優惠券</p>
-            ) : (
-              rawCoupons.map((coupon: any) => {
-                const isValid = subtotal >= (coupon.minAmount ?? 0);
-                return (
-                  <div
-                    key={coupon.id}
-                    className={`border rounded-lg p-3 ${isValid ? "cursor-pointer hover:border-primary" : "opacity-50"}`}
-                    onClick={() => isValid && applyCoupon(coupon)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-red-500 border-red-500">
-                            {coupon.discountType === "percentage"
-                              ? `${(coupon.discount ?? 0) * 100}% OFF`
-                              : `NT$${coupon.discount ?? 0}`}
-                          </Badge>
-                          <span className="font-medium">{coupon.name}</span>
-                        </div>
-                        {coupon.description && (
-                          <p className="text-xs text-gray-500 mt-1">{coupon.description}</p>
-                        )}
+            {mockCoupons.map(coupon => {
+              const isValid = subtotal >= coupon.minAmount;
+              return (
+                <div 
+                  key={coupon.id}
+                  className={`border rounded-lg p-3 ${isValid ? "cursor-pointer hover:border-primary" : "opacity-50"}`}
+                  onClick={() => isValid && applyCoupon(coupon)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-red-500 border-red-500">
+                          {coupon.discountType === "percentage" 
+                            ? `${coupon.discount * 100}% OFF`
+                            : `NT$${coupon.discount}`
+                          }
+                        </Badge>
+                        <span className="font-medium">{coupon.name}</span>
                       </div>
-                      {selectedCoupon?.id === coupon.id && (
-                        <Badge className="bg-green-500">已選擇</Badge>
-                      )}
+                      <p className="text-xs text-gray-500 mt-1">{coupon.description}</p>
+                      <p className="text-xs text-gray-400 mt-1">有效期限：{coupon.validUntil}</p>
                     </div>
-                    {!isValid && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-orange-500">
-                        <AlertCircle className="w-3 h-3" />
-                        <span>需消費滿 NT${(coupon.minAmount ?? 0).toLocaleString()}</span>
-                      </div>
+                    {selectedCoupon?.id === coupon.id && (
+                      <Badge className="bg-green-500">已選擇</Badge>
                     )}
                   </div>
-                );
-              })
-            )}
+                  {!isValid && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-orange-500">
+                      <AlertCircle className="w-3 h-3" />
+                      <span>需消費滿 NT${coupon.minAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <DialogFooter>
@@ -383,8 +394,8 @@ export default function LiffCartPage() {
               取消
             </Button>
             {selectedCoupon && (
-              <Button
-                variant="ghost"
+              <Button 
+                variant="ghost" 
                 className="text-red-500"
                 onClick={() => {
                   setSelectedCoupon(null);

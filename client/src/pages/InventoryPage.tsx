@@ -25,209 +25,58 @@ import {
   Filter,
 } from "lucide-react";
 
-// Mock data for inventory items
-const mockInventory = [
-  {
-    id: 1,
-    name: "玻尿酸 1ml",
-    sku: "HA-001",
-    category: "注射材料",
-    currentStock: 5,
-    minStock: 10,
-    maxStock: 50,
-    unit: "支",
-    costPrice: 3000,
-    status: "low",
-    lastRestocked: "2024-01-10",
-  },
-  {
-    id: 2,
-    name: "肉毒桿菌 100U",
-    sku: "BTX-001",
-    category: "注射材料",
-    currentStock: 3,
-    minStock: 5,
-    maxStock: 30,
-    unit: "瓶",
-    costPrice: 8000,
-    status: "critical",
-    lastRestocked: "2024-01-05",
-  },
-  {
-    id: 3,
-    name: "雷射探頭",
-    sku: "LSR-001",
-    category: "耗材",
-    currentStock: 20,
-    minStock: 10,
-    maxStock: 100,
-    unit: "個",
-    costPrice: 500,
-    status: "normal",
-    lastRestocked: "2024-01-12",
-  },
-  {
-    id: 4,
-    name: "保濕精華液",
-    sku: "SKC-001",
-    category: "保養品",
-    currentStock: 45,
-    minStock: 20,
-    maxStock: 100,
-    unit: "瓶",
-    costPrice: 200,
-    status: "normal",
-    lastRestocked: "2024-01-08",
-  },
-  {
-    id: 5,
-    name: "消毒紗布",
-    sku: "MED-001",
-    category: "醫療耗材",
-    currentStock: 8,
-    minStock: 20,
-    maxStock: 200,
-    unit: "包",
-    costPrice: 50,
-    status: "low",
-    lastRestocked: "2024-01-01",
-  },
-  {
-    id: 6,
-    name: "手術手套 M",
-    sku: "GLV-M01",
-    category: "醫療耗材",
-    currentStock: 150,
-    minStock: 100,
-    maxStock: 500,
-    unit: "雙",
-    costPrice: 10,
-    status: "normal",
-    lastRestocked: "2024-01-14",
-  },
-];
-
-// Mock data for inventory movements
-const mockMovements = [
-  {
-    id: 1,
-    itemName: "玻尿酸 1ml",
-    type: "out",
-    quantity: 2,
-    reason: "療程使用",
-    operator: "王醫師",
-    createdAt: "2024-01-15 14:30:00",
-    note: "客戶：李小華",
-  },
-  {
-    id: 2,
-    itemName: "肉毒桿菌 100U",
-    type: "out",
-    quantity: 1,
-    reason: "療程使用",
-    operator: "陳醫師",
-    createdAt: "2024-01-15 11:00:00",
-    note: "客戶：張美麗",
-  },
-  {
-    id: 3,
-    itemName: "保濕精華液",
-    type: "in",
-    quantity: 20,
-    reason: "進貨補充",
-    operator: "管理員",
-    createdAt: "2024-01-14 09:00:00",
-    note: "供應商：美麗生技",
-  },
-  {
-    id: 4,
-    itemName: "消毒紗布",
-    type: "out",
-    quantity: 5,
-    reason: "療程使用",
-    operator: "護理師",
-    createdAt: "2024-01-14 16:00:00",
-    note: "",
-  },
-  {
-    id: 5,
-    itemName: "雷射探頭",
-    type: "in",
-    quantity: 10,
-    reason: "進貨補充",
-    operator: "管理員",
-    createdAt: "2024-01-12 10:00:00",
-    note: "供應商：醫療器材公司",
-  },
-];
-
-// Mock alerts
-const mockAlerts = [
-  {
-    id: 1,
-    itemName: "肉毒桿菌 100U",
-    type: "critical",
-    message: "庫存嚴重不足，僅剩 3 瓶",
-    createdAt: "2024-01-15 08:00:00",
-    isRead: false,
-  },
-  {
-    id: 2,
-    itemName: "玻尿酸 1ml",
-    type: "low",
-    message: "庫存低於安全水位，目前 5 支",
-    createdAt: "2024-01-15 08:00:00",
-    isRead: false,
-  },
-  {
-    id: 3,
-    itemName: "消毒紗布",
-    type: "low",
-    message: "庫存低於安全水位，目前 8 包",
-    createdAt: "2024-01-15 08:00:00",
-    isRead: true,
-  },
-];
-
-const statusColors: Record<string, string> = {
-  normal: "bg-green-100 text-green-800",
-  low: "bg-yellow-100 text-yellow-800",
-  critical: "bg-red-100 text-red-800",
-};
-
-const statusLabels: Record<string, string> = {
-  normal: "正常",
-  low: "偏低",
-  critical: "嚴重不足",
-};
 
 export default function InventoryPage() {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: productsData, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = trpc.product.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: transactionsData, isLoading: txLoading, refetch: refetchTx } = trpc.inventory.listTransactions.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const createTxMutation = trpc.inventory.createTransaction.useMutation({
+    onSuccess: () => { toast.success("庫存交易已建立"); refetchProducts(); refetchTx(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const isLoading = productsLoading || txLoading;
+  const inventoryItems = (productsData?.data ?? []).map((p: any) => ({
+    id: p.id, name: p.name, sku: p.sku || `SKU-${p.id}`, category: p.category || "一般",
+    currentStock: p.stock ?? 0, minStock: p.minStock ?? 10, maxStock: p.maxStock ?? 100,
+    unit: p.unit || "個", costPrice: Number(p.costPrice || 0), sellingPrice: Number(p.price || 0),
+    supplier: p.supplier || "-", lastRestocked: p.updatedAt || "-", status: p.isActive ? "正常" : "停用",
+    expiryDate: p.expiryDate || null,
+  }));
+  const transactions = (transactionsData ?? []).map((t: any) => ({
+    id: t.id, productName: t.productName || `產品 #${t.productId}`, type: t.transactionType,
+    quantity: t.quantity, date: t.transactionDate, notes: t.notes || "",
+    staffName: t.staffName || "-",
+  }));
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<typeof mockInventory[0] | null>(null);
-  const [adjustType, setAdjustType] = useState<"in" | "out">("in");
   const [adjustQuantity, setAdjustQuantity] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
 
-  const filteredInventory = mockInventory.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredInventory = inventoryItems.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const categories = Array.from(new Set(mockInventory.map(item => item.category)));
+  const totalValue = filteredInventory.reduce((sum, item) => sum + item.costPrice * item.currentStock, 0);
+  const lowStockCount = filteredInventory.filter(item => item.currentStock < item.minStock && item.currentStock > 0).length;
+  const criticalStockCount = filteredInventory.filter(item => item.currentStock === 0).length;
+  const categories = [...new Set(inventoryItems.map(i => i.category))];
 
-  const handleAdjustStock = (item: typeof mockInventory[0], type: "in" | "out") => {
-    setSelectedItem(item);
-    setAdjustType(type);
-    setAdjustQuantity("");
-    setAdjustReason("");
-    setIsAdjustDialogOpen(true);
-  };
 
   const handleSaveAdjustment = () => {
     if (!adjustQuantity || !adjustReason) {
@@ -238,9 +87,9 @@ export default function InventoryPage() {
     setIsAdjustDialogOpen(false);
   };
 
-  const lowStockCount = mockInventory.filter(i => i.status === "low").length;
-  const criticalStockCount = mockInventory.filter(i => i.status === "critical").length;
-  const totalValue = mockInventory.reduce((sum, item) => sum + (item.currentStock * item.costPrice), 0);
+
+  if (productsError) return <QueryError message={productsError.message} onRetry={refetchProducts} />;
+
 
   return (
     <DashboardLayout>
@@ -261,7 +110,7 @@ export default function InventoryPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockInventory.length}</div>
+              <div className="text-2xl font-bold">{inventoryItems.length}</div>
               <p className="text-xs text-muted-foreground">管理中的品項</p>
             </CardContent>
           </Card>
@@ -303,7 +152,7 @@ export default function InventoryPage() {
         </div>
 
         {/* 警示通知 */}
-        {mockAlerts.filter(a => !a.isRead).length > 0 && (
+        {([] as any[]).filter(a => !a.isRead).length > 0 && (
           <Card className="border-orange-200 bg-orange-50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -313,7 +162,7 @@ export default function InventoryPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {mockAlerts.filter(a => !a.isRead).map((alert) => (
+                {([] as any[]).filter(a => !a.isRead).map((alert) => (
                   <div key={alert.id} className="flex items-center justify-between p-2 bg-white rounded-lg">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className={`h-4 w-4 ${alert.type === "critical" ? "text-red-500" : "text-yellow-500"}`} />
@@ -461,7 +310,7 @@ export default function InventoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockMovements.map((movement) => (
+                    {([] as any[]).map((movement) => (
                       <TableRow key={movement.id}>
                         <TableCell className="text-sm text-muted-foreground">
                           {movement.createdAt}
@@ -563,7 +412,7 @@ export default function InventoryPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockInventory.slice(0, 4).map((item) => (
+                      {inventoryItems.slice(0, 4).map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell className="text-right">

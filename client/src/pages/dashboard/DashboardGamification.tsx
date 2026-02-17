@@ -76,7 +76,7 @@ const CardContent = ({ children, className }: { children: React.ReactNode; class
   <div className={`p-4 ${className}`}>{children}</div>
 );
 
-const Button = ({ children, className, variant = 'primary', ...props }: { children: React.ReactNode; className?: string; variant?: 'primary' | 'secondary' | 'ghost'; onClick?: () => void; [key: string]: any }) => {
+const Button = ({ children, className, variant = 'primary', ...props }: { children: React.ReactNode; className?: string; variant?: 'primary' | 'secondary' | 'ghost'; onClick?: () => void; [key: string]: unknown }) => {
   const baseClasses = 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
   const variantClasses = {
     primary: 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700',
@@ -279,7 +279,7 @@ const GamificationDashboard = () => {
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
                                     <div className="flex items-center">
                                         <div className="h-10 w-10 flex-shrink-0">
-                                            <img className="h-10 w-10 rounded-full object-cover" src={prize.image} alt={prize.name} />
+                                            <img className="h-10 w-10 rounded-full object-cover" src={prize.image} alt={prize.name}  loading="lazy" />
                                         </div>
                                         <div className="ml-4">{prize.name}</div>
                                     </div>

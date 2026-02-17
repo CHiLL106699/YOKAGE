@@ -119,7 +119,7 @@ export function RichMenuImageUploader({
               src={preview}
               alt="圖文選單預覽"
               className="w-full h-auto rounded-lg border-2 border-border"
-            />
+             loading="lazy" />
             {uploadImage.isPending && (
               <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -2,6 +2,9 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Users, List, X, Plus, MoreVertical, Star, BarChart, Phone, Calendar, Briefcase, ChevronDown, Search } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { toast } from "sonner";
 
 // --- TYPESCRIPT MODELS ---
 type StaffRole = '醫師' | '護理師' | '美容師' | '櫃檯';
@@ -24,21 +27,6 @@ interface Staff {
   schedule: ScheduleEntry[];
 }
 
-// --- MOCK DATA ---
-const mockStaffData: Staff[] = [
-  { id: 's01', name: '林醫師', avatarUrl: 'https://i.pravatar.cc/150?u=s01', role: '醫師', phone: '0912-345-678', monthlySales: 250000, attendanceRate: 98, status: 'Active', schedule: [{ date: '2026-03-01', shift: '早班' }] },
-  { id: 's02', name: '陳護理師', avatarUrl: 'https://i.pravatar.cc/150?u=s02', role: '護理師', phone: '0922-345-678', monthlySales: 80000, attendanceRate: 100, status: 'Active', schedule: [{ date: '2026-03-01', shift: '晚班' }] },
-  { id: 's03', name: '黃美容師', avatarUrl: 'https://i.pravatar.cc/150?u=s03', role: '美容師', phone: '0932-345-678', monthlySales: 180000, attendanceRate: 95, status: 'Active', schedule: [{ date: '2026-03-01', shift: '全天' }] },
-  { id: 's04', name: '張櫃檯', avatarUrl: 'https://i.pravatar.cc/150?u=s04', role: '櫃檯', phone: '0942-345-678', monthlySales: 50000, attendanceRate: 99, status: 'Active', schedule: [{ date: '2026-03-01', shift: '早班' }] },
-  { id: 's05', name: '王醫師', avatarUrl: 'https://i.pravatar.cc/150?u=s05', role: '醫師', phone: '0952-345-678', monthlySales: 320000, attendanceRate: 97, status: 'Active', schedule: [{ date: '2026-03-02', shift: '休假' }] },
-  { id: 's06', name: '李護理師', avatarUrl: 'https://i.pravatar.cc/150?u=s06', role: '護理師', phone: '0962-345-678', monthlySales: 95000, attendanceRate: 94, status: 'Inactive', schedule: [] },
-  { id: 's07', name: '周美容師', avatarUrl: 'https://i.pravatar.cc/150?u=s07', role: '美容師', phone: '0972-345-678', monthlySales: 210000, attendanceRate: 96, status: 'Active', schedule: [] },
-  { id: 's08', name: '吳櫃檯', avatarUrl: 'https://i.pravatar.cc/150?u=s08', role: '櫃檯', phone: '0982-345-678', monthlySales: 65000, attendanceRate: 100, status: 'Active', schedule: [] },
-  { id: 's09', name: '蔡醫師', avatarUrl: 'https://i.pravatar.cc/150?u=s09', role: '醫師', phone: '0911-111-111', monthlySales: 280000, attendanceRate: 99, status: 'Active', schedule: [] },
-  { id: 's10', name: '許護理師', avatarUrl: 'https://i.pravatar.cc/150?u=s10', role: '護理師', phone: '0922-222-222', monthlySales: 85000, attendanceRate: 93, status: 'Active', schedule: [] },
-  { id: 's11', name: '鄭美容師', avatarUrl: 'https://i.pravatar.cc/150?u=s11', role: '美容師', phone: '0933-333-333', monthlySales: 195000, attendanceRate: 98, status: 'Inactive', schedule: [] },
-  { id: 's12', name: '廖櫃檯', avatarUrl: 'https://i.pravatar.cc/150?u=s12', role: '櫃檯', phone: '0944-444-444', monthlySales: 58000, attendanceRate: 97, status: 'Active', schedule: [] },
-];
 
 // --- HELPER COMPONENTS ---
 
@@ -64,7 +52,7 @@ const StatusBadge: React.FC<{ status: StaffStatus }> = ({ status }) => {
 
 const StaffCard: React.FC<{ staff: Staff; onSelect: (staff: Staff) => void }> = ({ staff, onSelect }) => (
   <div onClick={() => onSelect(staff)} className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:shadow-xl transition-shadow cursor-pointer">
-    <img src={staff.avatarUrl} alt={staff.name} className="w-24 h-24 rounded-full mb-4" />
+    <img src={staff.avatarUrl} alt={staff.name} className="w-24 h-24 rounded-full mb-4"  loading="lazy" />
     <h3 className="text-lg font-semibold text-gray-800">{staff.name}</h3>
     <div className="my-2"><RoleBadge role={staff.role} /></div>
     <p className="text-sm text-gray-500 flex items-center"><Phone className="w-4 h-4 mr-2" />{staff.phone}</p>
@@ -105,7 +93,7 @@ const StaffList: React.FC<{ staffList: Staff[]; onSelect: (staff: Staff) => void
                 {staffList.map((staff) => (
                     <tr key={staff.id} className="bg-white border-b hover:bg-gray-50">
                         <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">
-                            <img className="w-10 h-10 rounded-full mr-3" src={staff.avatarUrl} alt={staff.name} />
+                            <img className="w-10 h-10 rounded-full mr-3" src={staff.avatarUrl} alt={staff.name}  loading="lazy" />
                             {staff.name}
                         </th>
                         <td className="px-6 py-4"><RoleBadge role={staff.role} /></td>
@@ -140,12 +128,15 @@ const PerformanceOverview: React.FC<{ staffList: Staff[] }> = ({ staffList }) =>
 
   if (!topPerformer) return null;
 
+  
+
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div className="md:col-span-1 bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center text-center">
         <Star className="w-10 h-10 text-yellow-400 mb-2" />
         <h3 className="text-lg font-semibold text-gray-800">本月最佳表現</h3>
-        <img src={topPerformer.avatarUrl} alt={topPerformer.name} className="w-16 h-16 rounded-full my-3" />
+        <img src={topPerformer.avatarUrl} alt={topPerformer.name} className="w-16 h-16 rounded-full my-3"  loading="lazy" />
         <p className="font-bold text-xl text-indigo-600">{topPerformer.name}</p>
         <p className="text-gray-500">業績: ${topPerformer.monthlySales.toLocaleString()}</p>
       </div>
@@ -234,7 +225,7 @@ const StaffDetailModal: React.FC<{ staff: Staff | null; onClose: () => void }> =
             <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl">
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center">
-                        <img src={staff.avatarUrl} alt={staff.name} className="w-20 h-20 rounded-full mr-6" />
+                        <img src={staff.avatarUrl} alt={staff.name} className="w-20 h-20 rounded-full mr-6"  loading="lazy" />
                         <div>
                             <h2 className="text-3xl font-bold text-gray-800">{staff.name}</h2>
                             <RoleBadge role={staff.role} />
@@ -324,10 +315,33 @@ const DashboardLayout: React.FC<{ children: React.ReactNode, pageTitle: string }
 
 // --- PAGE COMPONENT ---
 const DashboardStaffPage = () => {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: staffData, isLoading, error, refetch } = trpc.staff.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const createMutation = trpc.staff.create.useMutation({
+    onSuccess: () => { toast.success("員工已建立"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const updateMutation = trpc.staff.update.useMutation({
+    onSuccess: () => { toast.success("員工已更新"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const staffList = (staffData?.data ?? []).map((s: any) => ({
+    id: s.id, name: s.name, employeeId: s.employeeId || "-",
+    phone: s.phone || "-", email: s.email || "-",
+    position: s.position || "-", department: s.department || "-",
+    hireDate: s.hireDate || "-", salary: s.salary || "0",
+    salaryType: s.salaryType || "monthly", isActive: s.isActive !== false,
+  }));
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [staffData, setStaffData] = useState<Staff[]>(mockStaffData);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [isNewStaffModalOpen, setIsNewStaffModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
 

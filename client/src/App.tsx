@@ -4,7 +4,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import React, { Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 // ============================================
@@ -186,20 +186,11 @@ const StaffClockEnhanced = React.lazy(() => import("@/pages/staff/StaffClockEnha
 const AttendanceCalendarPage = React.lazy(() => import("@/pages/staff/AttendanceCalendarPage"));
 const AttendanceRequestPage = React.lazy(() => import("@/pages/staff/AttendanceRequestPage"));
 
-// ============================================
-// Loading Fallback
-// ============================================
-function PageLoader() {
-  return (
-    <div className="flex h-screen w-full items-center justify-center">
-      <Loader2 className="size-8 animate-spin text-muted-foreground" />
-    </div>
-  );
-}
+
 
 function AppRouter() {
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<PageSkeleton />}>
       <Switch>
         {/* ======== 公開路由 ======== */}
         <Route path="/" component={LandingPage} />

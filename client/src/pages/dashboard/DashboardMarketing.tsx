@@ -2,39 +2,12 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { BarChart, Bell, Tag, Calendar, Users, Send, PlusCircle, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { toast } from "sonner";
 
-// Mock Data
-const mockBroadcasts = [
-  { id: 1, name: '夏季大特價', status: '已發送', sent: 1200, openRate: '75%', clickRate: '15%' },
-  { id: 2, name: '新品上市通知', status: '已發送', sent: 1500, openRate: '80%', clickRate: '20%' },
-  { id: 3, name: '週末快閃優惠', status: '排程中', sent: 0, openRate: 'N/A', clickRate: 'N/A' },
-  { id: 4, name: '會員專屬折扣', status: '草稿', sent: 0, openRate: 'N/A', clickRate: 'N/A' },
-  { id: 5, name: '節日問候', status: '已發送', sent: 2000, openRate: '85%', clickRate: '10%' },
-  { id: 6, name: '產品更新說明', status: '已發送', sent: 800, openRate: '60%', clickRate: '5%' },
-  { id: 7, name: '網絡研討會邀請', status: '排程中', sent: 0, openRate: 'N/A', clickRate: 'N/A' },
-  { id: 8, name: '客戶滿意度調查', status: '已發送', sent: 1800, openRate: '70%', clickRate: '12%' },
-  { id: 9, name: '廢棄購物車提醒', status: '草稿', sent: 0, openRate: 'N/A', clickRate: 'N/A' },
-  { id: 10, name: '生日祝福', status: '已發送', sent: 500, openRate: '90%', clickRate: '25%' },
-];
 
-const mockSegments = [
-  { id: 1, name: '高價值客戶', tags: ['VIP', '高消費'], count: 500 },
-  { id: 2, name: '潛在流失客戶', tags: ['低活躍度', '30天未登入'], count: 1200 },
-  { id: 3, name: '新註冊用戶', tags: ['新用戶', '7天內註冊'], count: 800 },
-  { id: 4, name: '活躍用戶', tags: ['高活躍度', '每日登入'], count: 2500 },
-  { id: 5, name: '特定產品愛好者', tags: ['產品A愛好者', '高頻次購買'], count: 300 },
-  { id: 6, name: '購物車放棄者', tags: ['有廢棄購物車'], count: 150 },
-  { id: 7, name: '電子報訂閱者', tags: ['訂閱電子報'], count: 3000 },
-  { id: 8, name: '地區性客戶', tags: ['北部地區'], count: 1800 },
-];
 
-const mockCampaigns = [
-  { id: 1, name: '雙十一購物節', dateRange: '2023/11/01 - 2023/11/11', type: '季節性', status: '已結束', conversionRate: '25%' },
-  { id: 2, name: '聖誕節特惠', dateRange: '2023/12/15 - 2023/12/25', type: '節日', status: '已結束', conversionRate: '20%' },
-  { id: 3, name: '春季新品推廣', dateRange: '2024/03/01 - 2024/03/31', type: '新品上市', status: '進行中', conversionRate: '15%' },
-  { id: 4, name: '會員感謝週', dateRange: '2024/05/10 - 2024/05/17', type: '會員活動', status: '規劃中', conversionRate: 'N/A' },
-  { id: 5, name: '夏季清倉', dateRange: '2024/07/20 - 2024/07/31', type: '清倉', status: '規劃中', conversionRate: 'N/A' },
-];
 
 const StatCard = ({ title, value, icon: Icon }: { title: string; value: string; icon: React.FC<{ className?: string }> }) => (
   <div className="bg-white p-4 rounded-lg shadow-md flex items-center">
@@ -73,7 +46,7 @@ const BroadcastsTab = ({ onOpenModal }: { onOpenModal: () => void }) => (
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {mockBroadcasts.map((broadcast) => (
+          {broadcasts.map((broadcast) => (
             <tr key={broadcast.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{broadcast.name}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -109,7 +82,7 @@ const SegmentsTab = () => (
       </button>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {mockSegments.map((segment) => (
+      {(campaigns as any[]).map((segment) => (
         <div key={segment.id} className="bg-white rounded-lg shadow-md p-4">
           <h3 className="text-lg font-bold text-gray-800 mb-2">{segment.name}</h3>
           <div className="flex flex-wrap gap-2 mb-2">
@@ -149,7 +122,7 @@ const CampaignsTab = () => (
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {mockCampaigns.map((campaign) => (
+          {campaigns.map((campaign) => (
             <tr key={campaign.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{campaign.name}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{campaign.dateRange}</td>
@@ -175,6 +148,11 @@ const CampaignsTab = () => (
 const BroadcastModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   if (!isOpen) return null;
 
+  if (isLoading) return <QueryLoading variant="skeleton-cards" />;
+
+  if (campError) return <QueryError message={campError.message} onRetry={refetchCampaigns} />;
+
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
@@ -194,7 +172,7 @@ const BroadcastModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           <div>
             <label className="block text-sm font-medium text-gray-700">目標分群</label>
             <select className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-              {mockSegments.map(segment => <option key={segment.id}>{segment.name}</option>)}
+              {(campaigns as any[]).map(segment => <option key={segment.id}>{segment.name}</option>)}
             </select>
           </div>
 
@@ -269,6 +247,27 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const DashboardMarketingPage = () => {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: campaignsData, isLoading: campLoading, error: campError, refetch: refetchCampaigns } = trpc.marketing.listCampaigns.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: broadcastData, isLoading: bcLoading } = trpc.broadcast.list.useQuery(
+    { organizationId, limit: 20 },
+    { enabled: !!organizationId }
+  );
+  
+  const createCampaignMutation = trpc.marketing.createCampaign.useMutation({
+    onSuccess: () => { toast.success("行銷活動已建立"); refetchCampaigns(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const isLoading = campLoading || bcLoading;
+  const campaigns = (campaignsData as any)?.data ?? campaignsData ?? [];
+  const broadcasts = (broadcastData as any)?.data ?? broadcastData ?? [];
+
   const [activeTab, setActiveTab] = useState('broadcasts');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
