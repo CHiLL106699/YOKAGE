@@ -1,32 +1,25 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Search, UserPlus, MoreVertical, Shield, User, Briefcase, Users, ChevronDown, ChevronLeft, ChevronRight, Edit, UserX, KeyRound } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { QueryLoading, QueryError } from '@/components/ui/query-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// --- MOCK DATA AND TYPES ---
+// --- TYPES ---
 type UserRole = 'super_admin' | 'admin' | 'staff' | 'user';
 
 interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  tenant: string;
-  lastLogin: string;
-  status: 'active' | 'inactive';
-  avatar: string;
+  id: number;
+  openId: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+  organizationName: string | null;
+  organizationId: number | null;
+  lastSignedIn: Date;
+  createdAt: Date;
 }
-
-const mockUsers: UserData[] = Array.from({ length: 20 }, (_, i) => ({
-  id: `user_${i + 1}`,
-  name: `User Name ${i + 1}`,
-  email: `user${i + 1}@example.com`,
-  role: (['super_admin', 'admin', 'staff', 'user'] as UserRole[])[i % 4],
-  tenant: `Tenant ${String.fromCharCode(65 + (i % 3))}`,
-  lastLogin: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 14).toISOString(),
-  status: Math.random() > 0.2 ? 'active' : 'inactive',
-  avatar: `https://i.pravatar.cc/40?u=user${i + 1}`,
-}));
 
 // --- HELPER COMPONENTS ---
 
@@ -102,7 +95,7 @@ const Sidebar: React.FC = () => {
   );
 };
 
-const StatCard: React.FC<{ title: string; value: string; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
+const StatCard: React.FC<{ title: string; value: string | number; icon: React.ElementType; isLoading?: boolean }> = ({ title, value, icon: Icon, isLoading }) => (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center">
             <div className="p-3 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 text-white">
@@ -110,7 +103,7 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ElementType
             </div>
             <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+                {isLoading ? <Skeleton className="h-9 w-24 mt-1" /> : <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</p>}
             </div>
         </div>
     </div>
@@ -118,69 +111,66 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ElementType
 
 const ITEMS_PER_PAGE = 10;
 
+// A simple debounce hook
+function useDebounce(value: string, delay: number): string {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+}
+
 // --- MAIN PAGE COMPONENT ---
 
 const AdminUsersPage = () => {
-  const [users, setUsers] = useState<UserData[]>(mockUsers);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const utils = trpc.useUtils();
 
-  const filteredUsers = useMemo(() => users
-    .filter(user => user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(user => roleFilter === 'all' || user.role === roleFilter), [users, searchTerm, roleFilter]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const paginatedUsers = useMemo(() => 
-    filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-  [filteredUsers, currentPage]);
+  const { data: statsData, isLoading: isLoadingStats } = trpc.superAdmin.userStats.useQuery();
 
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const { data: usersData, isLoading: isLoadingUsers, isError: isErrorUsers, error: usersError } = trpc.superAdmin.listAllUsers.useQuery({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: debouncedSearchTerm,
+    role: roleFilter === 'all' ? undefined : roleFilter,
+  });
 
-  const handleAction = (action: string, userId: string) => {
-    // In a real app, you'd dispatch an action to your state management library or make an API call.
-    setActiveDropdown(null); // Close dropdown after action
+  const toggleUserStatusMutation = trpc.superAdmin.toggleUserStatus.useMutation({
+    onSuccess: () => {
+      utils.superAdmin.listAllUsers.invalidate();
+      utils.superAdmin.userStats.invalidate();
+    },
+  });
+
+  const handleToggleStatus = (userId: number, currentStatus: boolean) => {
+    toggleUserStatusMutation.mutate({ userId, isActive: !currentStatus });
+    setActiveDropdown(null);
   };
 
-  const toggleDropdown = (userId: string) => {
-    if (activeDropdown === userId) {
-      setActiveDropdown(null);
-    } else {
-      setActiveDropdown(userId);
+  const toggleDropdown = (userId: number) => {
+    setActiveDropdown(activeDropdown === userId ? null : userId);
+  };
+
+  const totalPages = usersData ? Math.ceil(usersData.total / ITEMS_PER_PAGE) : 0;
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
     }
   };
 
-  if (loading) {
-    return (
-        <AdminLayout>
-            <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-500 dark:text-gray-400 text-lg">Loading user data...</p>
-                </div>
-            </div>
-        </AdminLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl">
-            <h2 className="text-2xl font-bold text-red-600">An Error Occurred</h2>
-            <p className="text-red-500 mt-2">{error}</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-6 px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
-              Retry
-            </button>
-          </div>
-        </div>
-      </AdminLayout>
-    );
+  if (isErrorUsers) {
+    return <AdminLayout><QueryError message={usersError?.message ?? '載入使用者失敗'} onRetry={() => utils.superAdmin.listAllUsers.invalidate()} /></AdminLayout>;
   }
 
   return (
@@ -188,10 +178,10 @@ const AdminUsersPage = () => {
       <h1 className="text-3xl font-semibold text-gray-800 dark:text-white">User Management</h1>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-        <StatCard title="Total Users" value="3,892" icon={Users} />
-        <StatCard title="Admins" value="156" icon={Shield} />
-        <StatCard title="Staff" value="2,100" icon={Briefcase} />
-        <StatCard title="Users" value="1,636" icon={User} />
+        <StatCard title="Total Users" value={statsData?.total ?? 0} icon={Users} isLoading={isLoadingStats} />
+        <StatCard title="Admins" value={statsData?.admins ?? 0} icon={Shield} isLoading={isLoadingStats} />
+        <StatCard title="Active Today" value={statsData?.active ?? 0} icon={Briefcase} isLoading={isLoadingStats} />
+        <StatCard title="New This Month" value={statsData?.newThisMonth ?? 0} icon={User} isLoading={isLoadingStats} />
       </div>
 
       <div className="mt-8 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
@@ -248,53 +238,68 @@ const AdminUsersPage = () => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedUsers.map((user) => (
+              {isLoadingUsers ? (
+                [...Array(ITEMS_PER_PAGE)].map((_, i) => (
+                    <tr key={i}>
+                        <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-5 w-32" /></td>
+                        <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell"><Skeleton className="h-5 w-48" /></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-6 w-20" /></td>
+                        <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell"><Skeleton className="h-5 w-24" /></td>
+                        <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell"><Skeleton className="h-5 w-28" /></td>
+                        <td className="px-6 py-4 whitespace-nowrap"><Skeleton className="h-6 w-16" /></td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><Skeleton className="h-8 w-8" /></td>
+                    </tr>
+                ))
+              ) : usersData?.data.map((user: any) => (
                 <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <img className="h-10 w-10 rounded-full object-cover" src={user.avatar} alt={`${user.name}'s avatar`}  loading="lazy" />
+                        <img className="h-10 w-10 rounded-full" src={`https://i.pravatar.cc/150?u=${user.id}`} alt="" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 sm:hidden">{user.email}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name || 'Unknown User'}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">ID: {user.id}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">{user.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <RoleBadge role={user.role} />
+                  <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                    <div className="text-sm text-gray-900 dark:text-gray-300">{user.email || 'N/A'}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">{user.tenant}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">{new Date(user.lastLogin).toLocaleDateString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
-                      {user.status === 'active' ? 'Active' : 'Inactive'}
+                    <RoleBadge role={user.role as UserRole} />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden lg:table-cell">
+                    {user.organizationName || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
+                    {user.lastSignedIn ? new Date(user.lastSignedIn).toLocaleString() : 'Never'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {user.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                     <div className="relative inline-block text-left">
-                        <button onClick={() => toggleDropdown(user.id)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-800 focus:ring-indigo-500">
-                            <MoreVertical className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                        </button>
-                        {activeDropdown === user.id && (
-                            <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
-                                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                                    <a href="#" onClick={() => handleAction('edit_role', user.id)} className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                                        <Edit className="mr-3 h-5 w-5 text-gray-400"/>
-                                        <span>編輯角色</span>
-                                    </a>
-                                    <a href="#" onClick={() => handleAction('deactivate', user.id)} className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                                        <UserX className="mr-3 h-5 w-5 text-gray-400"/>
-                                        <span>停用帳號</span>
-                                    </a>
-                                    <a href="#" onClick={() => handleAction('reset_password', user.id)} className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                                        <KeyRound className="mr-3 h-5 w-5 text-gray-400"/>
-                                        <span>重置密碼</span>
-                                    </a>
-                                </div>
-                            </div>
-                        )}
+                    <div className="relative inline-block text-left">
+                      <button onClick={() => toggleDropdown(user.id)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <MoreVertical className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                      </button>
+                      {activeDropdown === user.id && (
+                        <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-10">
+                          <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                            <a href="#" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                              <Edit className="mr-3 h-5 w-5" /> Edit User
+                            </a>
+                            <button onClick={() => handleToggleStatus(user.id, user.isActive)} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                              <UserX className="mr-3 h-5 w-5" /> {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <a href="#" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                              <KeyRound className="mr-3 h-5 w-5" /> Reset Password
+                            </a>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -303,22 +308,21 @@ const AdminUsersPage = () => {
           </table>
         </div>
 
-        <div className="flex items-center justify-between py-3 px-1">
-            <div className="text-sm text-gray-700 dark:text-gray-400">
-                Showing <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)}</span> of <span className="font-medium">{filteredUsers.length}</span> results
+        {totalPages > 0 && (
+            <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-gray-700 dark:text-gray-400">
+                    Page <span className="font-semibold text-gray-900 dark:text-white">{currentPage}</span> of <span className="font-semibold text-gray-900 dark:text-white">{totalPages}</span>
+                </span>
+                <div className="inline-flex -space-x-px rounded-md shadow-sm">
+                    <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <ChevronRight className="h-5 w-5" />
+                    </button>
+                </div>
             </div>
-            <div className="flex items-center space-x-1">
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <ChevronLeft className="h-5 w-5" />
-                </button>
-                {[...Array.from({length: totalPages}, (_, i) => i)].map(n => (
-                    <button key={n+1} onClick={() => setCurrentPage(n + 1)} className={`px-4 py-2 text-sm rounded-md ${currentPage === n + 1 ? 'bg-indigo-100 text-indigo-600 dark:bg-gray-700 dark:text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>{n + 1}</button>
-                ))}
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <ChevronRight className="h-5 w-5" />
-                </button>
-            </div>
-        </div>
+        )}
       </div>
     </AdminLayout>
   );

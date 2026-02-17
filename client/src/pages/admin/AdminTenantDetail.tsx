@@ -1,74 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useRoute } from 'wouter';
 import { Building2, Puzzle, BarChart3, CreditCard, ArrowUpCircle, XCircle, KeyRound, Edit, Save, X, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { QueryLoading, QueryError } from '@/components/ui/query-state';
 
 // --- TYPES --- //
-type TenantPlan = 'free' | 'pro' | 'enterprise';
-type TenantStatus = 'active' | 'inactive' | 'suspended';
-type BillingStatus = 'paid' | 'pending' | 'failed';
-
-type Tenant = {
-  id: string;
-  name: string;
-  slug: string;
-  email: string;
-  phone: string;
-  address: string;
-  plan: TenantPlan;
-  status: TenantStatus;
-  createdAt: string;
-  modules: { [key: string]: boolean };
-};
-
-type UsageData = {
-  date: string;
-  apiCalls: number;
-  storage: number;
-  users: number;
-};
-
-type BillingRecord = {
-  id: string;
-  date: string;
-  amount: number;
-  status: BillingStatus;
-  invoiceUrl: string;
-};
-
-// --- MOCK DATA --- //
-const mockTenant: Tenant = {
-  id: 'tenant-123',
-  name: 'Innovate Corp',
-  slug: 'innovate-corp',
-  email: 'contact@innovatecorp.com',
-  phone: '+1 (555) 123-4567',
-  address: '123 Innovation Drive, Tech City, TX 75001',
-  plan: 'pro',
-  status: 'active',
-  createdAt: '2023-01-15T10:30:00Z',
-  modules: {
-    'CRM': true,
-    'BI': true,
-    'AI對話': false,
-    '遊戲化': true,
-    'LINE行銷': false,
-    '多店管理': true,
-  },
-};
-
-const mockUsage: UsageData[] = [
-  { date: '2024-04', apiCalls: 150000, storage: 25, users: 120 },
-  { date: '2024-05', apiCalls: 180000, storage: 28, users: 135 },
-  { date: '2024-06', apiCalls: 220000, storage: 32, users: 150 },
-  { date: '2024-07', apiCalls: 210000, storage: 35, users: 160 },
-];
-
-const mockBillingHistory: BillingRecord[] = [
-  { id: 'inv-004', date: '2024-07-01', amount: 299, status: 'paid', invoiceUrl: '#' },
-  { id: 'inv-003', date: '2024-06-01', amount: 299, status: 'paid', invoiceUrl: '#' },
-  { id: 'inv-002', date: '2024-05-01', amount: 199, status: 'paid', invoiceUrl: '#' },
-  { id: 'inv-001', date: '2024-04-01', amount: 199, status: 'failed', invoiceUrl: '#' },
-];
+type TenantPlan = 'free' | 'basic' | 'pro' | 'enterprise';
+type SubscriptionStatus = 'active' | 'suspended' | 'cancelled';
 
 const modulesConfig = [
     { id: 'CRM', name: 'CRM', description: '客戶關係管理' },
@@ -80,71 +18,84 @@ const modulesConfig = [
 ];
 
 // --- HELPER COMPONENTS --- //
-const StatCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
-  <div className="bg-slate-800/50 p-4 rounded-lg">
-    <div className="flex items-center">
-      <Icon className="h-6 w-6 text-indigo-400 mr-3" />
-      <div>
-        <p className="text-sm text-slate-400">{title}</p>
-        <p className="text-xl font-bold text-white">{value}</p>
-      </div>
-    </div>
-  </div>
-);
-
-const BarChart = ({ title, data, dataKey, unit, maxVal }: { title: string; data: Array<Record<string, any>>; dataKey: string; unit: string; maxVal: number }) => (
-    <div className="bg-slate-800/50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
-        <div className="grid grid-cols-4 gap-4 text-center">
-            {data.map(item => (
-                <div key={item.date} className="flex flex-col items-center justify-end space-y-2">
-                    <div className="text-sm font-medium text-white">{item[dataKey].toLocaleString()}{unit}</div>
-                    <div className="w-1/2 bg-slate-700 rounded-t-lg" style={{ height: `${(item[dataKey] / maxVal) * 150}px` }}>
-                        <div className="w-full bg-gradient-to-t from-indigo-500 to-violet-500 rounded-t-lg" style={{ height: '100%' }}></div>
-                    </div>
-                    <div className="text-xs text-slate-400">{item.date}</div>
-                </div>
-            ))}
+const BarChartPlaceholder = ({ title }: { title: string }) => (
+    <div className="bg-slate-800/50 p-4 rounded-lg flex items-center justify-center h-48">
+        <div className="text-center">
+            <BarChart3 className="h-8 w-8 mx-auto text-slate-500 mb-2" />
+            <h3 className="text-lg font-semibold text-white mb-1">{title}</h3>
+            <p className="text-sm text-slate-400">此租戶的用量統計資料暫時無法使用。</p>
         </div>
     </div>
 );
 
 // --- MAIN COMPONENT --- //
 const AdminTenantDetailPage = () => {
-  const [match, params] = useRoute("/admin/tenants/:id");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [, params] = useRoute("/admin/tenants/:id");
+  const tenantIdStr = params?.id || '';
+  const tenantId = parseInt(tenantIdStr, 10);
+  const utils = trpc.useUtils();
+
   const [activeTab, setActiveTab] = useState('info');
   const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState<Partial<Tenant>>({});
+  const [editData, setEditData] = useState<Record<string, any>>({});
+
+  const { data: tenant, isLoading: isTenantLoading, error: tenantError } = trpc.superAdmin.getOrganization.useQuery(
+    { id: tenantId },
+    { enabled: !isNaN(tenantId) && tenantId > 0 }
+  );
+
+  const { data: billingData, isLoading: isBillingLoading, error: billingError } = trpc.superAdmin.listInvoices.useQuery(
+    { limit: 10 },
+    { enabled: !isNaN(tenantId) && activeTab === 'billing' }
+  );
+
+  const updateTenantMutation = trpc.superAdmin.updateOrganization.useMutation({
+    onSuccess: () => {
+      utils.superAdmin.getOrganization.invalidate({ id: tenantId });
+      setIsEditing(false);
+    },
+  });
 
   useEffect(() => {
-    setIsLoading(true);
-    setError(null);
-    // Simulate API call
-    setTimeout(() => {
-      if (params?.id === 'tenant-123') {
-        setTenant(mockTenant);
-        setEditData(mockTenant);
-      } else {
-        setError('找不到指定的租戶。');
-      }
-      setIsLoading(false);
-    }, 1000);
-  }, [params?.id]);
+    if (tenant) {
+      setEditData({
+        name: tenant.name,
+        slug: tenant.slug,
+        email: tenant.email ?? '',
+        phone: tenant.phone ?? '',
+        address: tenant.address ?? '',
+        subscriptionPlan: tenant.subscriptionPlan ?? 'free',
+        isActive: tenant.isActive ?? true,
+      });
+    }
+  }, [tenant]);
 
   const handleEditToggle = () => {
-    if (isEditing) {
-        setEditData(tenant || {});
+    if (isEditing && tenant) {
+      setEditData({
+        name: tenant.name,
+        slug: tenant.slug,
+        email: tenant.email ?? '',
+        phone: tenant.phone ?? '',
+        address: tenant.address ?? '',
+        subscriptionPlan: tenant.subscriptionPlan ?? 'free',
+        isActive: tenant.isActive ?? true,
+      });
     }
     setIsEditing(!isEditing);
   };
 
   const handleSave = () => {
-    // Simulate save API call
-    setTenant(prev => ({ ...prev!, ...editData } as Tenant));
-    setIsEditing(false);
+    if (!tenant) return;
+    updateTenantMutation.mutate({ 
+        id: tenant.id, 
+        name: editData.name || undefined,
+        email: editData.email || undefined,
+        phone: editData.phone || undefined,
+        address: editData.address || undefined,
+        subscriptionPlan: editData.subscriptionPlan as TenantPlan,
+        isActive: editData.isActive,
+    });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -152,36 +103,30 @@ const AdminTenantDetailPage = () => {
     setEditData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleModuleToggle = (moduleId: string) => {
-    setTenant(prev => {
-        if (!prev) return null;
-        const newModules = { ...prev.modules, [moduleId]: !prev.modules[moduleId] };
-        // Simulate API call to update modules
-        return { ...prev, modules: newModules };
-    });
+  const handleModuleToggle = (_moduleId: string) => {
+    // enabledModules is not part of the updateOrganization API
+    // This is a placeholder for future implementation
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-900 text-white">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-500" />
-        <p className="ml-4 text-lg">載入中...</p>
-      </div>
-    );
+  if (isTenantLoading) {
+    return <QueryLoading message="正在載入租戶資料..." />;
   }
 
-  if (error) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-900 text-white">
-        <AlertTriangle className="h-12 w-12 text-red-500" />
-        <p className="ml-4 text-lg">錯誤: {error}</p>
-      </div>
-    );
+  if (tenantError) {
+    return <QueryError message={tenantError.message} onRetry={() => utils.superAdmin.getOrganization.invalidate({ id: tenantId })} />;
   }
 
   if (!tenant) {
-    return null; // Should not happen if not loading and no error
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-900 text-white">
+        <AlertTriangle className="h-12 w-12 text-yellow-500" />
+        <p className="ml-4 text-lg">找不到指定的租戶資料。</p>
+      </div>
+    );
   }
+
+  const enabledModulesArr: string[] = (tenant.enabledModules as string[] | null) ?? [];
+  const enabledModulesSet = new Set(enabledModulesArr);
 
   const tabs = [
     { id: 'info', label: '基本資訊', icon: Building2 },
@@ -190,22 +135,24 @@ const AdminTenantDetailPage = () => {
     { id: 'billing', label: '帳單記錄', icon: CreditCard },
   ];
 
-  const planStyles: { [key in TenantPlan]: string } = {
+  const planStyles: Record<string, string> = {
     free: 'bg-slate-600 text-slate-100',
+    basic: 'bg-blue-600 text-blue-100',
     pro: 'bg-indigo-600 text-indigo-100',
     enterprise: 'bg-violet-600 text-violet-100',
   };
 
-  const statusStyles: { [key in TenantStatus]: string } = {
+  const statusStyles: Record<string, string> = {
     active: 'bg-green-500 text-green-100',
     inactive: 'bg-slate-500 text-slate-100',
     suspended: 'bg-red-500 text-red-100',
   };
 
-  const billingStatusStyles: { [key in BillingStatus]: string } = {
+  const billingStatusStyles: Record<string, string> = {
     paid: 'text-green-400',
     pending: 'text-yellow-400',
     failed: 'text-red-400',
+    overdue: 'text-red-400',
   };
 
   const renderTabContent = () => {
@@ -215,37 +162,40 @@ const AdminTenantDetailPage = () => {
           <div className="bg-slate-800/50 p-6 rounded-lg">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold text-white">租戶詳細資料</h3>
-                <button onClick={handleEditToggle} className="flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300">
-                    {isEditing ? <><X className="h-4 w-4 mr-1"/>取消</> : <><Edit className="h-4 w-4 mr-1"/>編輯</>}
-                </button>
+                <div className="flex items-center space-x-4">
+                    {isEditing && updateTenantMutation.isPending && <Loader2 className="h-5 w-5 animate-spin text-slate-400"/>}
+                    <button onClick={handleEditToggle} disabled={updateTenantMutation.isPending} className="flex items-center text-sm font-medium text-indigo-400 hover:text-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        {isEditing ? <><X className="h-4 w-4 mr-1"/>取消</> : <><Edit className="h-4 w-4 mr-1"/>編輯</>}
+                    </button>
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-300">
                 {isEditing ? (
                     <>
-                        <div><label className="text-sm text-slate-400">公司名稱</label><input type="text" name="name" value={editData.name} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
-                        <div><label className="text-sm text-slate-400">Slug</label><input type="text" name="slug" value={editData.slug} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
-                        <div><label className="text-sm text-slate-400">Email</label><input type="email" name="email" value={editData.email} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
-                        <div><label className="text-sm text-slate-400">電話</label><input type="tel" name="phone" value={editData.phone} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
-                        <div className="md:col-span-2"><label className="text-sm text-slate-400">地址</label><input type="text" name="address" value={editData.address} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
-                        <div><label className="text-sm text-slate-400">方案</label><select name="plan" value={editData.plan} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"><option value="free">Free</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
-                        <div><label className="text-sm text-slate-400">狀態</label><select name="status" value={editData.status} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div>
+                        <div><label className="text-sm text-slate-400">公司名稱</label><input type="text" name="name" value={editData.name || ''} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
+                        <div><label className="text-sm text-slate-400">Slug</label><input type="text" name="slug" value={editData.slug || ''} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white" disabled/></div>
+                        <div><label className="text-sm text-slate-400">Email</label><input type="email" name="email" value={editData.email || ''} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
+                        <div><label className="text-sm text-slate-400">電話</label><input type="tel" name="phone" value={editData.phone || ''} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
+                        <div className="md:col-span-2"><label className="text-sm text-slate-400">地址</label><input type="text" name="address" value={editData.address || ''} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"/></div>
+                        <div><label className="text-sm text-slate-400">方案</label><select name="subscriptionPlan" value={editData.subscriptionPlan || ''} onChange={handleInputChange} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"><option value="free">Free</option><option value="basic">Basic</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
+                        <div><label className="text-sm text-slate-400">狀態</label><select name="isActive" value={String(editData.isActive)} onChange={(e) => setEditData(p => ({...p, isActive: e.target.value === 'true'}))} className="w-full p-2 bg-slate-700 rounded mt-1 text-white"><option value="true">Active</option><option value="false">Inactive</option></select></div>
                     </>
                 ) : (
                     <>
                         <div><p className="text-sm text-slate-400">公司名稱</p><p className="text-white font-medium">{tenant.name}</p></div>
                         <div><p className="text-sm text-slate-400">Slug</p><p className="text-white font-mono">{tenant.slug}</p></div>
-                        <div><p className="text-sm text-slate-400">Email</p><p className="text-white font-medium">{tenant.email}</p></div>
-                        <div><p className="text-sm text-slate-400">電話</p><p className="text-white font-medium">{tenant.phone}</p></div>
-                        <div className="md:col-span-2"><p className="text-sm text-slate-400">地址</p><p className="text-white font-medium">{tenant.address}</p></div>
-                        <div><p className="text-sm text-slate-400">方案</p><span className={`px-2 py-1 text-xs font-bold rounded-full ${planStyles[tenant.plan]}`}>{tenant.plan.toUpperCase()}</span></div>
-                        <div><p className="text-sm text-slate-400">狀態</p><span className={`px-2 py-1 text-xs font-bold rounded-full ${statusStyles[tenant.status]}`}>{tenant.status.toUpperCase()}</span></div>
+                        <div><p className="text-sm text-slate-400">Email</p><p className="text-white font-medium">{tenant.email || 'N/A'}</p></div>
+                        <div><p className="text-sm text-slate-400">電話</p><p className="text-white font-medium">{tenant.phone || 'N/A'}</p></div>
+                        <div className="md:col-span-2"><p className="text-sm text-slate-400">地址</p><p className="text-white font-medium">{tenant.address || 'N/A'}</p></div>
+                        <div><p className="text-sm text-slate-400">方案</p><span className={`px-2 py-1 text-xs font-bold rounded-full ${planStyles[tenant.subscriptionPlan || 'free']}`}>{(tenant.subscriptionPlan || 'N/A').toUpperCase()}</span></div>
+                        <div><p className="text-sm text-slate-400">狀態</p><span className={`px-2 py-1 text-xs font-bold rounded-full ${statusStyles[tenant.isActive ? 'active' : 'inactive']}`}>{tenant.isActive ? 'ACTIVE' : 'INACTIVE'}</span></div>
                         <div><p className="text-sm text-slate-400">建立日期</p><p className="text-white font-medium">{new Date(tenant.createdAt).toLocaleDateString()}</p></div>
                     </>
                 )}
             </div>
             {isEditing && (
                 <div className="mt-6 flex justify-end">
-                    <button onClick={handleSave} className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+                    <button onClick={handleSave} disabled={updateTenantMutation.isPending} className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
                         <Save className="h-4 w-4 mr-2"/>儲存變更
                     </button>
                 </div>
@@ -263,8 +213,11 @@ const AdminTenantDetailPage = () => {
                                 <p className="font-semibold text-white">{module.name}</p>
                                 <p className="text-sm text-slate-400">{module.description}</p>
                             </div>
-                            <button onClick={() => handleModuleToggle(module.id)} className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${tenant.modules[module.id] ? 'bg-indigo-600' : 'bg-slate-600'}`}>
-                                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${tenant.modules[module.id] ? 'translate-x-6' : 'translate-x-1'}`}/>
+                            <button
+                                onClick={() => handleModuleToggle(module.id)}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${enabledModulesSet.has(module.id) ? 'bg-indigo-600' : 'bg-slate-600'}`}
+                            >
+                                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${enabledModulesSet.has(module.id) ? 'translate-x-6' : 'translate-x-1'}`}/>
                             </button>
                         </div>
                     ))}
@@ -274,12 +227,16 @@ const AdminTenantDetailPage = () => {
       case 'usage':
         return (
             <div className="grid grid-cols-1 gap-6">
-                <BarChart title="API 呼叫次數" data={mockUsage} dataKey="apiCalls" unit="" maxVal={300000} />
-                <BarChart title="儲存空間用量 (GB)" data={mockUsage} dataKey="storage" unit="GB" maxVal={50} />
-                <BarChart title="活躍使用者數" data={mockUsage} dataKey="users" unit="" maxVal={200} />
+                <BarChartPlaceholder title="API 呼叫次數" />
+                <BarChartPlaceholder title="儲存空間用量" />
+                <BarChartPlaceholder title="活躍使用者數" />
             </div>
         );
       case 'billing':
+        if (isBillingLoading) return <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-indigo-400" /></div>;
+        if (billingError) return <div className="text-red-400 bg-red-900/50 p-4 rounded-lg">無法載入帳單記錄: {billingError.message}</div>;
+        if (!billingData || billingData.data.length === 0) return <div className="text-slate-400 text-center p-8">沒有帳單記錄。</div>;
+
         return (
             <div className="bg-slate-800/50 rounded-lg overflow-hidden">
                 <table className="w-full text-left text-slate-300">
@@ -292,20 +249,20 @@ const AdminTenantDetailPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {mockBillingHistory.map(record => (
+                        {billingData.data.map((record: any) => (
                             <tr key={record.id} className="border-b border-slate-700 last:border-b-0">
-                                <td className="p-4">{record.date}</td>
-                                <td className="p-4">${record.amount.toFixed(2)}</td>
+                                <td className="p-4">{new Date(record.createdAt).toLocaleDateString()}</td>
+                                <td className="p-4">${(Number(record.amount) / 100).toFixed(2)}</td>
                                 <td className="p-4">
-                                    <span className={`flex items-center font-semibold ${billingStatusStyles[record.status]}`}>
-                                        {record.status === 'paid' && <CheckCircle className="h-4 w-4 mr-2"/>}
-                                        {record.status === 'pending' && <Loader2 className="h-4 w-4 mr-2 animate-spin"/>}
-                                        {record.status === 'failed' && <AlertTriangle className="h-4 w-4 mr-2"/>}
-                                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                                    <span className={`flex items-center font-semibold ${billingStatusStyles[String(record.status).toLowerCase()] || 'text-slate-400'}`}>
+                                        {['paid', 'succeeded'].includes(String(record.status).toLowerCase()) && <CheckCircle className="h-4 w-4 mr-2"/>}
+                                        {String(record.status).toLowerCase() === 'pending' && <Loader2 className="h-4 w-4 mr-2 animate-spin"/>}
+                                        {String(record.status).toLowerCase() === 'failed' && <AlertTriangle className="h-4 w-4 mr-2"/>}
+                                        {String(record.status).charAt(0).toUpperCase() + String(record.status).slice(1)}
                                     </span>
                                 </td>
                                 <td className="p-4">
-                                    <a href={record.invoiceUrl} className="text-indigo-400 hover:underline">下載</a>
+                                    <a href={`/invoice/${record.id}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">查看</a>
                                 </td>
                             </tr>
                         ))}
