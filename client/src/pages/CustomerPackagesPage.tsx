@@ -96,7 +96,7 @@ export default function CustomerPackagesPage() {
     });
   };
 
-  const getStatusBadge = (pkg: any) => {
+  const getStatusBadge = (pkg: Record<string, any>) => {
     if (pkg.status === "expired") {
       return <Badge variant="destructive">已過期</Badge>;
     }
@@ -110,7 +110,7 @@ export default function CustomerPackagesPage() {
   };
 
   const packagesList = Array.isArray(packagesData) ? packagesData : (packagesData?.data || []);
-  const filteredPackages = packagesList.filter((pkg: any) => {
+  const filteredPackages = packagesList.filter((pkg: Record<string, any>) => {
     if (!searchTerm) return true;
     const customer = customers?.data?.find(c => c.id === pkg.customerId);
     return customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,13 +120,13 @@ export default function CustomerPackagesPage() {
   // 統計數據
   const stats = {
     total: filteredPackages.length,
-    active: filteredPackages.filter((p: any) => p.status === "active").length,
-    expiringSoon: filteredPackages.filter((p: any) => {
+    active: filteredPackages.filter((p: Record<string, any>) => p.status === "active").length,
+    expiringSoon: filteredPackages.filter((p: Record<string, any>) => {
       if (!p.expiryDate) return false;
       const daysLeft = Math.ceil((new Date(p.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
       return daysLeft > 0 && daysLeft <= 30;
     }).length,
-    lowSessions: filteredPackages.filter((p: any) => p.remainingSessions > 0 && p.remainingSessions <= 2).length,
+    lowSessions: filteredPackages.filter((p: Record<string, any>) => p.remainingSessions > 0 && p.remainingSessions <= 2).length,
   };
 
   return (
@@ -178,7 +178,7 @@ export default function CustomerPackagesPage() {
                     <SelectValue placeholder="選擇療程項目" />
                   </SelectTrigger>
                   <SelectContent>
-                    {products?.data?.map((p: any) => (
+                    {products?.data?.map((p: Record<string, any>) => (
                       <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -338,7 +338,7 @@ export default function CustomerPackagesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPackages.map((pkg: any) => {
+                {filteredPackages.map((pkg: Record<string, any>) => {
                   const customer = customers?.data?.find(c => c.id === pkg.customerId);
                   const usedSessions = pkg.totalSessions - pkg.remainingSessions;
                   const progress = (usedSessions / pkg.totalSessions) * 100;
@@ -426,7 +426,7 @@ export default function CustomerPackagesPage() {
                   <SelectValue placeholder="選擇執行人員" />
                 </SelectTrigger>
                 <SelectContent>
-                  {staffList?.data?.map((s: any) => (
+                  {staffList?.data?.map((s: Record<string, any>) => (
                     <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>

@@ -141,7 +141,7 @@ export default function SuperAdminVouchersPage() {
         const values = lines[i].split(",").map(v => v.trim().replace(/"/g, ""));
         const errors: string[] = [];
         
-        const row: any = {};
+        const row: Record<string, any> = {};
         headers.forEach((header, index) => {
           row[header] = values[index] || "";
         });
@@ -277,7 +277,7 @@ export default function SuperAdminVouchersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">所有診所（全域模板）</SelectItem>
-                          {organizations?.data?.map((org: any) => (
+                          {organizations?.data?.map((org: Record<string, any>) => (
                             <SelectItem key={org.id} value={`clinic-${org.id}`}>
                               {org.name}
                             </SelectItem>
@@ -478,7 +478,7 @@ export default function SuperAdminVouchersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {templatesData.data.map((item: any) => (
+                      {templatesData.data.map((item: Record<string, any>) => (
                         <TableRow key={item.template.id}>
                           <TableCell className="font-medium">{item.template.name}</TableCell>
                           <TableCell>
@@ -566,7 +566,7 @@ export default function SuperAdminVouchersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {expiringVouchers.map((item: any) => {
+                      {expiringVouchers.map((item: Record<string, any>) => {
                         const daysLeft = Math.ceil((new Date(item.voucher.validUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                         return (
                           <TableRow key={item.voucher.id}>
@@ -625,7 +625,7 @@ export default function SuperAdminVouchersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {orgStats.map((stat: any) => (
+                      {orgStats.map((stat: Record<string, any>) => (
                         <TableRow key={stat.organizationId}>
                           <TableCell className="font-medium">{stat.organizationName}</TableCell>
                           <TableCell>{stat.templateCount}</TableCell>

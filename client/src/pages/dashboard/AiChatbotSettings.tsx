@@ -472,7 +472,7 @@ export default function AiChatbotSettings() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {knowledgeBase.map((item: any) => (
+              {knowledgeBase.map((item: Record<string, any>) => (
                 <KnowledgeCard
                   key={item.id}
                   item={item}
@@ -529,7 +529,7 @@ export default function AiChatbotSettings() {
                   <h3 className="text-sm font-medium text-muted-foreground">
                     找到 {searchResults.length} 個相關結果
                   </h3>
-                  {searchResults.map((result: any, index: number) => (
+                  {searchResults.map((result: Record<string, any>, index: number) => (
                     <Card
                       key={result.id}
                       className="border-l-4"
@@ -686,7 +686,7 @@ export default function AiChatbotSettings() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {intents.map((intent: any) => (
+              {intents.map((intent: Record<string, any>) => (
                 <Card key={intent.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
@@ -760,11 +760,11 @@ function KnowledgeCard({
   isLoadingSimilar,
   onGetSimilar,
 }: {
-  item: any;
+  item: Record<string, any>;
   isVectorizing: boolean;
   onVectorize: () => void;
   onDelete: () => void;
-  similarQuestions?: any[];
+  similarQuestions?: Array<Record<string, any>>;
   isLoadingSimilar: boolean;
   onGetSimilar: () => void;
 }) {

@@ -62,7 +62,7 @@ const DEFAULT_VARIANT: VariantFormData = {
 export default function BroadcastCampaigns() {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Record<string, any> | null>(null);
   const [abTestCampaignId, setAbTestCampaignId] = useState<number | null>(null);
   const [abTestCampaignName, setAbTestCampaignName] = useState<string>("");
 
@@ -208,7 +208,7 @@ export default function BroadcastCampaigns() {
   );
 
   const updateVariant = useCallback(
-    (index: number, field: keyof VariantFormData, value: any) => {
+    (index: number, field: keyof VariantFormData, value: string | number | boolean) => {
       const updated = [...variants];
       (updated[index] as any)[field] = value;
       setVariants(updated);
@@ -298,10 +298,10 @@ export default function BroadcastCampaigns() {
   const stats = {
     totalCampaigns: campaigns?.length || 0,
     sentCampaigns:
-      campaigns?.filter((c: any) => c.status === "sent" || c.status === "completed").length || 0,
+      campaigns?.filter((c: Record<string, any>) => c.status === "sent" || c.status === "completed").length || 0,
     totalRecipients:
       campaigns?.reduce(
-        (sum: number, c: any) => sum + (c.totalRecipients || 0),
+        (sum: number, c: Record<string, any>) => sum + (c.totalRecipients || 0),
         0
       ) || 0,
   };
@@ -699,7 +699,7 @@ export default function BroadcastCampaigns() {
           <TabsContent key={tabValue} value={tabValue} className="space-y-4 mt-4">
             {(tabValue === "all"
               ? campaigns
-              : campaigns.filter((c: any) =>
+              : campaigns.filter((c: Record<string, any>) =>
                   tabValue === "sent"
                     ? c.status === "sent" || c.status === "completed"
                     : c.status === tabValue
@@ -725,12 +725,12 @@ export default function BroadcastCampaigns() {
               <div className="space-y-4">
                 {(tabValue === "all"
                   ? campaigns
-                  : campaigns.filter((c: any) =>
+                  : campaigns.filter((c: Record<string, any>) =>
                       tabValue === "sent"
                         ? c.status === "sent" || c.status === "completed"
                         : c.status === tabValue
                     )
-                ).map((campaign: any) => (
+                ).map((campaign: Record<string, any>) => (
                   <CampaignCard
                     key={campaign.id}
                     campaign={campaign}
@@ -767,7 +767,7 @@ function CampaignCard({
   onViewABTest,
   isSending,
 }: {
-  campaign: any;
+  campaign: Record<string, any>;
   onSendNow: (id: number) => void;
   onDelete: (id: number) => void;
   onViewABTest: (id: number, name: string) => void;

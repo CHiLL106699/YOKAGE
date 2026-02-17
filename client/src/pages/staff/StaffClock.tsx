@@ -37,7 +37,7 @@ const mockRecentRecords: DailyRecord[] = [
 const StaffHeader = () => (
   <div className="bg-white dark:bg-gray-800/50 shadow-sm rounded-xl p-4 md:p-6 mb-6">
     <div className="flex items-center space-x-4">
-      <img src={mockStaff.avatarUrl} alt={mockStaff.name} className="w-16 h-16 rounded-full" />
+      <img src={mockStaff.avatarUrl} alt={mockStaff.name} className="w-16 h-16 rounded-full"  loading="lazy" />
       <div className="flex-grow">
         <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{mockStaff.name}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">{mockStaff.id}</p>

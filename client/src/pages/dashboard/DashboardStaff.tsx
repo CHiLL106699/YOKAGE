@@ -64,7 +64,7 @@ const StatusBadge: React.FC<{ status: StaffStatus }> = ({ status }) => {
 
 const StaffCard: React.FC<{ staff: Staff; onSelect: (staff: Staff) => void }> = ({ staff, onSelect }) => (
   <div onClick={() => onSelect(staff)} className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center hover:shadow-xl transition-shadow cursor-pointer">
-    <img src={staff.avatarUrl} alt={staff.name} className="w-24 h-24 rounded-full mb-4" />
+    <img src={staff.avatarUrl} alt={staff.name} className="w-24 h-24 rounded-full mb-4"  loading="lazy" />
     <h3 className="text-lg font-semibold text-gray-800">{staff.name}</h3>
     <div className="my-2"><RoleBadge role={staff.role} /></div>
     <p className="text-sm text-gray-500 flex items-center"><Phone className="w-4 h-4 mr-2" />{staff.phone}</p>
@@ -105,7 +105,7 @@ const StaffList: React.FC<{ staffList: Staff[]; onSelect: (staff: Staff) => void
                 {staffList.map((staff) => (
                     <tr key={staff.id} className="bg-white border-b hover:bg-gray-50">
                         <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center">
-                            <img className="w-10 h-10 rounded-full mr-3" src={staff.avatarUrl} alt={staff.name} />
+                            <img className="w-10 h-10 rounded-full mr-3" src={staff.avatarUrl} alt={staff.name}  loading="lazy" />
                             {staff.name}
                         </th>
                         <td className="px-6 py-4"><RoleBadge role={staff.role} /></td>
@@ -145,7 +145,7 @@ const PerformanceOverview: React.FC<{ staffList: Staff[] }> = ({ staffList }) =>
       <div className="md:col-span-1 bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center text-center">
         <Star className="w-10 h-10 text-yellow-400 mb-2" />
         <h3 className="text-lg font-semibold text-gray-800">本月最佳表現</h3>
-        <img src={topPerformer.avatarUrl} alt={topPerformer.name} className="w-16 h-16 rounded-full my-3" />
+        <img src={topPerformer.avatarUrl} alt={topPerformer.name} className="w-16 h-16 rounded-full my-3"  loading="lazy" />
         <p className="font-bold text-xl text-indigo-600">{topPerformer.name}</p>
         <p className="text-gray-500">業績: ${topPerformer.monthlySales.toLocaleString()}</p>
       </div>
@@ -234,7 +234,7 @@ const StaffDetailModal: React.FC<{ staff: Staff | null; onClose: () => void }> =
             <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl">
                 <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center">
-                        <img src={staff.avatarUrl} alt={staff.name} className="w-20 h-20 rounded-full mr-6" />
+                        <img src={staff.avatarUrl} alt={staff.name} className="w-20 h-20 rounded-full mr-6"  loading="lazy" />
                         <div>
                             <h2 className="text-3xl font-bold text-gray-800">{staff.name}</h2>
                             <RoleBadge role={staff.role} />

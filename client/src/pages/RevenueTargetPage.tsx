@@ -99,7 +99,7 @@ export default function RevenueTargetPage() {
   const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
 
   // 計算年度總目標與達成
-  const yearlyStats = targets?.reduce((acc: any, t: any) => {
+  const yearlyStats = targets?.reduce((acc: Record<string, any>, t: Record<string, any>) => {
     if (t.targetType === 'monthly') {
       acc.totalTarget += Number(t.targetAmount);
       acc.totalActual += Number(t.actualAmount || 0);
@@ -311,7 +311,7 @@ export default function RevenueTargetPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {monthNames.map((name, idx) => {
-              const monthTarget = targets?.find((t: any) => t.targetType === 'monthly' && t.targetMonth === idx + 1);
+              const monthTarget = targets?.find((t: Record<string, any>) => t.targetType === 'monthly' && t.targetMonth === idx + 1);
               const target = monthTarget ? Number(monthTarget.targetAmount) : 0;
               const actual = monthTarget ? Number(monthTarget.actualAmount || 0) : 0;
               const rate = target > 0 ? Math.round((actual / target) * 100) : 0;

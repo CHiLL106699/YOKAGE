@@ -17,7 +17,7 @@ export default function RichMenuManagement() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Record<string, any> | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editorAreas, setEditorAreas] = useState<any[]>([]);
   const [editorImageUrl, setEditorImageUrl] = useState<string>("");
@@ -187,7 +187,7 @@ export default function RichMenuManagement() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates.map((template: any) => (
+              {templates.map((template: Record<string, any>) => (
                 <Card key={template.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
@@ -211,7 +211,7 @@ export default function RichMenuManagement() {
                         src={template.imageUrl}
                         alt={template.name}
                         className="w-full h-32 object-cover rounded-md"
-                      />
+                       loading="lazy" />
                     )}
                     
                     {/* 統計資訊 */}

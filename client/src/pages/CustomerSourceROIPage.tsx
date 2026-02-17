@@ -119,7 +119,7 @@ export default function CustomerSourceROIPage() {
   };
 
   // 計算總體統計
-  const totalStats = sourceROI?.reduce((acc: any, s: any) => {
+  const totalStats = sourceROI?.reduce((acc: Record<string, any>, s: Record<string, any>) => {
     acc.totalCustomers += s.customerCount;
     acc.totalValue += s.totalLifetimeValue;
     return acc;
@@ -267,7 +267,7 @@ export default function CustomerSourceROIPage() {
           <CardContent>
             <div className="text-2xl font-bold">{campaigns?.length || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {campaigns?.filter((c: any) => c.status === 'active').length || 0} 個進行中
+              {campaigns?.filter((c: Record<string, any>) => c.status === 'active').length || 0} 個進行中
             </p>
           </CardContent>
         </Card>
@@ -293,7 +293,7 @@ export default function CustomerSourceROIPage() {
               <CardContent>
                 {sourceROI && sourceROI.length > 0 ? (
                   <div className="space-y-4">
-                    {sourceROI.map((source: any) => {
+                    {sourceROI.map((source: Record<string, any>) => {
                       const percentage = totalStats.totalCustomers > 0 
                         ? Math.round((source.customerCount / totalStats.totalCustomers) * 100) 
                         : 0;
@@ -341,8 +341,8 @@ export default function CustomerSourceROIPage() {
                 {sourceROI && sourceROI.length > 0 ? (
                   <div className="space-y-4">
                     {sourceROI
-                      .sort((a: any, b: any) => b.averageLifetimeValue - a.averageLifetimeValue)
-                      .map((source: any) => (
+                      .sort((a: Record<string, any>, b: Record<string, any>) => b.averageLifetimeValue - a.averageLifetimeValue)
+                      .map((source: Record<string, any>) => (
                         <div key={source.sourceType} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
                             {getCampaignTypeIcon(source.sourceType)}
@@ -382,7 +382,7 @@ export default function CustomerSourceROIPage() {
             <CardContent>
               {campaigns && campaigns.length > 0 ? (
                 <div className="space-y-4">
-                  {campaigns.map((campaign: any) => {
+                  {campaigns.map((campaign: Record<string, any>) => {
                     const statusBadge = getStatusBadge(campaign.status);
                     return (
                       <div key={campaign.id} className="flex items-center justify-between p-4 border rounded-lg">

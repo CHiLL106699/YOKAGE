@@ -134,7 +134,7 @@ export default function ConsultationManagementPage() {
   };
 
   const consultationsList = consultationsData?.data || [];
-  const filteredConsultations = consultationsList.filter((c: any) => {
+  const filteredConsultations = consultationsList.filter((c: Record<string, any>) => {
     if (!searchTerm) return true;
     return c.prospectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            c.prospectPhone?.includes(searchTerm);
@@ -143,8 +143,8 @@ export default function ConsultationManagementPage() {
   // 計算統計數據
   const stats = {
     total: consultationsList.length,
-    new: consultationsList.filter((c: any) => c.status === "new").length,
-    converted: consultationsList.filter((c: any) => c.status === "converted").length,
+    new: consultationsList.filter((c: Record<string, any>) => c.status === "new").length,
+    converted: consultationsList.filter((c: Record<string, any>) => c.status === "converted").length,
     conversionRate: conversionStats?.conversionRate || 0,
     pendingFollowUps: pendingFollowUps?.length || 0,
   };
@@ -240,7 +240,7 @@ export default function ConsultationManagementPage() {
                     <SelectValue placeholder="選擇諮詢人員" />
                   </SelectTrigger>
                   <SelectContent>
-                    {staffList?.data?.map((s: any) => (
+                    {staffList?.data?.map((s: Record<string, any>) => (
                       <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -407,8 +407,8 @@ export default function ConsultationManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredConsultations.map((consultation: any) => {
-                  const staff = staffList?.data?.find((s: any) => s.id === consultation.staffId);
+                {filteredConsultations.map((consultation: Record<string, any>) => {
+                  const staff = staffList?.data?.find((s: Record<string, any>) => s.id === consultation.staffId);
                   return (
                     <TableRow key={consultation.id}>
                       <TableCell>
@@ -512,7 +512,7 @@ export default function ConsultationManagementPage() {
                   <SelectValue placeholder="選擇負責人員" />
                 </SelectTrigger>
                 <SelectContent>
-                  {staffList?.data?.map((s: any) => (
+                  {staffList?.data?.map((s: Record<string, any>) => (
                     <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>

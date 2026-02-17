@@ -192,7 +192,7 @@ const BusinessHoursSection = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const handleHourChange = (index: number, field: keyof BusinessHour, value: any) => {
+  const handleHourChange = (index: number, field: keyof BusinessHour, value: string | number | boolean) => {
     const newHours = [...hours];
     (newHours[index] as any)[field] = value;
     setHours(newHours);
@@ -332,7 +332,7 @@ const ClinicInfoSection = () => {
           <div className="mt-1 flex justify-center items-center w-full h-40 border-2 border-gray-300 border-dashed rounded-md">
             {info.logo ? (
               <div className="relative group">
-                 <img src={info.logo} alt="Clinic Logo" className="h-36 w-auto object-contain" />
+                 <img src={info.logo} alt="Clinic Logo" className="h-36 w-auto object-contain"  loading="lazy" />
                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => setInfo({...info, logo: null})} className="text-white"><Trash2 size={24} /></button>
                  </div>

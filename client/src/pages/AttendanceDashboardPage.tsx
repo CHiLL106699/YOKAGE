@@ -252,12 +252,12 @@ export default function AttendanceDashboardPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary/20 text-primary">
-                          {allStaff.find((s: any) => s.id === record.staffId)?.name?.charAt(0) || '?'}
+                          {allStaff.find((s: Record<string, any>) => s.id === record.staffId)?.name?.charAt(0) || '?'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium text-foreground">
-                          {allStaff.find((s: any) => s.id === record.staffId)?.name || '未知員工'}
+                          {allStaff.find((s: Record<string, any>) => s.id === record.staffId)?.name || '未知員工'}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {record.isManualEntry && '補登記錄'}

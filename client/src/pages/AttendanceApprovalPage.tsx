@@ -20,7 +20,7 @@ export default function AttendanceApprovalPage() {
   const [organizationId] = useState(60001); // 測試診所 ID
   const [approverId] = useState(1); // 管理人員 ID
   const [approvalStatus, setApprovalStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [selectedRecord, setSelectedRecord] = useState<Record<string, any> | null>(null);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 

@@ -163,7 +163,7 @@ export default function LineRichMenuManagementPage() {
                   src={menu.imageUrl}
                   alt={menu.name}
                   className="w-full h-full object-cover"
-                />
+                 loading="lazy" />
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">

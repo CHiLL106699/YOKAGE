@@ -170,7 +170,7 @@ const AppointmentTimeline = () => (
                                 <p className="text-sm text-gray-600">服務項目: {appt.service}</p>
                                 <p className="text-sm text-gray-500">負責人員: {appt.staff}</p>
                             </div>
-                            <img src={appt.avatar} alt={appt.customerName} className="w-10 h-10 rounded-full" />
+                            <img src={appt.avatar} alt={appt.customerName} className="w-10 h-10 rounded-full"  loading="lazy" />
                         </div>
                     </div>
                 </div>
@@ -206,7 +206,7 @@ const RecentCustomersList = () => (
             {recentCustomers.map(customer => (
                 <li key={customer.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
                     <div className="flex items-center">
-                        <img src={customer.avatar} alt={customer.name} className="w-10 h-10 rounded-full mr-4" />
+                        <img src={customer.avatar} alt={customer.name} className="w-10 h-10 rounded-full mr-4"  loading="lazy" />
                         <div>
                             <p className="font-semibold text-gray-800">{customer.name}</p>
                             <p className="text-sm text-gray-500">最近訪問: {customer.lastVisit}</p>

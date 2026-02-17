@@ -102,7 +102,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                     <p className="font-semibold">Tech Lead</p>
                     <p className="text-sm text-gray-500">Principal Architect</p>
                 </div>
-                <img src="https://i.pravatar.cc/40" alt="User Avatar" className="w-10 h-10 rounded-full" />
+                <img src="https://i.pravatar.cc/40" alt="User Avatar" className="w-10 h-10 rounded-full"  loading="lazy" />
             </div>
         </header>
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-8">

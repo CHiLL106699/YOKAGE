@@ -20,7 +20,7 @@ type RoleOption = {
   tenantName?: string;
 };
 
-function getRoleOptions(user: any): RoleOption[] {
+function getRoleOptions(user: Record<string, any>): RoleOption[] {
   const options: RoleOption[] = [];
   const role = user?.role ?? "user";
 

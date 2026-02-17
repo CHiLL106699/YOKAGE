@@ -227,7 +227,7 @@ export default function SuperAdminSettingsPage() {
                   <div className="flex items-center gap-4">
                     <div className="w-20 h-20 rounded-lg border border-border bg-muted flex items-center justify-center overflow-hidden">
                       {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain"  loading="lazy" />
                       ) : (
                         <Image className="h-8 w-8 text-muted-foreground" />
                       )}

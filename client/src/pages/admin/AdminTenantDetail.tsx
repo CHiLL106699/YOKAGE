@@ -92,7 +92,7 @@ const StatCard = ({ title, value, icon: Icon }: { title: string; value: string |
   </div>
 );
 
-const BarChart = ({ title, data, dataKey, unit, maxVal }: { title: string; data: any[]; dataKey: string; unit: string; maxVal: number }) => (
+const BarChart = ({ title, data, dataKey, unit, maxVal }: { title: string; data: Array<Record<string, any>>; dataKey: string; unit: string; maxVal: number }) => (
     <div className="bg-slate-800/50 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
         <div className="grid grid-cols-4 gap-4 text-center">

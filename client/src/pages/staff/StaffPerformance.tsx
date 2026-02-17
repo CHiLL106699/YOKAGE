@@ -139,7 +139,7 @@ const staffInfo = {
 
 const StaffHeader = () => (
     <div className="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
-        <img src={staffInfo.avatarUrl} alt={staffInfo.name} className="w-16 h-16 rounded-full mr-4 border-2 border-violet-300" />
+        <img src={staffInfo.avatarUrl} alt={staffInfo.name} className="w-16 h-16 rounded-full mr-4 border-2 border-violet-300"  loading="lazy" />
         <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{staffInfo.name}</h1>
             <p className="text-md text-gray-500 dark:text-gray-400">{staffInfo.title}</p>

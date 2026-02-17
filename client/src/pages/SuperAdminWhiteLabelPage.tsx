@@ -78,7 +78,7 @@ export default function SuperAdminWhiteLabelPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<Record<string, any> | null>(null);
   const [formData, setFormData] = useState({
     clinicId: "",
     plan: "basic",
@@ -94,7 +94,7 @@ export default function SuperAdminWhiteLabelPage() {
   // DNS 驗證狀態
   const [verifyingDomain, setVerifyingDomain] = useState<string | null>(null);
   const [isDnsDialogOpen, setIsDnsDialogOpen] = useState(false);
-  const [selectedDomainForVerify, setSelectedDomainForVerify] = useState<any>(null);
+  const [selectedDomainForVerify, setSelectedDomainForVerify] = useState<Record<string, any> | null>(null);
   const [dnsVerificationResult, setDnsVerificationResult] = useState<{
     success: boolean;
     message: string;
@@ -188,7 +188,7 @@ export default function SuperAdminWhiteLabelPage() {
     });
   };
 
-  const handleEdit = (client: any) => {
+  const handleEdit = (client: Record<string, any>) => {
     setSelectedClient(client);
     setFormData({
       clinicId: client.organizationId?.toString() || client.id.toString(),
@@ -216,7 +216,7 @@ export default function SuperAdminWhiteLabelPage() {
     });
   };
 
-  const handleDelete = (client: any) => {
+  const handleDelete = (client: Record<string, any>) => {
     deleteMutation.mutate({ configId: client.id });
   };
 
@@ -234,7 +234,7 @@ export default function SuperAdminWhiteLabelPage() {
     });
   };
 
-  const openDnsVerifyDialog = (item: any) => {
+  const openDnsVerifyDialog = (item: Record<string, any>) => {
     setSelectedDomainForVerify(item);
     setDnsVerificationResult(null);
     setIsDnsDialogOpen(true);

@@ -429,7 +429,7 @@ export default function DataImportPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {importRecords.map((record: any) => (
+                  {importRecords.map((record: Record<string, any>) => (
                     <TableRow key={record.id}>
                       <TableCell className="font-medium">
                         {record.fileName}
