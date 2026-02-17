@@ -1,79 +1,15 @@
 import React, { useState, useMemo, FC, ReactNode } from 'react';
 import { useLocation, Link } from "wouter";
 import { ChevronDown, Download, Calendar, BarChart2, Users, Star, Briefcase, LayoutDashboard, Settings, FileText } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
 // --- TYPES --- //
 type DateRange = { startDate: Date; endDate: Date };
 type Tab = 'revenue' | 'customers' | 'performance';
 
-// --- MOCK DATA --- //
-const mockRevenueData = {
-  monthly: [
-    { name: '一月', revenue: 65000 }, { name: '二月', revenue: 59000 },
-    { name: '三月', revenue: 80000 }, { name: '四月', revenue: 81000 },
-    { name: '五月', revenue: 56000 }, { name: '六月', revenue: 55000 },
-  ],
-  weekly: [
-    { name: 'W1', revenue: 15000 }, { name: 'W2', revenue: 19000 },
-    { name: 'W3', revenue: 22000 }, { name: 'W4', revenue: 18000 },
-  ],
-  topServices: [
-    { name: '服務A', revenue: 120000 }, { name: '服務B', revenue: 95000 },
-    { name: '服務C', revenue: 78000 }, { name: '服務D', revenue: 45000 },
-  ],
-  paymentMethods: [
-    { name: '信用卡', value: 45 }, { name: 'LINE Pay', value: 25 },
-    { name: '現金', value: 20 }, { name: '其他', value: 10 },
-  ],
-  kpis: {
-    totalRevenue: 396000,
-    avgRevenue: 66000,
-    transactionCount: 1240,
-  }
-};
 
-const mockCustomerData = {
-  trend: [
-    { name: '一月', new: 40, returning: 24 }, { name: '二月', new: 30, returning: 14 },
-    { name: '三月', new: 20, returning: 98 }, { name: '四月', new: 28, returning: 39 },
-    { name: '五月', new: 18, returning: 48 }, { name: '六月', new: 24, returning: 38 },
-  ],
-  sources: [
-    { name: 'Google', value: 35 }, { name: 'Facebook', value: 25 },
-    { name: '介紹', value: 20 }, { name: '路過', value: 15 }, { name: '其他', value: 5 },
-  ],
-  rfm: [
-    { name: '高價值客戶', value: 15 }, { name: '潛力客戶', value: 25 },
-    { name: '新客戶', value: 30 }, { name: '沉睡客戶', value: 20 }, { name: '流失客戶', value: 10 },
-  ],
-  kpis: {
-    totalCustomers: 542,
-    newCustomers: 160,
-    returningRate: 70.4,
-  }
-};
 
-const mockEmployeeData = {
-  ranking: [
-    { id: 1, name: '員工A', revenue: 85000, avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d' },
-    { id: 2, name: '員工B', revenue: 78000, avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d' },
-    { id: 3, name: '員工C', revenue: 75000, avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706d' },
-    { id: 4, name: '員工D', revenue: 69000, avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d' },
-  ],
-  appointments: [
-    { name: '員工A', count: 120 }, { name: '員工B', count: 110 },
-    { name: '員工C', count: 105 }, { name: '員工D', count: 95 },
-  ],
-  ratings: [
-    { name: '員工A', rating: 4.9 }, { name: '員工B', rating: 4.8 },
-    { name: '員工C', rating: 4.85 }, { name: '員工D', rating: 4.7 },
-  ],
-  kpis: {
-    totalAppointments: 430,
-    avgRating: 4.82,
-    topPerformer: '員工A',
-  }
-};
 
 // --- HELPER & UI COMPONENTS --- //
 
@@ -99,6 +35,9 @@ const StatCard: FC<{ title: string; value: string | number; icon: ReactNode; }> 
 
 const BarChart: FC<{ data: { name: string; [key: string]: any }[]; keys: string[]; colors: string[] }> = ({ data, keys, colors }) => {
   const maxValue = Math.max(...data.flatMap(d => keys.map(key => d[key])));
+  if (isLoading) return <QueryLoading variant="skeleton-cards" />;
+  if (revError) return <QueryError message={revError.message} onRetry={refetchRevenue} />;
+
   return (
     <div className="w-full h-64 flex items-end space-x-2 sm:space-x-4 pr-4">
       {data.map((item, index) => (
@@ -204,14 +143,14 @@ const DashboardLayout: FC<{ children: ReactNode }> = ({ children }) => {
 
 const RevenueReportTab: FC = () => {
   const [timeframe, setTimeframe] = useState<'monthly' | 'weekly'>('monthly');
-  const data = timeframe === 'monthly' ? mockRevenueData.monthly : mockRevenueData.weekly;
+  const data = timeframe === 'monthly' ? revenueData.monthly : revenueData.weekly;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="總營收" value={`$${mockRevenueData.kpis.totalRevenue.toLocaleString()}`} icon={<BarChart2 className="w-6 h-6 text-indigo-500" />} />
-        <StatCard title="平均訂單金額" value={`$${mockRevenueData.kpis.avgRevenue.toLocaleString()}`} icon={<FileText className="w-6 h-6 text-indigo-500" />} />
-        <StatCard title="交易次數" value={mockRevenueData.kpis.transactionCount.toLocaleString()} icon={<Users className="w-6 h-6 text-indigo-500" />} />
+        <StatCard title="總營收" value={`$${revenueData.kpis.totalRevenue.toLocaleString()}`} icon={<BarChart2 className="w-6 h-6 text-indigo-500" />} />
+        <StatCard title="平均訂單金額" value={`$${revenueData.kpis.avgRevenue.toLocaleString()}`} icon={<FileText className="w-6 h-6 text-indigo-500" />} />
+        <StatCard title="交易次數" value={revenueData.kpis.transactionCount.toLocaleString()} icon={<Users className="w-6 h-6 text-indigo-500" />} />
       </div>
 
       <Card>
@@ -229,7 +168,7 @@ const RevenueReportTab: FC = () => {
         <Card>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">熱門服務項目</h3>
           <div className="space-y-3">
-            {mockRevenueData.topServices.map((service, i) => (
+            {revenueData.topServices.map((service, i) => (
               <div key={i} className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-300">{service.name}</span>
                 <span className="font-semibold text-gray-800 dark:text-gray-100">${service.revenue.toLocaleString()}</span>
@@ -239,7 +178,7 @@ const RevenueReportTab: FC = () => {
         </Card>
         <Card>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">付款方式分佈</h3>
-          <PieChart data={mockRevenueData.paymentMethods} />
+          <PieChart data={revenueData.paymentMethods} />
         </Card>
       </div>
     </div>
@@ -249,24 +188,24 @@ const RevenueReportTab: FC = () => {
 const CustomerReportTab: FC = () => (
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <StatCard title="總客戶數" value={mockCustomerData.kpis.totalCustomers} icon={<Users className="w-6 h-6 text-indigo-500" />} />
-      <StatCard title="新客戶數" value={mockCustomerData.kpis.newCustomers} icon={<Users className="w-6 h-6 text-indigo-500" />} />
-      <StatCard title="回頭率" value={`${mockCustomerData.kpis.returningRate}%`} icon={<Star className="w-6 h-6 text-indigo-500" />} />
+      <StatCard title="總客戶數" value={custStats.kpis.totalCustomers} icon={<Users className="w-6 h-6 text-indigo-500" />} />
+      <StatCard title="新客戶數" value={custStats.kpis.newCustomers} icon={<Users className="w-6 h-6 text-indigo-500" />} />
+      <StatCard title="回頭率" value={`${custStats.kpis.returningRate}%`} icon={<Star className="w-6 h-6 text-indigo-500" />} />
     </div>
 
     <Card>
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">新舊客戶趨勢</h3>
-      <BarChart data={mockCustomerData.trend} keys={['new', 'returning']} colors={['#818CF8', '#4F46E5']} />
+      <BarChart data={custStats.trend} keys={['new', 'returning']} colors={['#818CF8', '#4F46E5']} />
     </Card>
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">客戶來源</h3>
-        <PieChart data={mockCustomerData.sources} />
+        <PieChart data={custStats.sources} />
       </Card>
       <Card>
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">RFM 客戶分群</h3>
-        <PieChart data={mockCustomerData.rfm} />
+        <PieChart data={custStats.rfm} />
       </Card>
     </div>
   </div>
@@ -275,9 +214,9 @@ const CustomerReportTab: FC = () => (
 const EmployeeReportTab: FC = () => (
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <StatCard title="總預約數" value={mockEmployeeData.kpis.totalAppointments} icon={<Briefcase className="w-6 h-6 text-indigo-500" />} />
-      <StatCard title="平均評價" value={mockEmployeeData.kpis.avgRating} icon={<Star className="w-6 h-6 text-indigo-500" />} />
-      <StatCard title="績效冠軍" value={mockEmployeeData.kpis.topPerformer} icon={<Users className="w-6 h-6 text-indigo-500" />} />
+      <StatCard title="總預約數" value={String(apptStats?.totalAppointments ?? 0)} icon={<Briefcase className="w-6 h-6 text-indigo-500" />} />
+      <StatCard title="平均評價" value={String(apptStats?.avgRating ?? "-")} icon={<Star className="w-6 h-6 text-indigo-500" />} />
+      <StatCard title="績效冠軍" value={String(apptStats?.topPerformer ?? "-")} icon={<Users className="w-6 h-6 text-indigo-500" />} />
     </div>
 
     <Card>
@@ -294,7 +233,7 @@ const EmployeeReportTab: FC = () => (
             </tr>
           </thead>
           <tbody>
-            {mockEmployeeData.ranking.map((employee, i) => (
+            {(apptStats?.ranking ?? []).map((employee, i) => (
               <tr key={employee.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="p-3 font-medium">{i + 1}</td>
                 <td className="p-3 flex items-center">
@@ -302,10 +241,10 @@ const EmployeeReportTab: FC = () => (
                   {employee.name}
                 </td>
                 <td className="p-3 text-right font-mono">${employee.revenue.toLocaleString()}</td>
-                <td className="p-3 text-right font-mono">{mockEmployeeData.appointments.find(a => a.name === employee.name)?.count}</td>
+                <td className="p-3 text-right font-mono">{(apptStats?.appointments ?? []).find(a => a.name === employee.name)?.count}</td>
                 <td className="p-3 text-right font-mono flex justify-end items-center">
                   <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                  {mockEmployeeData.ratings.find(r => r.name === employee.name)?.rating}
+                  {(apptStats?.ratings ?? []).find(r => r.name === employee.name)?.rating}
                 </td>
               </tr>
             ))}
@@ -331,7 +270,6 @@ const DashboardReportsPage: FC = () => {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        // Mock success
         setLoading(false);
       } catch (e) {
         setError("無法載入報表資料，請稍後再試。");
@@ -348,6 +286,27 @@ const DashboardReportsPage: FC = () => {
   ];
 
   const renderContent = () => {
+  const organizationId = 1; // TODO: from context
+  const today = new Date().toISOString().split('T')[0];
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  
+  const { data: revenueData, isLoading: revLoading, error: revError, refetch: refetchRevenue } = trpc.report.revenue.useQuery(
+    { organizationId, startDate: monthStart, endDate: today },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: apptStats, isLoading: apptLoading } = trpc.report.appointmentStats.useQuery(
+    { organizationId, startDate: monthStart, endDate: today },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: custStats, isLoading: custLoading } = trpc.report.customerStats.useQuery(
+    { organizationId, startDate: monthStart, endDate: today },
+    { enabled: !!organizationId }
+  );
+  
+  const isLoading = revLoading || apptLoading || custLoading;
+
     if (loading) {
       return (
         <div className="flex justify-center items-center h-96">

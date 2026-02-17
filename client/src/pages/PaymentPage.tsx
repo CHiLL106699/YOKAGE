@@ -24,105 +24,46 @@ import {
   Eye,
   RotateCcw
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
-// 模擬付款記錄資料
-const mockPaymentRecords = [
-  {
-    id: "PAY-001",
-    orderId: "ORD-2024-001",
-    customerName: "王小明",
-    amount: 5000,
-    method: "line_pay",
-    status: "completed",
-    createdAt: "2024-01-15 14:30:00",
-    completedAt: "2024-01-15 14:31:25",
-    description: "玻尿酸療程訂金"
-  },
-  {
-    id: "PAY-002",
-    orderId: "ORD-2024-002",
-    customerName: "李小華",
-    amount: 12000,
-    method: "credit_card",
-    status: "completed",
-    createdAt: "2024-01-15 15:20:00",
-    completedAt: "2024-01-15 15:20:45",
-    description: "肉毒桿菌療程全額"
-  },
-  {
-    id: "PAY-003",
-    orderId: "ORD-2024-003",
-    customerName: "張美玲",
-    amount: 3000,
-    method: "line_pay",
-    status: "pending",
-    createdAt: "2024-01-15 16:00:00",
-    completedAt: null,
-    description: "美白導入療程訂金"
-  },
-  {
-    id: "PAY-004",
-    orderId: "ORD-2024-004",
-    customerName: "陳大偉",
-    amount: 8500,
-    method: "credit_card",
-    status: "failed",
-    createdAt: "2024-01-15 16:45:00",
-    completedAt: null,
-    description: "雷射除斑療程"
-  },
-  {
-    id: "PAY-005",
-    orderId: "ORD-2024-005",
-    customerName: "林雅婷",
-    amount: 2000,
-    method: "line_pay",
-    status: "refunded",
-    createdAt: "2024-01-14 10:00:00",
-    completedAt: "2024-01-14 10:01:30",
-    refundedAt: "2024-01-15 09:00:00",
-    description: "預約取消退款"
-  }
-];
 
-// 模擬待付款訂單
-const mockPendingOrders = [
-  {
-    id: "ORD-2024-006",
-    customerName: "黃小安",
-    customerPhone: "0912-345-678",
-    items: [
-      { name: "玻尿酸填充", price: 15000, quantity: 1 },
-      { name: "術後保養組", price: 2000, quantity: 1 }
-    ],
-    totalAmount: 17000,
-    depositRequired: 5000,
-    appointmentDate: "2024-01-20 14:00",
-    createdAt: "2024-01-15 11:30:00"
-  },
-  {
-    id: "ORD-2024-007",
-    customerName: "周美君",
-    customerPhone: "0923-456-789",
-    items: [
-      { name: "皮秒雷射", price: 8000, quantity: 1 }
-    ],
-    totalAmount: 8000,
-    depositRequired: 2000,
-    appointmentDate: "2024-01-22 10:00",
-    createdAt: "2024-01-15 13:00:00"
-  }
-];
 
 export default function PaymentPage() {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: txData, isLoading: txLoading, error: txError, refetch: refetchTx } = trpc.payment.getTransactions.useQuery(
+    { organizationId, page: 1, limit: 50 },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: providers, isLoading: provLoading } = trpc.payment.listProviders.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const { data: orders, isLoading: ordersLoading } = trpc.order.list.useQuery(
+    { organizationId, limit: 20 },
+    { enabled: !!organizationId }
+  );
+  
+  const createPaymentMutation = trpc.payment.createPayment.useMutation({
+    onSuccess: () => { toast.success("付款已建立"); refetchTx(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const isLoading = txLoading || provLoading;
+  const transactions = (txData as any)?.data ?? (txData as any)?.transactions ?? [];
+  const orderList = orders?.data ?? [];
+
   const [activeTab, setActiveTab] = useState("checkout");
-  const [selectedOrder, setSelectedOrder] = useState<typeof mockPendingOrders[0] | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<typeof orderList[0] | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [paymentType, setPaymentType] = useState<"deposit" | "full">("deposit");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<typeof mockPaymentRecords[0] | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<typeof transactions[0] | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -166,16 +107,13 @@ export default function PaymentPage() {
 
     setIsProcessing(true);
 
-    // 模擬付款處理
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     if (paymentMethod === "line_pay") {
-      // 模擬跳轉到 LINE Pay
       toast.success("正在跳轉至 LINE Pay...", {
         description: "請在 LINE App 中完成付款"
       });
     } else {
-      // 模擬信用卡付款
       toast.success("付款成功！", {
         description: `已收取 NT$ ${paymentType === "deposit" ? selectedOrder.depositRequired : selectedOrder.totalAmount}`
       });
@@ -202,13 +140,18 @@ export default function PaymentPage() {
     setSelectedPayment(null);
   };
 
-  const filteredRecords = mockPaymentRecords.filter(record => {
+  const filteredRecords = transactions.filter(record => {
     const matchesSearch = record.customerName.includes(searchTerm) || 
                          record.orderId.includes(searchTerm) ||
                          record.id.includes(searchTerm);
     const matchesStatus = statusFilter === "all" || record.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+
+  if (txError) return <QueryError message={txError.message} onRetry={refetchTx} />;
+
 
   return (
     <div className="container py-8">
@@ -243,7 +186,7 @@ export default function PaymentPage() {
                 <CardDescription>選擇訂單進行收款</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mockPendingOrders.map(order => (
+                {orderList.map(order => (
                   <div 
                     key={order.id}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${

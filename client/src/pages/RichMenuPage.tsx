@@ -30,58 +30,10 @@ import {
   User,
   Settings
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
 // 模擬 Rich Menu 資料
-const mockRichMenus = [
-  {
-    id: "rm-001",
-    name: "新客戶選單",
-    targetGroup: "new_customer",
-    isActive: true,
-    areas: [
-      { id: 1, label: "立即預約", action: "uri", data: "/liff/booking", icon: "Calendar" },
-      { id: 2, label: "療程介紹", action: "uri", data: "/treatments", icon: "Star" },
-      { id: 3, label: "優惠活動", action: "uri", data: "/promotions", icon: "Gift" },
-      { id: 4, label: "聯絡我們", action: "message", data: "我想了解更多", icon: "MessageSquare" },
-      { id: 5, label: "會員中心", action: "uri", data: "/liff/member", icon: "User" },
-      { id: 6, label: "線上商城", action: "uri", data: "/shop", icon: "ShoppingBag" }
-    ],
-    createdAt: "2024-01-10",
-    usageCount: 1250
-  },
-  {
-    id: "rm-002",
-    name: "VIP 會員選單",
-    targetGroup: "vip",
-    isActive: true,
-    areas: [
-      { id: 1, label: "專屬預約", action: "uri", data: "/liff/vip-booking", icon: "Calendar" },
-      { id: 2, label: "VIP 專區", action: "uri", data: "/vip-zone", icon: "Star" },
-      { id: 3, label: "點數查詢", action: "uri", data: "/liff/points", icon: "Gift" },
-      { id: 4, label: "專屬客服", action: "message", data: "VIP 專線服務", icon: "MessageSquare" },
-      { id: 5, label: "會員中心", action: "uri", data: "/liff/member", icon: "User" },
-      { id: 6, label: "獨家優惠", action: "uri", data: "/vip-offers", icon: "ShoppingBag" }
-    ],
-    createdAt: "2024-01-10",
-    usageCount: 380
-  },
-  {
-    id: "rm-003",
-    name: "待回訪客戶選單",
-    targetGroup: "followup",
-    isActive: true,
-    areas: [
-      { id: 1, label: "立即預約", action: "uri", data: "/liff/booking", icon: "Calendar" },
-      { id: 2, label: "回訪優惠", action: "uri", data: "/comeback-offers", icon: "Gift" },
-      { id: 3, label: "療程紀錄", action: "uri", data: "/liff/history", icon: "Clock" },
-      { id: 4, label: "聯絡客服", action: "message", data: "我想預約回診", icon: "MessageSquare" },
-      { id: 5, label: "會員中心", action: "uri", data: "/liff/member", icon: "User" },
-      { id: 6, label: "最新消息", action: "uri", data: "/news", icon: "Star" }
-    ],
-    createdAt: "2024-01-12",
-    usageCount: 520
-  }
-];
 
 const targetGroupLabels: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   new_customer: { label: "新客戶", color: "bg-blue-100 text-blue-800", icon: <Users className="w-3 h-3" /> },
@@ -103,8 +55,32 @@ const iconComponents: Record<string, React.ReactNode> = {
 };
 
 export default function RichMenuPage() {
-  const [menus, setMenus] = useState(mockRichMenus);
-  const [selectedMenu, setSelectedMenu] = useState<typeof mockRichMenus[0] | null>(null);
+  const organizationId = 1; // TODO: from context
+  
+  const { data: richMenusData, isLoading, error, refetch } = trpc.richMenu.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+  
+  const createMutation = trpc.richMenu.create.useMutation({
+    onSuccess: () => { toast.success("Rich Menu 已建立"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const updateMutation = trpc.richMenu.update.useMutation({
+    onSuccess: () => { toast.success("Rich Menu 已更新"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const deleteMutation = trpc.richMenu.delete.useMutation({
+    onSuccess: () => { toast.success("Rich Menu 已刪除"); refetch(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const richMenus = (richMenusData as any)?.data ?? richMenusData ?? [];
+
+  // menus from tRPC query
+  const [selectedMenu, setSelectedMenu] = useState<typeof richMenus[0] | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [editingArea, setEditingArea] = useState<number | null>(null);
@@ -113,7 +89,7 @@ export default function RichMenuPage() {
   const [editForm, setEditForm] = useState({
     name: "",
     targetGroup: "new_customer",
-    areas: [] as typeof mockRichMenus[0]["areas"]
+    areas: [] as typeof richMenus[0]["areas"]
   });
 
   const handleCreateMenu = () => {
@@ -133,7 +109,7 @@ export default function RichMenuPage() {
     setShowEditDialog(true);
   };
 
-  const handleEditMenu = (menu: typeof mockRichMenus[0]) => {
+  const handleEditMenu = (menu: typeof richMenus[0]) => {
     setEditForm({
       name: menu.name,
       targetGroup: menu.targetGroup,
@@ -187,7 +163,7 @@ export default function RichMenuPage() {
     toast.success("選單已刪除");
   };
 
-  const handleDuplicateMenu = (menu: typeof mockRichMenus[0]) => {
+  const handleDuplicateMenu = (menu: typeof richMenus[0]) => {
     const newMenu = {
       ...menu,
       id: `rm-${Date.now()}`,
@@ -208,6 +184,11 @@ export default function RichMenuPage() {
       )
     });
   };
+
+  if (isLoading) return <QueryLoading variant="skeleton-cards" />;
+
+  if (error) return <QueryError message={error.message} onRetry={refetch} />;
+
 
   return (
     <div className="container py-8">

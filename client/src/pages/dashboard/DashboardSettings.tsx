@@ -2,49 +2,44 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Settings, Building, Clock, Briefcase, ChevronDown, Plus, X, Image as ImageIcon, Upload, Trash2, Edit, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
+import { toast } from "sonner";
 
-// Mock Data (as per instructions)
-const mockClinicInfo = {
-  name: 'YOChiLL 牙科診所',
-  phone: '02-1234-5678',
-  email: 'contact@yochill.com',
-  address: '台北市信義區信義路五段7號',
-  logo: null as string | null,
-  description: 'YOChiLL 牙科診所致力於提供最優質的牙科護理服務，結合先進的技術與親切的服務態度，為您的口腔健康把關。',
-};
 
-const mockBusinessHours = [
-  { day: '週一', open: '09:00', close: '21:00', isOpen: true },
-  { day: '週二', open: '09:00', close: '21:00', isOpen: true },
-  { day: '週三', open: '09:00', close: '21:00', isOpen: true },
-  { day: '週四', open: '09:00', close: '21:00', isOpen: true },
-  { day: '週五', open: '09:00', close: '21:00', isOpen: true },
-  { day: '週六', open: '10:00', close: '18:00', isOpen: true },
-  { day: '週日', open: '', close: '', isOpen: false },
-];
 
-const mockServices = [
-  { id: 'S001', name: '洗牙', duration: 30, price: 500, category: '基礎護理', status: true },
-  { id: 'S002', name: '補牙', duration: 60, price: 2000, category: '修復治療', status: true },
-  { id: 'S003', name: '牙齒美白', duration: 90, price: 8000, category: '美容牙科', status: true },
-  { id: 'S004', name: '植牙諮詢', duration: 45, price: 0, category: '諮詢', status: false },
-];
 
 // Type Definitions
-type ClinicInfo = typeof mockClinicInfo;
-type BusinessHour = typeof mockBusinessHours[0];
-type Service = typeof mockServices[0];
+type ClinicInfo = any;
+type BusinessHour = any;
+type Service = any;
 
 // Main Component
 const DashboardSettingsPage = () => {
+  const organizationId = 1; // TODO: from context
+  
+  const { data: settingsData, isLoading: settingsLoading, error: settingsError, refetch: refetchSettings } = trpc.settings.list.useQuery(
+    { is_global: false },
+  );
+  
+  const { data: orgData } = trpc.organization.current.useQuery();
+  
+  const updateSettingMutation = trpc.settings.update.useMutation({
+    onSuccess: () => { toast.success("設定已儲存"); refetchSettings(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const isLoading = settingsLoading;
+  const settings = settingsData ?? [];
+
   const [location, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  
+  
 
   
 // Section Components
 const ServiceManagementSection = () => {
-  const [services, setServices] = useState<Service[]>(mockServices);
+  const [services, setServices] = useState<Service[]>(([] as any[]));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
 
@@ -70,6 +65,11 @@ const ServiceManagementSection = () => {
   const toggleStatus = (serviceId: string) => {
     setServices(services.map(s => s.id === serviceId ? { ...s, status: !s.status } : s));
   };
+
+  if (isLoading) return <QueryLoading variant="skeleton-cards" />;
+
+  if (settingsError) return <QueryError message={settingsError.message} onRetry={refetchSettings} />;
+
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm mt-6">
@@ -188,7 +188,7 @@ const ServiceModal = ({ service, onSave, onClose }: { service: Service | null, o
 };
 
 const BusinessHoursSection = () => {
-  const [hours, setHours] = useState<BusinessHour[]>(mockBusinessHours);
+  const [hours, setHours] = useState<BusinessHour[]>(([] as any[]));
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -259,7 +259,7 @@ const BusinessHoursSection = () => {
 };
 
 const ClinicInfoSection = () => {
-  const [info, setInfo] = useState<ClinicInfo>(mockClinicInfo);
+  const [info, setInfo] = useState<ClinicInfo>(orgData ?? {});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ClinicInfo, string>>>({});

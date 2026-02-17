@@ -30,148 +30,8 @@ import {
   Settings,
 } from "lucide-react";
 
-// Mock data for notification templates
-const mockTemplates = [
-  {
-    id: 1,
-    name: "預約提醒 - 前一天",
-    type: "appointment_reminder",
-    channel: "line",
-    content: "親愛的 {{customer_name}}，提醒您明天 {{appointment_time}} 有預約 {{service_name}}，請準時到達。",
-    isActive: true,
-    triggerTime: "1 day before",
-  },
-  {
-    id: 2,
-    name: "預約提醒 - 當天",
-    type: "appointment_reminder",
-    channel: "line",
-    content: "親愛的 {{customer_name}}，提醒您今天 {{appointment_time}} 有預約 {{service_name}}，我們期待您的到來！",
-    isActive: true,
-    triggerTime: "2 hours before",
-  },
-  {
-    id: 3,
-    name: "術後關懷 - 第一天",
-    type: "aftercare",
-    channel: "line",
-    content: "親愛的 {{customer_name}}，感謝您今天的療程。請記得 {{aftercare_notes}}，如有任何不適請隨時聯繫我們。",
-    isActive: true,
-    triggerTime: "1 day after",
-  },
-  {
-    id: 4,
-    name: "術後關懷 - 第三天",
-    type: "aftercare",
-    channel: "line",
-    content: "親愛的 {{customer_name}}，距離您的療程已過三天，請問恢復情況如何？如有任何問題歡迎回覆。",
-    isActive: true,
-    triggerTime: "3 days after",
-  },
-  {
-    id: 5,
-    name: "生日祝福",
-    type: "birthday",
-    channel: "line",
-    content: "親愛的 {{customer_name}}，祝您生日快樂！🎂 為慶祝您的生日，我們特別為您準備了專屬優惠，歡迎蒞臨體驗。",
-    isActive: true,
-    triggerTime: "on birthday",
-  },
-  {
-    id: 6,
-    name: "回訪提醒",
-    type: "followup",
-    channel: "line",
-    content: "親愛的 {{customer_name}}，距離您上次療程已過 {{days_since_last_visit}} 天，建議您安排回診以維持最佳效果。",
-    isActive: false,
-    triggerTime: "30 days after last visit",
-  },
-];
 
-// Mock data for notification logs
-const mockLogs = [
-  {
-    id: 1,
-    templateName: "預約提醒 - 前一天",
-    customerName: "王小明",
-    channel: "line",
-    status: "sent",
-    sentAt: "2024-01-15 10:00:00",
-    content: "親愛的 王小明，提醒您明天 14:00 有預約 雷射除斑，請準時到達。",
-  },
-  {
-    id: 2,
-    templateName: "術後關懷 - 第一天",
-    customerName: "李小華",
-    channel: "line",
-    status: "sent",
-    sentAt: "2024-01-15 09:30:00",
-    content: "親愛的 李小華，感謝您今天的療程。請記得保持傷口乾燥，如有任何不適請隨時聯繫我們。",
-  },
-  {
-    id: 3,
-    templateName: "生日祝福",
-    customerName: "張美麗",
-    channel: "line",
-    status: "failed",
-    sentAt: "2024-01-15 08:00:00",
-    content: "親愛的 張美麗，祝您生日快樂！🎂",
-    error: "LINE 用戶未綁定",
-  },
-  {
-    id: 4,
-    templateName: "預約提醒 - 當天",
-    customerName: "陳大明",
-    channel: "line",
-    status: "pending",
-    scheduledAt: "2024-01-16 08:00:00",
-    content: "親愛的 陳大明，提醒您今天 10:00 有預約 玻尿酸注射，我們期待您的到來！",
-  },
-];
 
-// Mock data for scheduled tasks
-const mockScheduledTasks = [
-  {
-    id: 1,
-    type: "appointment_reminder",
-    name: "預約提醒排程",
-    description: "每天早上 8:00 發送當天預約提醒",
-    schedule: "0 8 * * *",
-    isActive: true,
-    lastRun: "2024-01-15 08:00:00",
-    nextRun: "2024-01-16 08:00:00",
-  },
-  {
-    id: 2,
-    type: "aftercare",
-    name: "術後關懷排程",
-    description: "每天早上 9:00 檢查並發送術後關懷訊息",
-    schedule: "0 9 * * *",
-    isActive: true,
-    lastRun: "2024-01-15 09:00:00",
-    nextRun: "2024-01-16 09:00:00",
-  },
-  {
-    id: 3,
-    type: "birthday",
-    name: "生日祝福排程",
-    description: "每天早上 8:00 發送當天生日祝福",
-    schedule: "0 8 * * *",
-    isActive: true,
-    lastRun: "2024-01-15 08:00:00",
-    nextRun: "2024-01-16 08:00:00",
-  },
-  {
-    id: 4,
-    type: "followup",
-    name: "回訪提醒排程",
-    description: "每週一早上 10:00 發送回訪提醒",
-    schedule: "0 10 * * 1",
-    isActive: false,
-    lastRun: "2024-01-08 10:00:00",
-    nextRun: "2024-01-22 10:00:00",
-  },
-];
 
 const typeIcons: Record<string, React.ReactNode> = {
   appointment_reminder: <Calendar className="h-4 w-4" />,
@@ -200,7 +60,28 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const [selectedTemplate, setSelectedTemplate] = useState<typeof mockTemplates[0] | null>(null);
+  const organizationId = 1; // TODO: from context
+  
+  const { data: notifSettings, isLoading: settingsLoading, refetch: refetchSettings } = trpc.notification.getNotificationSettings.useQuery();
+  
+  const { data: notifLog, isLoading: logLoading, error: logError, refetch: refetchLog } = trpc.notification.getNotificationLog.useQuery(
+    { page: 1, limit: 50 }
+  );
+  
+  const updateSettingsMutation = trpc.notification.updateNotificationSettings.useMutation({
+    onSuccess: () => { toast.success("通知設定已更新"); refetchSettings(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const sendNotifMutation = trpc.notification.sendNotification.useMutation({
+    onSuccess: () => { toast.success("通知已發送"); refetchLog(); },
+    onError: (err: any) => toast.error(err.message),
+  });
+  
+  const isLoading = settingsLoading || logLoading;
+  const notifications = notifLog?.logs ?? [];
+
+  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [isNewTemplate, setIsNewTemplate] = useState(false);
 
@@ -214,7 +95,7 @@ export default function NotificationsPage() {
     isActive: true,
   });
 
-  const handleEditTemplate = (template: typeof mockTemplates[0]) => {
+  const handleEditTemplate = (template: any) => {
     setSelectedTemplate(template);
     setTemplateForm({
       name: template.name,
@@ -259,6 +140,11 @@ export default function NotificationsPage() {
     toast.success("測試訊息已發送");
   };
 
+  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+
+  if (logError) return <QueryError message={logError.message} onRetry={refetchLog} />;
+
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -279,10 +165,10 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {mockTemplates.filter(t => t.isActive).length}
+                {[].filter(t => t.isActive).length}
               </div>
               <p className="text-xs text-muted-foreground">
-                共 {mockTemplates.length} 個模板
+                共 {[].length} 個模板
               </p>
             </CardContent>
           </Card>
@@ -294,7 +180,7 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {mockLogs.filter(l => l.status === "sent").length}
+                {notifications.filter(l => l.status === "sent").length}
               </div>
               <p className="text-xs text-muted-foreground">
                 成功發送通知
@@ -309,7 +195,7 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {mockLogs.filter(l => l.status === "pending").length}
+                {notifications.filter(l => l.status === "pending").length}
               </div>
               <p className="text-xs text-muted-foreground">
                 排程中的通知
@@ -324,7 +210,7 @@ export default function NotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                {mockLogs.filter(l => l.status === "failed").length}
+                {notifications.filter(l => l.status === "failed").length}
               </div>
               <p className="text-xs text-muted-foreground">
                 需要處理
@@ -353,7 +239,7 @@ export default function NotificationsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockTemplates.map((template) => (
+              {[].map((template) => (
                 <Card key={template.id} className={!template.isActive ? "opacity-60" : ""}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -402,7 +288,7 @@ export default function NotificationsPage() {
             <h2 className="text-lg font-semibold">排程任務管理</h2>
 
             <div className="grid gap-4">
-              {mockScheduledTasks.map((task) => (
+              {([] as any[]).map((task) => (
                 <Card key={task.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -457,7 +343,7 @@ export default function NotificationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockLogs.map((log) => (
+                  {notifications.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">{log.templateName}</TableCell>
                       <TableCell>{log.customerName}</TableCell>

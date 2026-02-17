@@ -1,5 +1,7 @@
 import React from 'react';
 import { Users, Calendar, DollarSign, Clock, Briefcase, CheckCircle } from 'lucide-react';
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
 interface Employee {
   id: string;
@@ -11,53 +13,42 @@ interface Employee {
   commission: number;
 }
 
-const mockEmployees: Employee[] = [
-  {
-    id: 'E001',
-    name: 'Dr. 陳醫師',
-    role: '主治醫師',
-    status: 'On Duty',
-    checkInTime: '09:55 AM',
-    monthlySales: 1200000,
-    commission: 360000,
-  },
-  {
-    id: 'E002',
-    name: 'Dr. 林醫師',
-    role: '兼任醫師',
-    status: 'Off Duty',
-    monthlySales: 450000,
-    commission: 135000,
-  },
-  {
-    id: 'E003',
-    name: 'Amy',
-    role: '諮詢師',
-    status: 'On Duty',
-    checkInTime: '09:45 AM',
-    monthlySales: 800000,
-    commission: 40000,
-  },
-  {
-    id: 'E004',
-    name: 'Jessica',
-    role: '美容師',
-    status: 'Leave',
-    monthlySales: 300000,
-    commission: 15000,
-  },
-  {
-    id: 'E005',
-    name: 'Kevin',
-    role: '店長',
-    status: 'On Duty',
-    checkInTime: '09:30 AM',
-    monthlySales: 0,
-    commission: 50000, // Base + Bonus
-  },
-];
-
 const HrDashboard: React.FC = () => {
+  const organizationId = 1; // TODO: from context
+
+  const { data: staffData, isLoading: staffLoading, error: staffError, refetch: refetchStaff } = trpc.staff.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+
+  const { data: attendanceData, isLoading: attLoading } = trpc.attendance.list.useQuery(
+    { organizationId },
+    { enabled: !!organizationId }
+  );
+
+  const isLoading = staffLoading || attLoading;
+
+  const staffList = staffData?.data ?? [];
+  const attendanceRecords = (attendanceData as any)?.data ?? attendanceData ?? [];
+
+  // Transform staff data to Employee format
+  const employees: Employee[] = staffList.map((s: any) => {
+    const attendance = attendanceRecords.find?.((a: any) => a.staffId === s.id);
+    return {
+      id: s.employeeId || `E${String(s.id).padStart(3, '0')}`,
+      name: s.name,
+      role: s.position || '員工',
+      status: attendance?.clockIn ? 'On Duty' : (s.isActive === false ? 'Leave' : 'Off Duty'),
+      checkInTime: attendance?.clockIn ? new Date(attendance.clockIn).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : undefined,
+      monthlySales: Number(s.monthlySales || 0),
+      commission: Number(s.commission || s.salary || 0),
+    };
+  });
+
+  const totalStaff = employees.length;
+  const onDutyCount = employees.filter(e => e.status === 'On Duty').length;
+  const totalCommission = employees.reduce((sum, e) => sum + e.commission, 0);
+
   const getStatusBadgeClass = (status: Employee['status']) => {
     switch (status) {
       case 'On Duty':
@@ -70,6 +61,9 @@ const HrDashboard: React.FC = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (isLoading) return <QueryLoading variant="skeleton-table" />;
+  if (staffError) return <QueryError message={staffError.message} onRetry={refetchStaff} />;
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -102,7 +96,7 @@ const HrDashboard: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">總員工數</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">12</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">{totalStaff}</dd>
                 </dl>
               </div>
             </div>
@@ -118,7 +112,7 @@ const HrDashboard: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">今日出勤</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">8 / 12</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">{onDutyCount} / {totalStaff}</dd>
                 </dl>
               </div>
             </div>
@@ -134,7 +128,7 @@ const HrDashboard: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">本月遲到</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">3 次</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">{attendanceRecords.filter?.((a: any) => a.isLate)?.length ?? 0} 次</dd>
                 </dl>
               </div>
             </div>
@@ -150,7 +144,7 @@ const HrDashboard: React.FC = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">預估發放獎金</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">NT$ 600K</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">NT$ {(totalCommission / 1000).toFixed(0)}K</dd>
                 </dl>
               </div>
             </div>
@@ -179,7 +173,11 @@ const HrDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {mockEmployees.map((employee) => (
+              {employees.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">尚無員工資料</td>
+                </tr>
+              ) : employees.map((employee) => (
                 <tr key={employee.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
