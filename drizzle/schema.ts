@@ -1,6 +1,7 @@
 import {
   integer,
   pgTable,
+  pgEnum,
   text,
   timestamp,
   varchar,
@@ -12,6 +13,21 @@ import {
   serial,
   customType,
 } from "drizzle-orm/pg-core";
+
+// ============================================
+// ENUM 定義
+// ============================================
+export const planTypeEnum = pgEnum("plan_type_enum", [
+  "yokage_starter",
+  "yokage_pro",
+  "yyq_basic",
+  "yyq_advanced",
+]);
+
+export const sourceProductEnum = pgEnum("source_product_enum", [
+  "yokage",
+  "yaoyouqian",
+]);
 
 // pgvector custom type for Drizzle ORM
 const vector = customType<{ data: number[]; driverData: string }>({
@@ -68,9 +84,9 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 // ============================================
-// 組織/診所表 - 多租戶核心
+// 租戶表 (原 organizations) - 多租戶核心
 // ============================================
-export const organizations = pgTable("organizations", {
+export const tenants = pgTable("tenants", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
@@ -82,6 +98,13 @@ export const organizations = pgTable("organizations", {
   currency: varchar("currency", { length: 10 }).default("TWD"),
   businessHours: jsonb("businessHours"),
   settings: jsonb("settings"),
+  // 新增：SaaS 方案類型
+  planType: planTypeEnum("planType").default("yokage_starter"),
+  // 新增：已啟用模組 (Feature Gating)
+  enabledModules: jsonb("enabledModules").$type<string[]>(),
+  // 新增：來源產品
+  sourceProduct: sourceProductEnum("sourceProduct").default("yokage"),
+  // 保留舊欄位以向後相容
   subscriptionPlan: text("subscriptionPlan").default("free"),
   subscriptionStatus: text("subscriptionStatus").default("active"),
   trialEndsAt: timestamp("trialEndsAt"),
@@ -90,13 +113,18 @@ export const organizations = pgTable("organizations", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type Organization = typeof organizations.$inferSelect;
-export type InsertOrganization = typeof organizations.$inferInsert;
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = typeof tenants.$inferInsert;
+
+// 向後相容別名 — 避免大量重構既有 import
+export const organizations = tenants;
+export type Organization = Tenant;
+export type InsertOrganization = InsertTenant;
 
 // ============================================
-// 組織使用者關聯表 - 多對多關係
+// 租戶使用者關聯表 (原 organizationUsers) - 多對多關係
 // ============================================
-export const organizationUsers = pgTable("organizationUsers", {
+export const tenantUsers = pgTable("organizationUsers", {
   id: serial("id").primaryKey(),
   organizationId: integer("organizationId").notNull(),
   userId: integer("userId").notNull(),
@@ -108,8 +136,13 @@ export const organizationUsers = pgTable("organizationUsers", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export type OrganizationUser = typeof organizationUsers.$inferSelect;
-export type InsertOrganizationUser = typeof organizationUsers.$inferInsert;
+export type TenantUser = typeof tenantUsers.$inferSelect;
+export type InsertTenantUser = typeof tenantUsers.$inferInsert;
+
+// 向後相容別名
+export const organizationUsers = tenantUsers;
+export type OrganizationUser = TenantUser;
+export type InsertOrganizationUser = InsertTenantUser;
 
 // ============================================
 // 客戶表
