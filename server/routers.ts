@@ -56,6 +56,10 @@ import { aiChatbotRouter } from './routers/aiChatbot.js';
 import { broadcastVariantsRouter } from './routers/broadcastVariants.js';
 // Phase 109: Rich Menu 模板市集
 import { richMenuTemplateMarketRouter } from './routers/richMenuTemplateMarket.js';
+// Sprint 1: 三層 Router 架構
+import { coreRouter } from './routers/core/index';
+import { proRouter } from './routers/pro/index';
+import { lineEnhancedRouter } from './routers/line/index';
 // ============================================
 // Super Admin Router
 // ============================================
@@ -3813,10 +3817,21 @@ const settlementRouter = router({
 });
 
 // ============================================
-// Main App Router
+// Main App Router — 三層架構
 // ============================================
 export const appRouter = router({
   system: systemRouter,
+
+  // ======== 三層 Router 架構 (Sprint 1) ========
+  // coreRouter: 共用層（YOKAGE + YaoYouQian）
+  core: coreRouter,
+  // proRouter: YOKAGE 專屬進階功能
+  pro: proRouter,
+  // lineEnhanced: YaoYouQian LINE 強化功能
+  lineEnhanced: lineEnhancedRouter,
+
+  // ======== 向後相容：保留既有 flat router 結構 ========
+  // 以下 router 保留以確保前端既有頁面不受影響
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -3825,7 +3840,6 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
-
   superAdmin: superAdminRouter,
   organization: organizationRouter,
   customer: customerRouter,
@@ -3833,14 +3847,13 @@ export const appRouter = router({
   staff: staffRouter,
   appointment: appointmentRouter,
   schedule: scheduleRouter,
-  attendance: smartAttendanceRouter, // 智慧打卡系統（Phase 79-B）
+  attendance: smartAttendanceRouter,
   order: orderRouter,
   coupon: couponRouter,
   aftercare: aftercareRouter,
   line: lineRouter,
   clinic: clinicRouter,
   report: reportRouter,
-  // 核心功能模組
   treatment: treatmentRouter,
   package: packageRouter,
   consultation: consultationRouter,
@@ -3851,7 +3864,6 @@ export const appRouter = router({
   revenueTarget: revenueTargetRouter,
   marketing: marketingRouter,
   satisfaction: satisfactionRouter,
-  // Phase 41-48 進階功能模組
   injection: injectionRouter,
   consent: consentRouter,
   prescription: prescriptionRouter,
@@ -3860,46 +3872,31 @@ export const appRouter = router({
   teleConsult: teleConsultRouter,
   referral: referralRouter,
   social: socialRouter,
-  // Phase 56: 電子票券系統
   voucher: voucherRouter,
-  // Phase 61: 每日結帳系統
   settlement: settlementRouter,
-  // Phase 29-31: LINE 整合、資料匯入、支付整合
   lineSettings: lineSettingsRouter,
   dataImport: dataImportRouter,
   payment: paymentRouter,
-  // Phase 35: 定位打卡與 LINE 遊戲模組
   attendanceSettings: attendanceSettingsRouter,
   game: gameRouter,
   prize: prizeRouter,
   couponManagement: couponManagementRouter,
   lineRichMenu: lineRichMenuRouter,
   leaveManagement: leaveManagementRouter,
-  // Phase 86: 系統 B 整合 - 6 大核心模組
   dashboardB: dashboardSystemBRouter,
-  // Phase 92: 營運分析模組匯出報表功能
   biExport: biExportRouter,
-  // Phase 95: CRM 模組客戶標籤功能
   crmTags: crmTagsRouter,
-  // Phase 96: CRM 模組客戶 CRUD 功能
   crmCustomers: crmCustomersRouter,
-  // Phase 97: CRM 模組客戶互動歷史記錄功能
   interactions: interactionsRouter,
-  // Phase 98: CRM 模組自動化標籤系統
   tagRules: tagRulesRouter,
-  // Phase 99: CRM 模組 LINE Messaging API 整合
   lineMessaging: lineMessagingRouter,
-  // Phase 100: LINE Webhook 自動接收訊息功能
   lineWebhook: lineWebhookRouter,
   autoReplyRules: autoReplyRulesRouter,
-  // Phase 101-103: Rich Menu 動態管理、分群推播、AI 對話機器人
   richMenu: richMenuRouter,
   broadcast: broadcastRouter,
   broadcastVariants: broadcastVariantsRouter,
   aiChatbot: aiChatbotRouter,
-  // Phase 109: Rich Menu 模板市集
   richMenuTemplateMarket: richMenuTemplateMarketRouter,
-  // Previously imported but unregistered routers
   ai: aiChatRouter,
   newOrganization: newOrganizationRouter,
   newCustomer: newCustomerRouter,
