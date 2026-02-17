@@ -710,6 +710,497 @@ const superAdminRouter = router({
       };
     }),
 
+  // ============================================
+  // Sprint 6: 計費管理 API
+  // ============================================
+
+  /** 計費統計摘要 */
+  billingStats: adminProcedure.query(async () => {
+    // 帳單統計
+    const invoiceResult = await db.query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0)::numeric as total_revenue,
+        COALESCE(SUM(CASE WHEN status = 'paid' AND paid_at >= date_trunc('month', NOW()) THEN amount ELSE 0 END), 0)::numeric as monthly_revenue,
+        COUNT(*) FILTER (WHERE status = 'pending') as pending_invoices,
+        COUNT(*) FILTER (WHERE status = 'overdue') as overdue_invoices
+      FROM invoices
+    `);
+    // 活躍訂閱數
+    const subResult = await db.query(`
+      SELECT COUNT(*) as active_subscriptions
+      FROM tenants
+      WHERE is_active = true AND plan_type != 'yokage_starter'
+    `);
+    const inv = invoiceResult?.[0] || {};
+    const sub = subResult?.[0] || {};
+    return {
+      totalRevenue: Number(inv.total_revenue) || 0,
+      monthlyRevenue: Number(inv.monthly_revenue) || 0,
+      activeSubscriptions: Number(sub.active_subscriptions) || 0,
+      pendingInvoices: Number(inv.pending_invoices) || 0,
+      overdueInvoices: Number(inv.overdue_invoices) || 0,
+      growthRate: 0,
+    };
+  }),
+
+  /** 帳單列表 */
+  listInvoices: adminProcedure
+    .input(z.object({
+      status: z.string().optional(),
+      search: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const page = input?.page || 1;
+      const limit = input?.limit || 50;
+      const offset = (page - 1) * limit;
+      const conditions: string[] = [];
+      const params: any[] = [];
+      let paramIdx = 1;
+      if (input?.status && input.status !== 'all') {
+        conditions.push(`i.status = $${paramIdx++}`);
+        params.push(input.status);
+      }
+      if (input?.search) {
+        conditions.push(`(i.invoice_number ILIKE $${paramIdx} OR t.name ILIKE $${paramIdx})`);
+        params.push(`%${input.search}%`);
+        paramIdx++;
+      }
+      const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const result = await db.query(`
+        SELECT i.*, t.name as clinic_name
+        FROM invoices i
+        LEFT JOIN tenants t ON i.organization_id = t.id
+        ${where}
+        ORDER BY i.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `, params);
+      const countResult = await db.query(`
+        SELECT COUNT(*) as total FROM invoices i
+        LEFT JOIN tenants t ON i.organization_id = t.id
+        ${where}
+      `, params);
+      return {
+        data: (result || []).map((r: any) => ({
+          id: r.invoice_number || `INV-${r.id}`,
+          dbId: r.id,
+          clinicName: r.clinic_name || `租戶 #${r.organization_id}`,
+          amount: Number(r.amount) || 0,
+          status: r.status || 'pending',
+          dueDate: r.due_date,
+          paidAt: r.paid_at,
+          plan: r.plan_name || '-',
+          createdAt: r.created_at,
+        })),
+        total: Number(countResult?.[0]?.total) || 0,
+      };
+    }),
+
+  /** 建立帳單 */
+  createInvoice: adminProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      amount: z.number(),
+      planName: z.string().optional(),
+      dueDate: z.string().optional(),
+      notes: z.string().optional(),
+      lineItems: z.any().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      // 產生帳單編號
+      const countResult = await db.query(`SELECT COUNT(*) as cnt FROM invoices`);
+      const cnt = Number(countResult?.[0]?.cnt) || 0;
+      const invoiceNumber = `INV-${new Date().getFullYear()}-${String(cnt + 1).padStart(4, '0')}`;
+      await db.query(`
+        INSERT INTO invoices (organization_id, invoice_number, amount, plan_name, due_date, notes, line_items, status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW(), NOW())
+      `, [
+        input.organizationId,
+        invoiceNumber,
+        input.amount,
+        input.planName || null,
+        input.dueDate ? new Date(input.dueDate) : null,
+        input.notes || null,
+        input.lineItems ? JSON.stringify(input.lineItems) : null,
+      ]);
+      return { success: true, invoiceNumber };
+    }),
+
+  /** 更新帳單狀態 */
+  updateInvoiceStatus: adminProcedure
+    .input(z.object({
+      invoiceId: z.number(),
+      status: z.enum(['paid', 'pending', 'overdue', 'cancelled']),
+    }))
+    .mutation(async ({ input }) => {
+      const paidAt = input.status === 'paid' ? ', paid_at = NOW()' : '';
+      await db.query(`
+        UPDATE invoices SET status = $1${paidAt}, updated_at = NOW() WHERE id = $2
+      `, [input.status, input.invoiceId]);
+      return { success: true };
+    }),
+
+  /** 訂閱狀態列表（租戶 + 方案） */
+  listSubscriptions: adminProcedure
+    .input(z.object({
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const limit = input?.limit || 50;
+      const offset = ((input?.page || 1) - 1) * limit;
+      const result = await db.query(`
+        SELECT id, name, plan_type, subscription_status, is_active, trial_ends_at, created_at, updated_at
+        FROM tenants
+        ORDER BY created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+      return (result || []).map((t: any) => ({
+        id: t.id,
+        clinic: t.name || `租戶 #${t.id}`,
+        plan: t.plan_type || 'yokage_starter',
+        status: t.subscription_status || (t.is_active ? 'active' : 'expired'),
+        startDate: t.created_at,
+        endDate: t.trial_ends_at,
+        isActive: t.is_active !== false,
+      }));
+    }),
+
+  /** 月度收入趨勢 */
+  revenueByMonth: adminProcedure.query(async () => {
+    const result = await db.query(`
+      SELECT
+        to_char(paid_at, 'YYYY/MM') as month,
+        SUM(amount)::numeric as revenue
+      FROM invoices
+      WHERE status = 'paid' AND paid_at IS NOT NULL
+      GROUP BY to_char(paid_at, 'YYYY/MM')
+      ORDER BY month DESC
+      LIMIT 12
+    `);
+    return (result || []).map((r: any) => ({
+      month: r.month,
+      revenue: Number(r.revenue) || 0,
+    }));
+  }),
+
+  /** 方案分布統計 */
+  planDistribution: adminProcedure.query(async () => {
+    const result = await db.query(`
+      SELECT plan_type, COUNT(*) as count
+      FROM tenants
+      WHERE is_active = true
+      GROUP BY plan_type
+      ORDER BY count DESC
+    `);
+    return (result || []).map((r: any) => ({
+      plan: r.plan_type || 'unknown',
+      count: Number(r.count) || 0,
+    }));
+  }),
+
+  // ============================================
+  // Sprint 6: API 金鑰管理 API
+  // ============================================
+
+  /** 列出所有 API 金鑰 */
+  listApiKeys: adminProcedure
+    .input(z.object({
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const limit = input?.limit || 50;
+      const offset = ((input?.page || 1) - 1) * limit;
+      const result = await db.query(`
+        SELECT ak.*, t.name as organization_name
+        FROM api_keys ak
+        LEFT JOIN tenants t ON ak.organization_id = t.id
+        ORDER BY ak.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `);
+      return (result || []).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        keyPrefix: r.key_prefix,
+        organizationName: r.organization_name || `租戶 #${r.organization_id}`,
+        organizationId: r.organization_id,
+        status: r.status || 'active',
+        lastUsedAt: r.last_used_at,
+        requestCount: Number(r.request_count) || 0,
+        rateLimit: Number(r.rate_limit) || 1000,
+        scopes: r.scopes || [],
+        createdAt: r.created_at,
+        expiresAt: r.expires_at,
+      }));
+    }),
+
+  /** 建立 API 金鑰 */
+  createApiKey: adminProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      name: z.string().min(1),
+      scopes: z.array(z.string()).optional(),
+      rateLimit: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const crypto = await import('crypto');
+      // 產生隨機金鑰
+      const rawKey = `yk_live_${crypto.randomBytes(24).toString('hex')}`;
+      const keyPrefix = rawKey.substring(0, 15);
+      const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+      await db.query(`
+        INSERT INTO api_keys (organization_id, name, key_prefix, key_hash, scopes, rate_limit, created_by, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      `, [
+        input.organizationId,
+        input.name,
+        keyPrefix,
+        keyHash,
+        JSON.stringify(input.scopes || ['read:all']),
+        input.rateLimit || 1000,
+        ctx.user.id,
+      ]);
+      // 只在建立時回傳完整金鑰，之後不可再取得
+      return { success: true, apiKey: rawKey, keyPrefix };
+    }),
+
+  /** 撤銷 API 金鑰 */
+  revokeApiKey: adminProcedure
+    .input(z.object({ apiKeyId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.query(`
+        UPDATE api_keys SET status = 'revoked', updated_at = NOW() WHERE id = $1
+      `, [input.apiKeyId]);
+      return { success: true };
+    }),
+
+  /** API 使用統計 */
+  apiUsageStats: adminProcedure.query(async () => {
+    const result = await db.query(`
+      SELECT
+        COUNT(*) as total_requests,
+        COUNT(*) FILTER (WHERE called_at >= date_trunc('day', NOW())) as today_requests,
+        COALESCE(AVG(response_time_ms), 0)::integer as avg_latency,
+        COALESCE(
+          COUNT(*) FILTER (WHERE status_code >= 400)::numeric * 100.0 / NULLIF(COUNT(*), 0),
+          0
+        )::numeric(5,2) as error_rate
+      FROM api_usage_logs
+    `);
+    const keyCount = await db.query(`
+      SELECT COUNT(*) as active_keys FROM api_keys WHERE status = 'active'
+    `);
+    const stats = result?.[0] || {};
+    return {
+      totalRequests: Number(stats.total_requests) || 0,
+      todayRequests: Number(stats.today_requests) || 0,
+      avgLatency: Number(stats.avg_latency) || 0,
+      errorRate: Number(stats.error_rate) || 0,
+      activeKeys: Number(keyCount?.[0]?.active_keys) || 0,
+    };
+  }),
+
+  /** 最近 API 請求紀錄 */
+  recentApiLogs: adminProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const limit = input?.limit || 20;
+      const result = await db.query(`
+        SELECT al.*, ak.name as key_name, ak.key_prefix
+        FROM api_usage_logs al
+        LEFT JOIN api_keys ak ON al.api_key_id = ak.id
+        ORDER BY al.called_at DESC
+        LIMIT ${limit}
+      `);
+      return (result || []).map((r: any) => ({
+        id: r.id,
+        time: r.called_at,
+        method: r.method || 'GET',
+        path: r.endpoint || '/',
+        status: Number(r.status_code) || 200,
+        latency: Number(r.response_time_ms) || 0,
+        keyName: r.key_name,
+        keyPrefix: r.key_prefix,
+      }));
+    }),
+
+  // ============================================
+  // Sprint 6: 白標方案管理 API
+  // ============================================
+
+  /** 白標統計 */
+  whiteLabelStats: adminProcedure.query(async () => {
+    const result = await db.query(`
+      SELECT
+        COUNT(*) as total_clients,
+        COUNT(*) FILTER (WHERE is_active = true) as active_clients,
+        COUNT(*) FILTER (WHERE custom_domain IS NOT NULL AND domain_status = 'active') as custom_domains
+      FROM white_label_configs
+    `);
+    const stats = result?.[0] || {};
+    return {
+      totalClients: Number(stats.total_clients) || 0,
+      activeClients: Number(stats.active_clients) || 0,
+      customDomains: Number(stats.custom_domains) || 0,
+    };
+  }),
+
+  /** 列出白標客戶 */
+  listWhiteLabelClients: adminProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const limit = input?.limit || 50;
+      const offset = ((input?.page || 1) - 1) * limit;
+      const conditions: string[] = [];
+      const params: any[] = [];
+      if (input?.search) {
+        conditions.push(`(t.name ILIKE $1 OR wl.custom_domain ILIKE $1)`);
+        params.push(`%${input.search}%`);
+      }
+      const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const result = await db.query(`
+        SELECT wl.*, t.name as clinic_name
+        FROM white_label_configs wl
+        LEFT JOIN tenants t ON wl.organization_id = t.id
+        ${where}
+        ORDER BY wl.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `, params);
+      return (result || []).map((r: any) => ({
+        id: r.id,
+        organizationId: r.organization_id,
+        clinicName: r.clinic_name || `租戶 #${r.organization_id}`,
+        plan: r.plan || 'basic',
+        customDomain: r.custom_domain,
+        domainStatus: r.domain_status,
+        primaryColor: r.primary_color || '#6366f1',
+        brandName: r.brand_name,
+        logoUrl: r.logo_url,
+        isActive: r.is_active !== false,
+        createdAt: r.created_at,
+      }));
+    }),
+
+  /** 建立白標設定 */
+  createWhiteLabelConfig: adminProcedure
+    .input(z.object({
+      organizationId: z.number(),
+      plan: z.enum(['basic', 'professional', 'enterprise']).optional(),
+      customDomain: z.string().optional(),
+      primaryColor: z.string().optional(),
+      brandName: z.string().optional(),
+      logoUrl: z.string().optional(),
+      faviconUrl: z.string().optional(),
+      customCss: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { organizationId, ...data } = input;
+      await db.query(`
+        INSERT INTO white_label_configs (organization_id, plan, custom_domain, primary_color, brand_name, logo_url, favicon_url, custom_css, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW(), NOW())
+      `, [
+        organizationId,
+        data.plan || 'basic',
+        data.customDomain || null,
+        data.primaryColor || '#6366f1',
+        data.brandName || null,
+        data.logoUrl || null,
+        data.faviconUrl || null,
+        data.customCss || null,
+      ]);
+      return { success: true };
+    }),
+
+  /** 更新白標設定 */
+  updateWhiteLabelConfig: adminProcedure
+    .input(z.object({
+      configId: z.number(),
+      plan: z.enum(['basic', 'professional', 'enterprise']).optional(),
+      customDomain: z.string().optional(),
+      primaryColor: z.string().optional(),
+      brandName: z.string().optional(),
+      logoUrl: z.string().optional(),
+      faviconUrl: z.string().optional(),
+      customCss: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { configId, ...data } = input;
+      const setClauses: string[] = ['updated_at = NOW()'];
+      const params: any[] = [];
+      let paramIdx = 1;
+      if (data.plan !== undefined) { setClauses.push(`plan = $${paramIdx++}`); params.push(data.plan); }
+      if (data.customDomain !== undefined) { setClauses.push(`custom_domain = $${paramIdx++}`); params.push(data.customDomain); }
+      if (data.primaryColor !== undefined) { setClauses.push(`primary_color = $${paramIdx++}`); params.push(data.primaryColor); }
+      if (data.brandName !== undefined) { setClauses.push(`brand_name = $${paramIdx++}`); params.push(data.brandName); }
+      if (data.logoUrl !== undefined) { setClauses.push(`logo_url = $${paramIdx++}`); params.push(data.logoUrl); }
+      if (data.faviconUrl !== undefined) { setClauses.push(`favicon_url = $${paramIdx++}`); params.push(data.faviconUrl); }
+      if (data.customCss !== undefined) { setClauses.push(`custom_css = $${paramIdx++}`); params.push(data.customCss); }
+      if (data.isActive !== undefined) { setClauses.push(`is_active = $${paramIdx++}`); params.push(data.isActive); }
+      params.push(configId);
+      await db.query(`
+        UPDATE white_label_configs SET ${setClauses.join(', ')} WHERE id = $${paramIdx}
+      `, params);
+      return { success: true };
+    }),
+
+  /** 刪除白標設定 */
+  deleteWhiteLabelConfig: adminProcedure
+    .input(z.object({ configId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db.query(`DELETE FROM white_label_configs WHERE id = $1`, [input.configId]);
+      return { success: true };
+    }),
+
+  /** DNS 驗證 */
+  verifyDns: adminProcedure
+    .input(z.object({
+      configId: z.number(),
+      domain: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      // 嘗試 DNS 查詢（簡易版：檢查 CNAME 是否指向平台）
+      try {
+        const dns = await import('dns');
+        const { promisify } = await import('util');
+        const resolveCname = promisify(dns.resolveCname);
+        const records = await resolveCname(input.domain).catch(() => [] as string[]);
+        const expectedCname = 'app.yokage.com';
+        const found = records.some((r: string) => r.includes('yokage'));
+        if (found) {
+          await db.query(`
+            UPDATE white_label_configs SET domain_status = 'active', updated_at = NOW() WHERE id = $1
+          `, [input.configId]);
+          return {
+            success: true,
+            message: 'DNS 設定正確，網域已啟用',
+            details: { cnameFound: true, cnameValue: records[0], expectedValue: expectedCname, sslStatus: 'active' },
+          };
+        } else {
+          await db.query(`
+            UPDATE white_label_configs SET domain_status = 'error', updated_at = NOW() WHERE id = $1
+          `, [input.configId]);
+          return {
+            success: false,
+            message: `未找到指向 ${expectedCname} 的 CNAME 記錄`,
+            details: { cnameFound: false, expectedValue: expectedCname, cnameValue: records[0] || undefined },
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          message: 'DNS 查詢失敗，請確認網域設定',
+          details: { cnameFound: false, expectedValue: 'app.yokage.com' },
+        };
+      }
+    }),
+
 });
 
 // ============================================

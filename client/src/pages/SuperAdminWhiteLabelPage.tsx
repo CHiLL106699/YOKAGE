@@ -8,22 +8,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { StatCard } from "@/components/ui/stat-card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import { 
   Globe, Plus, Search, MoreHorizontal, Eye, Edit, Trash2, 
-  Palette, Image, Link2, CheckCircle, XCircle, ExternalLink,
+  Palette, CheckCircle, XCircle, ExternalLink,
   Building2, DollarSign, Settings, RefreshCw, Shield, AlertTriangle,
   Copy, Clock, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
 
-// 白標方案配置
+// 白標方案配置（靜態定義）
 const WHITE_LABEL_PLANS = [
   {
     id: "basic",
@@ -69,6 +67,13 @@ const WHITE_LABEL_PLANS = [
   },
 ];
 
+// 方案名稱對照
+const PLAN_DISPLAY: Record<string, string> = {
+  basic: "基礎白標",
+  professional: "專業白標",
+  enterprise: "企業白標",
+};
+
 export default function SuperAdminWhiteLabelPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -86,63 +91,112 @@ export default function SuperAdminWhiteLabelPage() {
     loginPageDescription: "",
   });
 
-  // 模擬白標客戶資料
-  const whiteLabelClients = [
-    {
-      id: 1,
-      clinicName: "曜美診所",
-      plan: "專業白標",
-      customDomain: "booking.yomei.com.tw",
-      domainStatus: "active",
-      primaryColor: "#8B5CF6",
-      createdAt: "2025-06-01",
-      monthlyFee: 5990,
-    },
-    {
-      id: 2,
-      clinicName: "美麗人生診所",
-      plan: "企業白標",
-      customDomain: "app.beautifullife.com.tw",
-      domainStatus: "active",
-      primaryColor: "#EC4899",
-      createdAt: "2025-03-15",
-      monthlyFee: 9990,
-    },
-    {
-      id: 3,
-      clinicName: "新光診所",
-      plan: "基礎白標",
-      customDomain: null,
-      domainStatus: null,
-      primaryColor: "#3B82F6",
-      createdAt: "2025-09-01",
-      monthlyFee: 2990,
-    },
-  ];
+  // DNS 驗證狀態
+  const [verifyingDomain, setVerifyingDomain] = useState<string | null>(null);
+  const [isDnsDialogOpen, setIsDnsDialogOpen] = useState(false);
+  const [selectedDomainForVerify, setSelectedDomainForVerify] = useState<any>(null);
+  const [dnsVerificationResult, setDnsVerificationResult] = useState<{
+    success: boolean;
+    message: string;
+    details?: {
+      cnameFound: boolean;
+      cnameValue?: string;
+      expectedValue: string;
+      sslStatus?: string;
+    };
+  } | null>(null);
 
-  // 統計資料
-  const stats = {
-    totalClients: 3,
-    activeClients: 3,
-    monthlyRevenue: 18970,
-    customDomains: 2,
+  // ============================================
+  // tRPC API 查詢
+  // ============================================
+  const { data: wlStats, isLoading: statsLoading } = trpc.superAdmin.whiteLabelStats.useQuery(
+    undefined,
+    { refetchInterval: 60000 }
+  );
+
+  const { data: whiteLabelClients, isLoading: clientsLoading, refetch: refetchClients } = trpc.superAdmin.listWhiteLabelClients.useQuery(
+    { search: searchTerm || undefined },
+    { placeholderData: (prev) => prev }
+  );
+
+  const createMutation = trpc.superAdmin.createWhiteLabelConfig.useMutation({
+    onSuccess: () => {
+      refetchClients();
+      toast.success("白標方案已建立");
+      setIsCreateDialogOpen(false);
+      resetForm();
+    },
+    onError: (err) => toast.error(`建立失敗: ${err.message}`),
+  });
+
+  const updateMutation = trpc.superAdmin.updateWhiteLabelConfig.useMutation({
+    onSuccess: () => {
+      refetchClients();
+      toast.success("白標設定已更新");
+      setIsEditDialogOpen(false);
+      setSelectedClient(null);
+    },
+    onError: (err) => toast.error(`更新失敗: ${err.message}`),
+  });
+
+  const deleteMutation = trpc.superAdmin.deleteWhiteLabelConfig.useMutation({
+    onSuccess: () => {
+      refetchClients();
+      toast.success("白標方案已取消");
+    },
+    onError: (err) => toast.error(`刪除失敗: ${err.message}`),
+  });
+
+  const verifyDnsMutation = trpc.superAdmin.verifyDns.useMutation({
+    onSuccess: (data) => {
+      setDnsVerificationResult(data);
+      setVerifyingDomain(null);
+      if (data.success) {
+        toast.success("DNS 驗證成功");
+        refetchClients();
+      } else {
+        toast.error(`DNS 驗證失敗: ${data.message}`);
+      }
+    },
+    onError: (err) => {
+      setVerifyingDomain(null);
+      toast.error(`驗證失敗: ${err.message}`);
+    },
+  });
+
+  // 統計數據
+  const stats = wlStats || {
+    totalClients: 0,
+    activeClients: 0,
+    customDomains: 0,
   };
 
+  const clients = whiteLabelClients || [];
+
   const handleCreate = () => {
-    toast.success("白標方案已建立");
-    setIsCreateDialogOpen(false);
-    resetForm();
+    if (!formData.clinicId) {
+      toast.error("請選擇診所");
+      return;
+    }
+    createMutation.mutate({
+      organizationId: parseInt(formData.clinicId),
+      plan: formData.plan as "basic" | "professional" | "enterprise",
+      customDomain: formData.customDomain || undefined,
+      primaryColor: formData.primaryColor,
+      logoUrl: formData.logoUrl || undefined,
+      faviconUrl: formData.faviconUrl || undefined,
+    });
   };
 
   const handleEdit = (client: any) => {
     setSelectedClient(client);
     setFormData({
-      clinicId: client.id.toString(),
+      clinicId: client.organizationId?.toString() || client.id.toString(),
       plan: client.plan,
       customDomain: client.customDomain || "",
-      primaryColor: client.primaryColor,
+      primaryColor: client.primaryColor || "#8B5CF6",
       secondaryColor: "#EC4899",
-      logoUrl: "",
+      logoUrl: client.logoUrl || "",
       faviconUrl: "",
       loginPageTitle: "",
       loginPageDescription: "",
@@ -151,13 +205,19 @@ export default function SuperAdminWhiteLabelPage() {
   };
 
   const handleUpdate = () => {
-    toast.success("白標設定已更新");
-    setIsEditDialogOpen(false);
-    setSelectedClient(null);
+    if (!selectedClient) return;
+    updateMutation.mutate({
+      configId: selectedClient.id,
+      plan: formData.plan as "basic" | "professional" | "enterprise",
+      customDomain: formData.customDomain || undefined,
+      primaryColor: formData.primaryColor,
+      logoUrl: formData.logoUrl || undefined,
+      faviconUrl: formData.faviconUrl || undefined,
+    });
   };
 
   const handleDelete = (client: any) => {
-    toast.success(`「${client.clinicName}」的白標方案已取消`);
+    deleteMutation.mutate({ configId: client.id });
   };
 
   const resetForm = () => {
@@ -174,73 +234,19 @@ export default function SuperAdminWhiteLabelPage() {
     });
   };
 
-  // DNS 驗證狀態
-  const [verifyingDomain, setVerifyingDomain] = useState<string | null>(null);
-  const [isDnsDialogOpen, setIsDnsDialogOpen] = useState(false);
-  const [selectedDomainForVerify, setSelectedDomainForVerify] = useState<any>(null);
-  const [dnsVerificationResult, setDnsVerificationResult] = useState<{
-    success: boolean;
-    message: string;
-    details?: {
-      cnameFound: boolean;
-      cnameValue?: string;
-      expectedValue: string;
-      sslStatus?: string;
-    };
-  } | null>(null);
-
-  // DNS 驗證功能（前端模擬，後端 API 可後續擴展）
-
-  const handleVerifyDomain = (domain: string) => {
-    setVerifyingDomain(domain);
-    // 模擬 DNS 驗證過程
-    setTimeout(() => {
-      const mockResult = {
-        success: true,
-        message: "DNS 設定正確",
-        details: {
-          cnameFound: true,
-          cnameValue: "app.yochill.com",
-          expectedValue: "app.yochill.com",
-          sslStatus: "active",
-        },
-      };
-      setDnsVerificationResult(mockResult);
-      toast.success(`網域 ${domain} DNS 驗證成功`);
-      setVerifyingDomain(null);
-    }, 2000);
-  };
-
-  const openDnsVerifyDialog = (domainInfo: any) => {
-    setSelectedDomainForVerify(domainInfo);
+  const openDnsVerifyDialog = (item: any) => {
+    setSelectedDomainForVerify(item);
     setDnsVerificationResult(null);
     setIsDnsDialogOpen(true);
   };
 
   const runDnsVerification = () => {
     if (!selectedDomainForVerify) return;
-    setVerifyingDomain(selectedDomainForVerify.domain);
-    
-    // 模擬 DNS 驗證過程
-    setTimeout(() => {
-      const mockResult = {
-        success: Math.random() > 0.3, // 70% 成功率
-        message: Math.random() > 0.3 ? "DNS 設定正確，CNAME 記錄已正確指向" : "CNAME 記錄未找到或指向錯誤",
-        details: {
-          cnameFound: Math.random() > 0.3,
-          cnameValue: Math.random() > 0.3 ? "app.yochill.com" : undefined,
-          expectedValue: "app.yochill.com",
-          sslStatus: Math.random() > 0.3 ? "active" : "pending",
-        },
-      };
-      setDnsVerificationResult(mockResult);
-      if (mockResult.success) {
-        toast.success(`網域 ${selectedDomainForVerify.domain} DNS 驗證成功`);
-      } else {
-        toast.error(`DNS 驗證失敗: ${mockResult.message}`);
-      }
-      setVerifyingDomain(null);
-    }, 2000);
+    setVerifyingDomain(selectedDomainForVerify.customDomain || selectedDomainForVerify.domain);
+    verifyDnsMutation.mutate({
+      configId: selectedDomainForVerify.id,
+      domain: selectedDomainForVerify.customDomain || selectedDomainForVerify.domain,
+    });
   };
 
   const copyToClipboard = (text: string) => {
@@ -262,7 +268,7 @@ export default function SuperAdminWhiteLabelPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => refetchClients()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               重新整理
             </Button>
@@ -280,20 +286,13 @@ export default function SuperAdminWhiteLabelPage() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>選擇診所</Label>
-                    <Select
+                    <Label>組織 ID</Label>
+                    <Input
                       value={formData.clinicId}
-                      onValueChange={(value) => setFormData({ ...formData, clinicId: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="選擇診所..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">曜美診所</SelectItem>
-                        <SelectItem value="2">美麗人生診所</SelectItem>
-                        <SelectItem value="3">新光診所</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={(e) => setFormData({ ...formData, clinicId: e.target.value })}
+                      placeholder="輸入組織 ID"
+                      type="number"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>白標方案</Label>
@@ -306,7 +305,7 @@ export default function SuperAdminWhiteLabelPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="basic">基礎白標 (NT$ 2,990/月)</SelectItem>
-                        <SelectItem value="pro">專業白標 (NT$ 5,990/月)</SelectItem>
+                        <SelectItem value="professional">專業白標 (NT$ 5,990/月)</SelectItem>
                         <SelectItem value="enterprise">企業白標 (NT$ 9,990/月)</SelectItem>
                       </SelectContent>
                     </Select>
@@ -353,13 +352,15 @@ export default function SuperAdminWhiteLabelPage() {
                       placeholder="例：booking.yourclinic.com"
                     />
                     <p className="text-xs text-muted-foreground">
-                      需將網域 CNAME 指向 app.yochill.com
+                      需將網域 CNAME 指向 app.yokage.com
                     </p>
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>取消</Button>
-                  <Button onClick={handleCreate}>建立白標</Button>
+                  <Button onClick={handleCreate} disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "建立中..." : "建立白標"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -373,24 +374,28 @@ export default function SuperAdminWhiteLabelPage() {
             value={stats.totalClients}
             description="使用白標方案的診所"
             icon={Building2}
+            loading={statsLoading}
           />
           <StatCard
             title="活躍客戶"
             value={stats.activeClients}
             description="正常運作中"
             icon={CheckCircle}
+            loading={statsLoading}
           />
           <StatCard
             title="月收入"
-            value={`NT$ ${stats.monthlyRevenue.toLocaleString()}`}
-            description="白標方案收入"
+            value={`NT$ ${(stats.totalClients * 2990).toLocaleString()}`}
+            description="白標方案收入（估算）"
             icon={DollarSign}
+            loading={statsLoading}
           />
           <StatCard
             title="自訂網域"
             value={stats.customDomains}
             description="已設定的網域"
             icon={Globe}
+            loading={statsLoading}
           />
         </div>
 
@@ -424,84 +429,105 @@ export default function SuperAdminWhiteLabelPage() {
                 </div>
 
                 {/* 客戶表格 */}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>診所</TableHead>
-                      <TableHead>方案</TableHead>
-                      <TableHead>品牌色</TableHead>
-                      <TableHead>自訂網域</TableHead>
-                      <TableHead>月費</TableHead>
-                      <TableHead>建立日期</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {whiteLabelClients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.clinicName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{client.plan}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-6 h-6 rounded-full border"
-                              style={{ backgroundColor: client.primaryColor }}
-                            />
-                            <span className="text-sm font-mono">{client.primaryColor}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {client.customDomain ? (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <a
-                                href={`https://${client.customDomain}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm hover:underline"
-                              >
-                                {client.customDomain}
-                              </a>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>NT$ {client.monthlyFee.toLocaleString()}</TableCell>
-                        <TableCell>{client.createdAt}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(client)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                編輯設定
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.info("預覽功能")}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                預覽效果
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-red-500"
-                                onClick={() => handleDelete(client)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                取消白標
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                {clientsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : clients.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Palette className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>尚無白標客戶</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>診所</TableHead>
+                        <TableHead>方案</TableHead>
+                        <TableHead>品牌色</TableHead>
+                        <TableHead>自訂網域</TableHead>
+                        <TableHead>建立日期</TableHead>
+                        <TableHead className="text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clients.map((client) => (
+                        <TableRow key={client.id}>
+                          <TableCell className="font-medium">{client.clinicName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{PLAN_DISPLAY[client.plan] || client.plan}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-6 h-6 rounded-full border"
+                                style={{ backgroundColor: client.primaryColor }}
+                              />
+                              <span className="text-sm font-mono">{client.primaryColor}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {client.customDomain ? (
+                              <div className="flex items-center gap-2">
+                                {client.domainStatus === 'active' ? (
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Clock className="h-4 w-4 text-amber-500" />
+                                )}
+                                <a
+                                  href={`https://${client.customDomain}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm hover:underline"
+                                >
+                                  {client.customDomain}
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(client)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  編輯設定
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast.info("預覽功能")}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  預覽效果
+                                </DropdownMenuItem>
+                                {client.customDomain && (
+                                  <DropdownMenuItem onClick={() => openDnsVerifyDialog(client)}>
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    DNS 驗證
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-red-500"
+                                  onClick={() => handleDelete(client)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  取消白標
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -609,69 +635,77 @@ export default function SuperAdminWhiteLabelPage() {
                 <CardDescription>管理診所的自訂網域設定與 DNS 驗證</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>診所</TableHead>
-                      <TableHead>自訂網域</TableHead>
-                      <TableHead>DNS 狀態</TableHead>
-                      <TableHead>SSL 憑證</TableHead>
-                      <TableHead>設定日期</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[
-                      { clinic: "曜美診所", domain: "booking.yomei.com.tw", dnsStatus: "verified", sslStatus: "active", createdAt: "2025-06-01" },
-                      { clinic: "美麗人生診所", domain: "app.beautifullife.com.tw", dnsStatus: "verified", sslStatus: "active", createdAt: "2025-03-15" },
-                    ].map((item, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{item.clinic}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-muted-foreground" />
-                            <a
-                              href={`https://${item.domain}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:underline"
-                            >
-                              {item.domain}
-                            </a>
-                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className="bg-green-500 text-white">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            已驗證
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className="bg-green-500 text-white">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            有效
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.createdAt}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openDnsVerifyDialog(item)}
-                            disabled={verifyingDomain === item.domain}
-                          >
-                            {verifyingDomain === item.domain ? (
-                              <><Loader2 className="h-4 w-4 animate-spin mr-1" /> 驗證中...</>
-                            ) : (
-                              '重新驗證'
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                {clientsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>診所</TableHead>
+                        <TableHead>自訂網域</TableHead>
+                        <TableHead>DNS 狀態</TableHead>
+                        <TableHead>設定日期</TableHead>
+                        <TableHead className="text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {clients.filter(c => c.customDomain).map((client) => (
+                        <TableRow key={client.id}>
+                          <TableCell className="font-medium">{client.clinicName}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-muted-foreground" />
+                              <a
+                                href={`https://${client.customDomain}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                              >
+                                {client.customDomain}
+                              </a>
+                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={client.domainStatus === 'active' ? "bg-green-500 text-white" : "bg-amber-500 text-white"}>
+                              {client.domainStatus === 'active' ? (
+                                <><CheckCircle className="h-3 w-3 mr-1" /> 已驗證</>
+                              ) : (
+                                <><Clock className="h-3 w-3 mr-1" /> 待驗證</>
+                              )}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openDnsVerifyDialog(client)}
+                              disabled={verifyingDomain === client.customDomain}
+                            >
+                              {verifyingDomain === client.customDomain ? (
+                                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> 驗證中...</>
+                              ) : (
+                                '重新驗證'
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {clients.filter(c => c.customDomain).length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            尚無自訂網域設定
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
 
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <h4 className="font-medium mb-2">DNS 設定說明</h4>
@@ -695,54 +729,93 @@ export default function SuperAdminWhiteLabelPage() {
                     </div>
                     <div className="flex gap-4 items-center">
                       <span className="text-muted-foreground w-16">值:</span>
-                      <span className="flex-1">app.yochill.com</span>
-                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard("app.yochill.com")}>
+                      <span className="flex-1">app.yokage.com</span>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard("app.yokage.com")}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 </div>
-
-                {/* 新增網域區塊 */}
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-lg">新增自訂網域</CardTitle>
-                    <CardDescription>為診所設定新的自訂網域</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>選擇診所</Label>
-                          <Select>
-                            <SelectTrigger>
-                              <SelectValue placeholder="選擇診所..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1">曜美診所</SelectItem>
-                              <SelectItem value="2">美麗人生診所</SelectItem>
-                              <SelectItem value="3">新光診所</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>自訂網域</Label>
-                          <Input placeholder="例：booking.yourclinic.com" />
-                        </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <Button className="gap-2">
-                          <Plus className="h-4 w-4" />
-                          新增網域
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 編輯白標 Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>編輯白標設定：{selectedClient?.clinicName}</DialogTitle>
+              <DialogDescription>修改品牌客製化設定</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>白標方案</Label>
+                <Select
+                  value={formData.plan}
+                  onValueChange={(value) => setFormData({ ...formData, plan: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">基礎白標 (NT$ 2,990/月)</SelectItem>
+                    <SelectItem value="professional">專業白標 (NT$ 5,990/月)</SelectItem>
+                    <SelectItem value="enterprise">企業白標 (NT$ 9,990/月)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>主要品牌色</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
+                      className="w-12 h-10 p-1"
+                    />
+                    <Input
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>次要品牌色</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={formData.secondaryColor}
+                      onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
+                      className="w-12 h-10 p-1"
+                    />
+                    <Input
+                      value={formData.secondaryColor}
+                      onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>自訂網域（選填）</Label>
+                <Input
+                  value={formData.customDomain}
+                  onChange={(e) => setFormData({ ...formData, customDomain: e.target.value })}
+                  placeholder="例：booking.yourclinic.com"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>取消</Button>
+              <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "儲存中..." : "儲存變更"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* DNS 驗證對話框 */}
         <Dialog open={isDnsDialogOpen} onOpenChange={setIsDnsDialogOpen}>
@@ -753,7 +826,7 @@ export default function SuperAdminWhiteLabelPage() {
                 DNS 驗證
               </DialogTitle>
               <DialogDescription>
-                驗證網域 {selectedDomainForVerify?.domain} 的 DNS 設定
+                驗證網域 {selectedDomainForVerify?.customDomain || selectedDomainForVerify?.domain} 的 DNS 設定
               </DialogDescription>
             </DialogHeader>
 
@@ -830,9 +903,9 @@ export default function SuperAdminWhiteLabelPage() {
                         <div>
                           <h4 className="font-medium text-amber-500 mb-1">請檢查您的 DNS 設定</h4>
                           <ul className="text-sm text-muted-foreground space-y-1">
-                            <li>• 確認已新增 CNAME 記錄</li>
-                            <li>• CNAME 值應為 <code className="bg-muted px-1 rounded">app.yochill.com</code></li>
-                            <li>• DNS 更新可能需要 24-48 小時生效</li>
+                            <li>確認已新增 CNAME 記錄</li>
+                            <li>CNAME 值應為 <code className="bg-muted px-1 rounded">app.yokage.com</code></li>
+                            <li>DNS 更新可能需要 24-48 小時生效</li>
                           </ul>
                         </div>
                       </div>
@@ -844,9 +917,9 @@ export default function SuperAdminWhiteLabelPage() {
                   <div className="bg-muted/50 p-4 rounded-lg">
                     <h4 className="font-medium mb-2">驗證前請確認</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• 已在 DNS 服務商新增 CNAME 記錄</li>
-                      <li>• CNAME 指向 <code className="bg-muted px-1 rounded">app.yochill.com</code></li>
-                      <li>• DNS 更新已生效（通常需 5-30 分鐘）</li>
+                      <li>已在 DNS 服務商新增 CNAME 記錄</li>
+                      <li>CNAME 指向 <code className="bg-muted px-1 rounded">app.yokage.com</code></li>
+                      <li>DNS 更新已生效（通常需 5-30 分鐘）</li>
                     </ul>
                   </div>
                 </div>

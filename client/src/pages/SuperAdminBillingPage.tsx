@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import { StatCard } from "@/components/ui/stat-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   CreditCard, Plus, Search, MoreHorizontal, Eye, Edit, Trash2, 
   DollarSign, TrendingUp, Building2, Calendar, Download, RefreshCw,
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// 訂閱方案配置
+// 訂閱方案配置（靜態定義，作為前端方案展示用）
 const SUBSCRIPTION_PLANS = [
   {
     id: "free",
@@ -101,8 +102,21 @@ const INVOICE_STATUS = {
   cancelled: { label: "已取消", color: "bg-gray-500" },
 } as const;
 
+// 方案名稱對照
+const PLAN_DISPLAY: Record<string, string> = {
+  yokage_starter: "免費版",
+  yokage_pro: "專業版",
+  yyq_basic: "基礎版",
+  yyq_advanced: "企業版",
+  free: "免費版",
+  basic: "基礎版",
+  pro: "專業版",
+  enterprise: "企業版",
+};
+
 export default function SuperAdminBillingPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreatePlanDialogOpen, setIsCreatePlanDialogOpen] = useState(false);
   const [isEditPlanDialogOpen, setIsEditPlanDialogOpen] = useState(false);
@@ -120,20 +134,44 @@ export default function SuperAdminBillingPage() {
     hasWhiteLabel: false,
   });
 
-  // API 查詢（使用模擬資料，後端 API 待實作）
-  const refetchInvoices = () => {
-    toast.info("重新載入中...");
+  // ============================================
+  // tRPC API 查詢
+  // ============================================
+  const { data: stats, isLoading: statsLoading } = trpc.superAdmin.billingStats.useQuery(
+    undefined,
+    { refetchInterval: 60000 }
+  );
+
+  const { data: invoicesData, isLoading: invoicesLoading, refetch: refetchInvoices } = trpc.superAdmin.listInvoices.useQuery(
+    { status: statusFilter !== "all" ? statusFilter : undefined, search: searchTerm || undefined, page: currentPage },
+    { placeholderData: (prev) => prev }
+  );
+
+  const { data: subscriptions, isLoading: subsLoading } = trpc.superAdmin.listSubscriptions.useQuery();
+
+  const { data: revenueByMonth } = trpc.superAdmin.revenueByMonth.useQuery();
+
+  const { data: planDistribution } = trpc.superAdmin.planDistribution.useQuery();
+
+  const updateInvoiceStatus = trpc.superAdmin.updateInvoiceStatus.useMutation({
+    onSuccess: () => {
+      refetchInvoices();
+      toast.success("帳單狀態已更新");
+    },
+    onError: (err) => toast.error(`更新失敗: ${err.message}`),
+  });
+
+  // 統計數據（來自 API，fallback 為 0）
+  const billingStats = stats || {
+    totalRevenue: 0,
+    monthlyRevenue: 0,
+    activeSubscriptions: 0,
+    pendingInvoices: 0,
+    overdueInvoices: 0,
+    growthRate: 0,
   };
 
-  // 計算統計數據（模擬資料）
-  const stats = {
-    totalRevenue: 125800,
-    monthlyRevenue: 45600,
-    activeSubscriptions: 23,
-    pendingInvoices: 5,
-    overdueInvoices: 2,
-    growthRate: 15.2,
-  };
+  const invoices = invoicesData?.data || [];
 
   const handleCreatePlan = () => {
     toast.success("方案建立成功");
@@ -191,15 +229,6 @@ export default function SuperAdminBillingPage() {
     toast.success(`已發送付款提醒`);
   };
 
-  // 模擬帳單資料
-  const mockInvoices = [
-    { id: "INV-2026-001", clinicName: "曜美診所", amount: 4990, status: "paid", dueDate: "2026-01-15", paidAt: "2026-01-10", plan: "專業版" },
-    { id: "INV-2026-002", clinicName: "美麗人生診所", amount: 9990, status: "paid", dueDate: "2026-01-15", paidAt: "2026-01-12", plan: "企業版" },
-    { id: "INV-2026-003", clinicName: "新光診所", amount: 1990, status: "pending", dueDate: "2026-01-20", paidAt: null, plan: "基礎版" },
-    { id: "INV-2026-004", clinicName: "康美診所", amount: 4990, status: "pending", dueDate: "2026-01-22", paidAt: null, plan: "專業版" },
-    { id: "INV-2026-005", clinicName: "優質診所", amount: 1990, status: "overdue", dueDate: "2026-01-05", paidAt: null, plan: "基礎版" },
-  ];
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -229,29 +258,33 @@ export default function SuperAdminBillingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="總收入"
-            value={`NT$ ${stats.totalRevenue.toLocaleString()}`}
+            value={`NT$ ${billingStats.totalRevenue.toLocaleString()}`}
             description="累計總收入"
             icon={DollarSign}
-            trend={{ value: stats.growthRate, label: "成長率" }}
+            trend={billingStats.growthRate ? { value: billingStats.growthRate, label: "成長率" } : undefined}
+            loading={statsLoading}
           />
           <StatCard
             title="本月收入"
-            value={`NT$ ${stats.monthlyRevenue.toLocaleString()}`}
+            value={`NT$ ${billingStats.monthlyRevenue.toLocaleString()}`}
             description="本月營收"
             icon={TrendingUp}
+            loading={statsLoading}
           />
           <StatCard
             title="活躍訂閱"
-            value={stats.activeSubscriptions}
+            value={billingStats.activeSubscriptions}
             description="付費診所數"
             icon={Building2}
+            loading={statsLoading}
           />
           <StatCard
             title="待付款帳單"
-            value={stats.pendingInvoices}
-            description={`${stats.overdueInvoices} 筆逾期`}
+            value={billingStats.pendingInvoices}
+            description={`${billingStats.overdueInvoices} 筆逾期`}
             icon={Receipt}
-            trend={stats.overdueInvoices > 0 ? { value: -stats.overdueInvoices, label: "逾期" } : undefined}
+            trend={billingStats.overdueInvoices > 0 ? { value: -billingStats.overdueInvoices, label: "逾期" } : undefined}
+            loading={statsLoading}
           />
         </div>
 
@@ -283,7 +316,7 @@ export default function SuperAdminBillingPage() {
                       className="pl-10"
                     />
                   </div>
-                  <Select defaultValue="all">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-[150px]">
                       <SelectValue placeholder="付款狀態" />
                     </SelectTrigger>
@@ -297,69 +330,88 @@ export default function SuperAdminBillingPage() {
                 </div>
 
                 {/* 帳單表格 */}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>帳單編號</TableHead>
-                      <TableHead>診所</TableHead>
-                      <TableHead>方案</TableHead>
-                      <TableHead>金額</TableHead>
-                      <TableHead>到期日</TableHead>
-                      <TableHead>狀態</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockInvoices.map((invoice) => {
-                      const statusConfig = INVOICE_STATUS[invoice.status as keyof typeof INVOICE_STATUS];
-                      return (
-                        <TableRow key={invoice.id}>
-                          <TableCell className="font-mono">{invoice.id}</TableCell>
-                          <TableCell>{invoice.clinicName}</TableCell>
-                          <TableCell>{invoice.plan}</TableCell>
-                          <TableCell>NT$ {invoice.amount.toLocaleString()}</TableCell>
-                          <TableCell>{invoice.dueDate}</TableCell>
-                          <TableCell>
-                            <Badge className={`${statusConfig.color} text-white`}>
-                              {statusConfig.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleDownloadInvoice(invoice.id)}>
-                                  <Download className="h-4 w-4 mr-2" />
-                                  下載發票
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => toast.info("查看詳情")}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  查看詳情
-                                </DropdownMenuItem>
-                                {invoice.status === "pending" && (
-                                  <DropdownMenuItem onClick={() => handleSendReminder(invoice.id)}>
-                                    <Clock className="h-4 w-4 mr-2" />
-                                    發送提醒
+                {invoicesLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : invoices.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>尚無帳單資料</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>帳單編號</TableHead>
+                        <TableHead>診所</TableHead>
+                        <TableHead>方案</TableHead>
+                        <TableHead>金額</TableHead>
+                        <TableHead>到期日</TableHead>
+                        <TableHead>狀態</TableHead>
+                        <TableHead className="text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map((invoice) => {
+                        const statusConfig = INVOICE_STATUS[invoice.status as keyof typeof INVOICE_STATUS] || INVOICE_STATUS.pending;
+                        return (
+                          <TableRow key={invoice.id}>
+                            <TableCell className="font-mono">{invoice.id}</TableCell>
+                            <TableCell>{invoice.clinicName}</TableCell>
+                            <TableCell>{invoice.plan}</TableCell>
+                            <TableCell>NT$ {invoice.amount.toLocaleString()}</TableCell>
+                            <TableCell>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '-'}</TableCell>
+                            <TableCell>
+                              <Badge className={`${statusConfig.color} text-white`}>
+                                {statusConfig.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleDownloadInvoice(invoice.id)}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    下載發票
                                   </DropdownMenuItem>
-                                )}
-                                {invoice.status === "overdue" && (
-                                  <DropdownMenuItem className="text-red-500" onClick={() => handleSendReminder(invoice.id)}>
-                                    <AlertTriangle className="h-4 w-4 mr-2" />
-                                    催繳通知
+                                  <DropdownMenuItem onClick={() => toast.info("查看詳情")}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    查看詳情
                                   </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                                  {invoice.status === "pending" && (
+                                    <>
+                                      <DropdownMenuItem onClick={() => handleSendReminder(invoice.id)}>
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        發送提醒
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => updateInvoiceStatus.mutate({ invoiceId: invoice.dbId, status: 'paid' })}>
+                                        <Check className="h-4 w-4 mr-2" />
+                                        標記已付款
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                  {invoice.status === "overdue" && (
+                                    <DropdownMenuItem className="text-red-500" onClick={() => handleSendReminder(invoice.id)}>
+                                      <AlertTriangle className="h-4 w-4 mr-2" />
+                                      催繳通知
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -495,56 +547,51 @@ export default function SuperAdminBillingPage() {
                 <CardDescription>查看所有診所的訂閱方案與到期時間</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>診所</TableHead>
-                      <TableHead>方案</TableHead>
-                      <TableHead>狀態</TableHead>
-                      <TableHead>開始日期</TableHead>
-                      <TableHead>到期日期</TableHead>
-                      <TableHead>使用量</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[
-                      { clinic: "曜美診所", plan: "專業版", status: "active", startDate: "2025-06-01", endDate: "2026-06-01", usage: 65 },
-                      { clinic: "美麗人生診所", plan: "企業版", status: "active", startDate: "2025-03-15", endDate: "2026-03-15", usage: 82 },
-                      { clinic: "新光診所", plan: "基礎版", status: "active", startDate: "2025-09-01", endDate: "2026-09-01", usage: 45 },
-                      { clinic: "康美診所", plan: "專業版", status: "trial", startDate: "2026-01-01", endDate: "2026-01-31", usage: 20 },
-                      { clinic: "優質診所", plan: "基礎版", status: "expired", startDate: "2025-01-01", endDate: "2026-01-01", usage: 0 },
-                    ].map((sub, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{sub.clinic}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{sub.plan}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={
-                            sub.status === "active" ? "bg-green-500" :
-                            sub.status === "trial" ? "bg-blue-500" : "bg-red-500"
-                          }>
-                            {sub.status === "active" ? "啟用中" : sub.status === "trial" ? "試用中" : "已到期"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{sub.startDate}</TableCell>
-                        <TableCell>{sub.endDate}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress value={sub.usage} className="w-20 h-2" />
-                            <span className="text-sm text-muted-foreground">{sub.usage}%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => toast.info("管理訂閱")}>
-                            管理
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                {subsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>診所</TableHead>
+                        <TableHead>方案</TableHead>
+                        <TableHead>狀態</TableHead>
+                        <TableHead>開始日期</TableHead>
+                        <TableHead>到期日期</TableHead>
+                        <TableHead className="text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(subscriptions || []).map((sub) => (
+                        <TableRow key={sub.id}>
+                          <TableCell className="font-medium">{sub.clinic}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{PLAN_DISPLAY[sub.plan] || sub.plan}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={
+                              sub.status === "active" ? "bg-green-500" :
+                              sub.status === "trial" ? "bg-blue-500" : "bg-red-500"
+                            }>
+                              {sub.status === "active" ? "啟用中" : sub.status === "trial" ? "試用中" : "已到期"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => toast.info("管理訂閱")}>
+                              管理
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -559,27 +606,19 @@ export default function SuperAdminBillingPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { month: "2026/01", revenue: 45600, growth: 15 },
-                      { month: "2025/12", revenue: 42300, growth: 8 },
-                      { month: "2025/11", revenue: 39200, growth: 12 },
-                      { month: "2025/10", revenue: 35000, growth: 5 },
-                      { month: "2025/09", revenue: 33400, growth: 10 },
-                      { month: "2025/08", revenue: 30400, growth: 7 },
-                    ].map((item, idx) => (
+                    {(revenueByMonth && revenueByMonth.length > 0) ? revenueByMonth.map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between">
                         <span className="text-sm">{item.month}</span>
                         <div className="flex items-center gap-4">
-                          <Progress value={item.revenue / 500} className="w-32 h-2" />
+                          <Progress value={Math.min(item.revenue / 500, 100)} className="w-32 h-2" />
                           <span className="text-sm font-medium w-24 text-right">
                             NT$ {item.revenue.toLocaleString()}
                           </span>
-                          <Badge variant="outline" className="text-green-500">
-                            +{item.growth}%
-                          </Badge>
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <p className="text-muted-foreground text-center py-4">尚無收入資料</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -591,27 +630,15 @@ export default function SuperAdminBillingPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { plan: "企業版", count: 5, revenue: 49950, color: "bg-amber-500" },
-                      { plan: "專業版", count: 12, revenue: 59880, color: "bg-purple-500" },
-                      { plan: "基礎版", count: 8, revenue: 15920, color: "bg-blue-500" },
-                      { plan: "免費版", count: 15, revenue: 0, color: "bg-gray-500" },
-                    ].map((item, idx) => (
+                    {(planDistribution && planDistribution.length > 0) ? planDistribution.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-4">
-                        <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                        <span className="flex-1">{item.plan}</span>
+                        <div className="w-3 h-3 rounded-full bg-amber-500" />
+                        <span className="flex-1">{PLAN_DISPLAY[item.plan] || item.plan}</span>
                         <span className="text-muted-foreground">{item.count} 診所</span>
-                        <span className="font-medium w-28 text-right">
-                          NT$ {item.revenue.toLocaleString()}
-                        </span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-6 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">總計</span>
-                      <span className="font-bold text-lg">NT$ 125,750</span>
-                    </div>
+                    )) : (
+                      <p className="text-muted-foreground text-center py-4">尚無方案分布資料</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -653,6 +680,61 @@ export default function SuperAdminBillingPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 編輯方案 Dialog */}
+        <Dialog open={isEditPlanDialogOpen} onOpenChange={setIsEditPlanDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>編輯方案：{selectedPlan?.name}</DialogTitle>
+              <DialogDescription>修改訂閱方案設定</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>方案名稱</Label>
+                <Input
+                  value={planFormData.name}
+                  onChange={(e) => setPlanFormData({ ...planFormData, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>價格 (NT$)</Label>
+                  <Input
+                    type="number"
+                    value={planFormData.price}
+                    onChange={(e) => setPlanFormData({ ...planFormData, price: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>計費週期</Label>
+                  <Select
+                    value={planFormData.period}
+                    onValueChange={(value) => setPlanFormData({ ...planFormData, period: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="月">每月</SelectItem>
+                      <SelectItem value="年">每年</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>方案說明</Label>
+                <Textarea
+                  value={planFormData.description}
+                  onChange={(e) => setPlanFormData({ ...planFormData, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditPlanDialogOpen(false)}>取消</Button>
+              <Button onClick={handleUpdatePlan}>儲存變更</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

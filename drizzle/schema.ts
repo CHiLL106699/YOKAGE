@@ -2580,3 +2580,118 @@ export const aiKnowledgeBaseVectors = pgTable('ai_knowledge_base_vectors', {
 
 export type AiKnowledgeBaseVector = typeof aiKnowledgeBaseVectors.$inferSelect;
 export type InsertAiKnowledgeBaseVector = typeof aiKnowledgeBaseVectors.$inferInsert;
+
+
+// ============================================
+// Sprint 6: 計費管理 — 帳單表
+// ============================================
+export const invoiceStatusEnum = pgEnum("invoice_status_enum", [
+  "paid", "pending", "overdue", "cancelled",
+]);
+
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull(),
+  /** 帳單編號，如 INV-2026-0001 */
+  invoiceNumber: varchar("invoice_number", { length: 50 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("TWD"),
+  status: invoiceStatusEnum("status").default("pending"),
+  /** 方案名稱快照 */
+  planName: varchar("plan_name", { length: 100 }),
+  /** 帳單明細 (JSON: [{item, qty, unitPrice, subtotal}]) */
+  lineItems: jsonb("line_items"),
+  dueDate: timestamp("due_date"),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+
+// ============================================
+// Sprint 6: API 金鑰管理表
+// ============================================
+export const apiKeyStatusEnum = pgEnum("api_key_status_enum", [
+  "active", "revoked", "expired",
+]);
+
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull(),
+  /** 金鑰名稱（使用者自訂） */
+  name: varchar("name", { length: 200 }).notNull(),
+  /** 金鑰前綴（用於識別，如 yk_live_abc） */
+  keyPrefix: varchar("key_prefix", { length: 20 }).notNull(),
+  /** 金鑰雜湊（SHA-256，不可逆） */
+  keyHash: varchar("key_hash", { length: 128 }).notNull(),
+  status: apiKeyStatusEnum("status").default("active"),
+  /** 權限範圍 (JSON: ["read:customers","write:appointments"]) */
+  scopes: jsonb("scopes").$type<string[]>(),
+  lastUsedAt: timestamp("last_used_at"),
+  requestCount: integer("request_count").default(0),
+  /** 每日請求上限 */
+  rateLimit: integer("rate_limit").default(1000),
+  expiresAt: timestamp("expires_at"),
+  createdBy: integer("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+// ============================================
+// Sprint 6: API 使用紀錄表
+// ============================================
+export const apiUsageLogs = pgTable("api_usage_logs", {
+  id: serial("id").primaryKey(),
+  apiKeyId: integer("api_key_id").notNull(),
+  organizationId: integer("organization_id").notNull(),
+  endpoint: varchar("endpoint", { length: 500 }),
+  method: varchar("method", { length: 10 }),
+  statusCode: integer("status_code"),
+  responseTimeMs: integer("response_time_ms"),
+  calledAt: timestamp("called_at").defaultNow().notNull(),
+});
+export type ApiUsageLog = typeof apiUsageLogs.$inferSelect;
+export type InsertApiUsageLog = typeof apiUsageLogs.$inferInsert;
+
+// ============================================
+// Sprint 6: 白標方案設定表
+// ============================================
+export const whiteLabelPlanEnum = pgEnum("white_label_plan_enum", [
+  "basic", "professional", "enterprise",
+]);
+
+export const domainStatusEnum = pgEnum("domain_status_enum", [
+  "pending", "active", "error",
+]);
+
+export const whiteLabelConfigs = pgTable("white_label_configs", {
+  id: serial("id").primaryKey(),
+  organizationId: integer("organization_id").notNull(),
+  /** 白標方案 */
+  plan: whiteLabelPlanEnum("plan").default("basic"),
+  /** 自訂網域 */
+  customDomain: varchar("custom_domain", { length: 255 }),
+  domainStatus: domainStatusEnum("domain_status").default("pending"),
+  /** 品牌主色 */
+  primaryColor: varchar("primary_color", { length: 20 }).default("#6366f1"),
+  /** 品牌 Logo URL */
+  logoUrl: varchar("logo_url", { length: 500 }),
+  /** 品牌名稱 */
+  brandName: varchar("brand_name", { length: 200 }),
+  /** 自訂 CSS */
+  customCss: text("custom_css"),
+  /** 自訂 Favicon URL */
+  faviconUrl: varchar("favicon_url", { length: 500 }),
+  /** 啟用白標 */
+  isActive: boolean("is_active").default(false),
+  /** 額外設定 (JSON) */
+  settings: jsonb("settings"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type WhiteLabelConfig = typeof whiteLabelConfigs.$inferSelect;
+export type InsertWhiteLabelConfig = typeof whiteLabelConfigs.$inferInsert;

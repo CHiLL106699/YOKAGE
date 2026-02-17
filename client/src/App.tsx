@@ -493,98 +493,142 @@ function AppRouter() {
           </ProtectedRoute>
         </Route>
         {/* ======== 向後相容：/super-admin/* (重導至 /admin/*) ======== */}
-        <Route path="/super-admin" component={SuperAdminDashboard} />
-        <Route path="/super-admin/organizations" component={OrganizationsPage} />
-        <Route path="/super-admin/organizations/:id" component={OrganizationDetailPage} />
-        <Route path="/super-admin/billing" component={BillingPage} />
-        <Route path="/super-admin/api-docs" component={ApiDocsPage} />
-        <Route path="/super-admin/white-label" component={WhiteLabelPage} />
-        <Route path="/super-admin/settings" component={SuperAdminSettingsPage} />
-        <Route path="/super-admin/vouchers" component={SuperAdminVouchersPage} />
-        <Route path="/super-admin/users" component={SuperAdminUsersPage} />
-        <Route path="/super-admin/monitor" component={SuperAdminMonitorPage} />
-        <Route path="/super-admin/notifications" component={SuperAdminNotificationsPage} />
+        <Route path="/super-admin">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/organizations">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <OrganizationsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/organizations/:id">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <OrganizationDetailPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/billing">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <BillingPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/api-docs">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <ApiDocsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/white-label">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <WhiteLabelPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/settings">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminSettingsPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/vouchers">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminVouchersPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/users">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminUsersPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/monitor">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminMonitorPage />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/super-admin/notifications">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminNotificationsPage />
+          </ProtectedRoute>
+        </Route>
 
         {/* ======== 向後相容：/clinic/* 路由 ======== */}
-        <Route path="/clinic" component={ClinicDashboard} />
-        <Route path="/clinic/customers" component={CustomersPage} />
-        <Route path="/clinic/customers/:id" component={CustomerDetailPage} />
-        <Route path="/clinic/appointments" component={AppointmentsPage} />
-        <Route path="/clinic/products" component={ProductsPage} />
-        <Route path="/clinic/staff" component={StaffPage} />
-        <Route path="/clinic/aftercare" component={AftercarePage} />
-        <Route path="/clinic/line-settings" component={LineSettingsPage} />
-        <Route path="/clinic/schedule" component={SchedulePage} />
-        <Route path="/clinic/attendance" component={AttendanceClockPage} />
-        <Route path="/clinic/attendance/records" component={AttendanceRecordsListPage} />
-        <Route path="/clinic/attendance/dashboard" component={AttendanceDashboardPage} />
-        <Route path="/clinic/attendance/approval" component={AttendanceApprovalPage} />
-        <Route path="/clinic/coupons" component={CouponsPage} />
-        <Route path="/clinic/orders" component={OrdersPage} />
-        <Route path="/clinic/reports" component={ReportsPage} />
-        <Route path="/clinic/notifications" component={NotificationsPage} />
-        <Route path="/clinic/inventory" component={InventoryPage} />
-        <Route path="/clinic/line-integration" component={LineIntegrationPage} />
-        <Route path="/clinic/payment" component={PaymentPage} />
-        <Route path="/clinic/settlement" component={SettlementPage} />
-        <Route path="/clinic/marketing" component={CustomerMarketingPage} />
-        <Route path="/clinic/payment-settings" component={PaymentSettingsPage} />
-        <Route path="/clinic/data-import" component={DataImportPage} />
-        <Route path="/clinic/rich-menu" component={RichMenuPage} />
-        <Route path="/clinic/line-rich-menu" component={LineRichMenuManagementPage} />
-        <Route path="/clinic/leave-request" component={LeaveRequestPage} />
-        <Route path="/clinic/leave-approval" component={LeaveApprovalPage} />
-        <Route path="/clinic/flex-message" component={FlexMessagePage} />
-        <Route path="/clinic/webhook" component={WebhookPage} />
-        <Route path="/clinic/analytics" component={AnalyticsPage} />
-        <Route path="/clinic/settings" component={SettingsPage} />
-        <Route path="/clinic/ai-chatbot" component={AIChatbotPage} />
-        <Route path="/clinic/marketing-automation" component={MarketingAutomationPage} />
-        <Route path="/clinic/gamification" component={GamificationPage} />
-        <Route path="/clinic/member-passport" component={MemberPassportPage} />
-        <Route path="/clinic/message-center" component={MessageCenterPage} />
-        <Route path="/clinic/customer-marketing" component={CustomerMarketingPage} />
-        <Route path="/clinic/social-marketing" component={SocialMarketingPage} />
-        <Route path="/clinic/attendance-settings" component={AttendanceSettingsPage} />
-        <Route path="/clinic/game-management" component={GameManagementPage} />
-        <Route path="/clinic/games/ichiban-kuji" component={IchibanKujiGame} />
-        <Route path="/clinic/games/slot-machine" component={SlotMachineGame} />
-        <Route path="/clinic/games/pachinko" component={PachinkoGame} />
-        <Route path="/clinic/user-prizes" component={UserPrizesPage} />
-        <Route path="/clinic/coupon-management" component={CouponManagementPage} />
-        <Route path="/clinic/hr-management" component={HRManagementPage} />
-        <Route path="/clinic/supplier-management" component={SupplierManagementPage} />
-        <Route path="/clinic/review-management" component={ReviewManagementPage} />
-        <Route path="/clinic/multi-branch" component={MultiBranchPage} />
-        <Route path="/clinic/contract-management" component={ContractManagementPage} />
-        <Route path="/clinic/treatment-tracking" component={TreatmentTrackingPage} />
-        <Route path="/clinic/recommendation-engine" component={RecommendationEnginePage} />
-        <Route path="/clinic/smart-scheduling" component={SmartSchedulingPage} />
-        <Route path="/clinic/customer-360" component={Customer360Page} />
-        <Route path="/clinic/treatment-records" component={TreatmentRecordsPage} />
-        <Route path="/clinic/customer-packages" component={CustomerPackagesPage} />
-        <Route path="/clinic/consultation" component={ConsultationManagementPage} />
-        <Route path="/clinic/rfm-analysis" component={RFMAnalysisPage} />
-        <Route path="/clinic/commission" component={CommissionManagementPage} />
-        <Route path="/clinic/commission-allocation" component={CommissionAllocationPage} />
-        <Route path="/clinic/intelligent-scheduling" component={IntelligentSchedulingPage} />
-        <Route path="/clinic/prize-records" component={PrizeRecordsPage} />
-        <Route path="/clinic/satisfaction" component={SatisfactionSurveyPage} />
-        <Route path="/clinic/attendance-tracking" component={AttendanceTrackingPage} />
-        <Route path="/clinic/inventory-cost" component={InventoryCostPage} />
-        <Route path="/clinic/revenue-target" component={RevenueTargetPage} />
-        <Route path="/clinic/customer-source-roi" component={CustomerSourceROIPage} />
-        <Route path="/clinic/injection-mapping" component={InjectionMappingPage} />
-        <Route path="/clinic/consent-form" component={ConsentFormPage} />
-        <Route path="/clinic/prescription" component={PrescriptionPage} />
-        <Route path="/clinic/skin-analysis" component={SkinAnalysisPage} />
-        <Route path="/clinic/subscription" component={SubscriptionPage} />
-        <Route path="/clinic/teleconsult" component={TeleconsultPage} />
-        <Route path="/clinic/referral" component={ReferralPage} />
-        <Route path="/clinic/social-integration" component={SocialIntegrationPage} />
-        <Route path="/clinic/vouchers" component={VouchersPage} />
-        <Route path="/clinic/voucher-redemption" component={VoucherRedemptionPage} />
-        <Route path="/clinic/voucher-reports" component={VoucherReportsPage} />
+        <Route path="/clinic"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ClinicDashboard /></ProtectedRoute></Route>
+        <Route path="/clinic/customers"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomersPage /></ProtectedRoute></Route>
+        <Route path="/clinic/customers/:id"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerDetailPage /></ProtectedRoute></Route>
+        <Route path="/clinic/appointments"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AppointmentsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/products"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ProductsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/staff"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><StaffPage /></ProtectedRoute></Route>
+        <Route path="/clinic/aftercare"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AftercarePage /></ProtectedRoute></Route>
+        <Route path="/clinic/line-settings"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><LineSettingsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/schedule"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SchedulePage /></ProtectedRoute></Route>
+        <Route path="/clinic/attendance"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceClockPage /></ProtectedRoute></Route>
+        <Route path="/clinic/attendance/records"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceRecordsListPage /></ProtectedRoute></Route>
+        <Route path="/clinic/attendance/dashboard"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceDashboardPage /></ProtectedRoute></Route>
+        <Route path="/clinic/attendance/approval"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceApprovalPage /></ProtectedRoute></Route>
+        <Route path="/clinic/coupons"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CouponsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/orders"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><OrdersPage /></ProtectedRoute></Route>
+        <Route path="/clinic/reports"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ReportsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/notifications"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><NotificationsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/inventory"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><InventoryPage /></ProtectedRoute></Route>
+        <Route path="/clinic/line-integration"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><LineIntegrationPage /></ProtectedRoute></Route>
+        <Route path="/clinic/payment"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><PaymentPage /></ProtectedRoute></Route>
+        <Route path="/clinic/settlement"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SettlementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/marketing"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerMarketingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/payment-settings"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><PaymentSettingsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/data-import"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><DataImportPage /></ProtectedRoute></Route>
+        <Route path="/clinic/rich-menu"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><RichMenuPage /></ProtectedRoute></Route>
+        <Route path="/clinic/line-rich-menu"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><LineRichMenuManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/leave-request"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><LeaveRequestPage /></ProtectedRoute></Route>
+        <Route path="/clinic/leave-approval"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><LeaveApprovalPage /></ProtectedRoute></Route>
+        <Route path="/clinic/flex-message"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><FlexMessagePage /></ProtectedRoute></Route>
+        <Route path="/clinic/webhook"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><WebhookPage /></ProtectedRoute></Route>
+        <Route path="/clinic/analytics"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AnalyticsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/settings"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SettingsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/ai-chatbot"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AIChatbotPage /></ProtectedRoute></Route>
+        <Route path="/clinic/marketing-automation"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><MarketingAutomationPage /></ProtectedRoute></Route>
+        <Route path="/clinic/gamification"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><GamificationPage /></ProtectedRoute></Route>
+        <Route path="/clinic/member-passport"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><MemberPassportPage /></ProtectedRoute></Route>
+        <Route path="/clinic/message-center"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><MessageCenterPage /></ProtectedRoute></Route>
+        <Route path="/clinic/customer-marketing"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerMarketingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/social-marketing"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SocialMarketingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/attendance-settings"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceSettingsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/game-management"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><GameManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/games/ichiban-kuji"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><IchibanKujiGame /></ProtectedRoute></Route>
+        <Route path="/clinic/games/slot-machine"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SlotMachineGame /></ProtectedRoute></Route>
+        <Route path="/clinic/games/pachinko"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><PachinkoGame /></ProtectedRoute></Route>
+        <Route path="/clinic/user-prizes"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><UserPrizesPage /></ProtectedRoute></Route>
+        <Route path="/clinic/coupon-management"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CouponManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/hr-management"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><HRManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/supplier-management"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SupplierManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/review-management"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ReviewManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/multi-branch"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><MultiBranchPage /></ProtectedRoute></Route>
+        <Route path="/clinic/contract-management"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ContractManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/treatment-tracking"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><TreatmentTrackingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/recommendation-engine"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><RecommendationEnginePage /></ProtectedRoute></Route>
+        <Route path="/clinic/smart-scheduling"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SmartSchedulingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/customer-360"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><Customer360Page /></ProtectedRoute></Route>
+        <Route path="/clinic/treatment-records"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><TreatmentRecordsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/customer-packages"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerPackagesPage /></ProtectedRoute></Route>
+        <Route path="/clinic/consultation"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ConsultationManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/rfm-analysis"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><RFMAnalysisPage /></ProtectedRoute></Route>
+        <Route path="/clinic/commission"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CommissionManagementPage /></ProtectedRoute></Route>
+        <Route path="/clinic/commission-allocation"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CommissionAllocationPage /></ProtectedRoute></Route>
+        <Route path="/clinic/intelligent-scheduling"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><IntelligentSchedulingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/prize-records"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><PrizeRecordsPage /></ProtectedRoute></Route>
+        <Route path="/clinic/satisfaction"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SatisfactionSurveyPage /></ProtectedRoute></Route>
+        <Route path="/clinic/attendance-tracking"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AttendanceTrackingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/inventory-cost"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><InventoryCostPage /></ProtectedRoute></Route>
+        <Route path="/clinic/revenue-target"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><RevenueTargetPage /></ProtectedRoute></Route>
+        <Route path="/clinic/customer-source-roi"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerSourceROIPage /></ProtectedRoute></Route>
+        <Route path="/clinic/injection-mapping"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><InjectionMappingPage /></ProtectedRoute></Route>
+        <Route path="/clinic/consent-form"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ConsentFormPage /></ProtectedRoute></Route>
+        <Route path="/clinic/prescription"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><PrescriptionPage /></ProtectedRoute></Route>
+        <Route path="/clinic/skin-analysis"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SkinAnalysisPage /></ProtectedRoute></Route>
+        <Route path="/clinic/subscription"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SubscriptionPage /></ProtectedRoute></Route>
+        <Route path="/clinic/teleconsult"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><TeleconsultPage /></ProtectedRoute></Route>
+        <Route path="/clinic/referral"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ReferralPage /></ProtectedRoute></Route>
+        <Route path="/clinic/social-integration"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><SocialIntegrationPage /></ProtectedRoute></Route>
+        <Route path="/clinic/vouchers"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><VouchersPage /></ProtectedRoute></Route>
+        <Route path="/clinic/voucher-redemption"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><VoucherRedemptionPage /></ProtectedRoute></Route>
+        <Route path="/clinic/voucher-reports"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><VoucherReportsPage /></ProtectedRoute></Route>
 
         {/* ======== LIFF 路由 ======== */}
         <Route path="/liff/booking" component={LiffBookingPage} />
