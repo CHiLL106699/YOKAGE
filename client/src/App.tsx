@@ -16,7 +16,27 @@ const LandingPage = React.lazy(() => import("./pages/LandingPage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
-// === Super Admin (/admin/*) ===
+// === Sprint 2: 超級管理員平台 (/admin/*) — 新頁面 ===
+const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminTenants = React.lazy(() => import("./pages/admin/AdminTenants"));
+const AdminTenantDetail = React.lazy(() => import("./pages/admin/AdminTenantDetail"));
+const AdminRevenue = React.lazy(() => import("./pages/admin/AdminRevenue"));
+const AdminUsers = React.lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSystem = React.lazy(() => import("./pages/admin/AdminSystem"));
+const AdminLogs = React.lazy(() => import("./pages/admin/AdminLogs"));
+
+// === Sprint 2: 租戶管理平台 (/dashboard/*) — 新頁面 ===
+const DashboardAppointments = React.lazy(() => import("./pages/dashboard/DashboardAppointments"));
+const DashboardCustomers = React.lazy(() => import("./pages/dashboard/DashboardCustomers"));
+const DashboardStaff = React.lazy(() => import("./pages/dashboard/DashboardStaff"));
+const DashboardSchedule = React.lazy(() => import("./pages/dashboard/DashboardSchedule"));
+const DashboardInventory = React.lazy(() => import("./pages/dashboard/DashboardInventory"));
+const DashboardMarketing = React.lazy(() => import("./pages/dashboard/DashboardMarketing"));
+const DashboardGamification = React.lazy(() => import("./pages/dashboard/DashboardGamification"));
+const DashboardReports = React.lazy(() => import("./pages/dashboard/DashboardReports"));
+const DashboardSettings = React.lazy(() => import("./pages/dashboard/DashboardSettings"));
+
+// === Super Admin (/admin/*) — 原有頁面 ===
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
 const OrganizationsPage = React.lazy(() => import("./pages/OrganizationsPage"));
 const OrganizationDetailPage = React.lazy(() => import("./pages/OrganizationDetailPage"));
@@ -173,12 +193,44 @@ function AppRouter() {
         <Route path="/" component={LandingPage} />
         <Route path="/login" component={LoginPage} />
 
-        {/* ======== /admin/* — 超級管理員平台 ======== */}
+        {/* ======== /admin/* — 超級管理員平台 (Sprint 2 新路由) ======== */}
         <Route path="/admin">
           <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminDashboard />
+            <AdminDashboard />
           </ProtectedRoute>
         </Route>
+        <Route path="/admin/tenants">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminTenants />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/tenants/:id">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminTenantDetail />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/revenue">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminRevenue />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/users">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminUsers />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/system">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminSystem />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/logs">
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <AdminLogs />
+          </ProtectedRoute>
+        </Route>
+
+        {/* ======== /admin/* — 超級管理員平台 (原有路由保留) ======== */}
         <Route path="/admin/organizations">
           <ProtectedRoute allowedRoles={["super_admin"]}>
             <OrganizationsPage />
@@ -230,12 +282,49 @@ function AppRouter() {
           </ProtectedRoute>
         </Route>
 
-        {/* ======== /dashboard/* — 租戶管理平台 ======== */}
+        {/* ======== /dashboard/* — 租戶管理平台 (Sprint 2 新路由) ======== */}
         <Route path="/dashboard">
           <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
             <DashboardHome />
           </ProtectedRoute>
         </Route>
+        <Route path="/dashboard/appointments">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardAppointments />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/customers">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardCustomers />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/staff">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardStaff />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/schedule">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardSchedule />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/marketing">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardMarketing />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/reports">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardReports />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/dashboard/settings">
+          <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+            <DashboardSettings />
+          </ProtectedRoute>
+        </Route>
+
+        {/* ======== /dashboard/* — 租戶管理平台 (原有路由保留) ======== */}
         <Route path="/dashboard/inventory">
           <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
             <InventoryDashboard />
