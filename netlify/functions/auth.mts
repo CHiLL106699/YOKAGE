@@ -45,11 +45,11 @@ async function handleLogin(body: any) {
     // 查詢 staff_accounts 表
     const result = await client.query(
       `SELECT sa.id as account_id, sa.username, sa.password_hash, sa.role,
-              s.id as staff_id, s.name as staff_name, s."organizationId" as tenant_id,
+              s.id as staff_id, s.name as staff_name, s.organization_id as tenant_id,
               t.name as tenant_name, t.slug as tenant_slug
        FROM staff_accounts sa
        LEFT JOIN staff s ON sa.staff_id = s.id
-       LEFT JOIN tenants t ON s."organizationId" = t.id
+       LEFT JOIN tenants t ON s.organization_id = t.id
        WHERE sa.username = $1 AND sa.is_active = true`,
       [username]
     );
