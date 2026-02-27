@@ -4627,11 +4627,11 @@ export const appRouter = router({
         }
         // 查詢 staff 表取得 organizationId
         const staffRows = await database.execute(
-          sql`SELECT s.id, s."organizationId", s.name, s.email, s.position
+          sql`SELECT s.id, s.organization_id, s.name, s.email, s.position
               FROM staff s WHERE s.id = ${account.staff_id} LIMIT 1`
         );
         const staffInfo = (staffRows as unknown as Array<{
-          id: number; organizationId: number; name: string;
+          id: number; organization_id: number; name: string;
           email: string | null; position: string | null;
         }>)[0];
         if (!staffInfo) {
@@ -4646,7 +4646,7 @@ export const appRouter = router({
           staffId: staffInfo.id,
           staffAccountId: account.id,
           role: account.role,
-          organizationId: staffInfo.organizationId,
+          organizationId: staffInfo.organization_id,
           username: account.username,
         };
         const token = jwt.sign(payload, secret, { expiresIn: "7d" });
@@ -4661,7 +4661,7 @@ export const appRouter = router({
             name: staffInfo.name,
             email: staffInfo.email,
             role: account.role,
-            organizationId: staffInfo.organizationId,
+            organizationId: staffInfo.organization_id,
             position: staffInfo.position,
             username: account.username,
           },

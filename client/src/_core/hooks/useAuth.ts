@@ -24,44 +24,45 @@ export function useAuth(options?: UseAuthOptions) {
   const fetchMe = useCallback(async () => {
     const token = localStorage.getItem("yokage_token");
     if (!token) {
-      // 沒有 token，嘗試從 localStorage 讀取 cached user
-      const cached = localStorage.getItem("yokage_user");
-      if (cached) {
-        try {
-          setUser(JSON.parse(cached));
-          setLoading(false);
-          return;
-        } catch { /* ignore */ }
-      }
       setUser(null);
       setLoading(false);
       return;
     }
 
+    // 先從 localStorage 讀取 cached user（快速顯示）
+    const cached = localStorage.getItem("yokage_user");
+    if (cached) {
+      try {
+        setUser(JSON.parse(cached));
+      } catch { /* ignore */ }
+    }
+
+    // 用 tRPC auth.me 驗證 token 有效性
     try {
-      const resp = await fetch("/api/auth/me", {
+      const resp = await fetch("/api/trpc/auth.me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await resp.json();
-      if (data.user) {
-        setUser(data.user);
-        localStorage.setItem("yokage_user", JSON.stringify(data.user));
-      } else {
-        // token 無效，清除
+      // tRPC 回傳格式: { result: { data: { json: {...} } } }
+      const userData = data?.result?.data?.json;
+      if (userData && userData.id) {
+        const authUser: AuthUser = {
+          id: userData.id,
+          name: userData.name,
+          role: userData.role,
+          organizationId: userData.organizationId ?? 0,
+        };
+        setUser(authUser);
+        localStorage.setItem("yokage_user", JSON.stringify(authUser));
+      } else if (!cached) {
+        // token 無效且沒有 cache
         localStorage.removeItem("yokage_token");
         localStorage.removeItem("yokage_user");
         setUser(null);
       }
     } catch (err: any) {
-      // /api/auth/me 不可用時，fallback 到 localStorage cached user
-      const cached = localStorage.getItem("yokage_user");
-      if (cached) {
-        try {
-          setUser(JSON.parse(cached));
-        } catch {
-          setUser(null);
-        }
-      } else {
+      // 網路錯誤時保留 cached user
+      if (!cached) {
         setUser(null);
       }
       setError(err);

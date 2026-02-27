@@ -10,6 +10,7 @@ import React, { useState, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Loader2, Building2, Shield, UserCog, User, AlertCircle } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 type RoleOption = {
   role: string;
@@ -85,6 +86,7 @@ export default function LoginPage() {
   const [, navigate] = useLocation();
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [roleOptions, setRoleOptions] = useState<RoleOption[]>([]);
+  const loginMutation = trpc.auth.login.useMutation();
 
   // 登入表單狀態
   const [username, setUsername] = useState("");
@@ -111,20 +113,14 @@ export default function LoginPage() {
     setIsLoggingIn(true);
 
     try {
-      // 直接呼叫 Netlify Function /api/auth/login
-      const resp = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: username.trim(),
-          password,
-        }),
+      // 透過 tRPC auth.login mutation 登入
+      const result = await loginMutation.mutateAsync({
+        username: username.trim(),
+        password,
       });
 
-      const result = await resp.json();
-
-      if (!resp.ok || !result.success) {
-        throw new Error(result.error || "登入失敗");
+      if (!result.token) {
+        throw new Error("登入失敗");
       }
 
       // 儲存 JWT token 到 localStorage
