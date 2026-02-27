@@ -4,6 +4,11 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { ENV } from "./_core/env";
+import { sql } from "drizzle-orm";
+import type { JwtPayload } from "./_core/context";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { lineSettingsRouter } from "./routers/lineSettingsRouter";
 import { dataImportRouter } from "./routers/dataImportRouter";
@@ -4581,7 +4586,92 @@ export const appRouter = router({
   // ======== 向後相容：保留既有 flat router 結構 ========
   // 以下 router 保留以確保前端既有頁面不受影響
   auth: router({
+    /** 帳號密碼登入 — 驗證 staff_accounts 表，回傳 JWT */
+    login: publicProcedure
+      .input(z.object({
+        username: z.string().min(1),
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        const database = db.db;
+        // 查詢 staff_accounts
+        const accountRows = await database.execute(
+          sql`SELECT sa.id, sa.staff_id, sa.username, sa.password_hash, sa.role, sa.is_active
+              FROM staff_accounts sa
+              WHERE sa.username = ${input.username}
+              LIMIT 1`
+        );
+        const account = (accountRows as unknown as Array<{
+          id: number; staff_id: number; username: string;
+          password_hash: string; role: string; is_active: boolean;
+        }>)[0];
+        if (!account) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "帳號或密碼錯誤" });
+        }
+        if (!account.is_active) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "帳號已停用" });
+        }
+        // 密碼驗證：先嘗試 bcrypt，若失敗則嘗試明文比對（向後相容舊資料）
+        let passwordValid = false;
+        try {
+          if (account.password_hash.startsWith("$2")) {
+            passwordValid = await bcrypt.compare(input.password, account.password_hash);
+          } else {
+            passwordValid = input.password === account.password_hash;
+          }
+        } catch {
+          passwordValid = input.password === account.password_hash;
+        }
+        if (!passwordValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "帳號或密碼錯誤" });
+        }
+        // 查詢 staff 表取得 organizationId
+        const staffRows = await database.execute(
+          sql`SELECT s.id, s."organizationId", s.name, s.email, s.position
+              FROM staff s WHERE s.id = ${account.staff_id} LIMIT 1`
+        );
+        const staffInfo = (staffRows as unknown as Array<{
+          id: number; organizationId: number; name: string;
+          email: string | null; position: string | null;
+        }>)[0];
+        if (!staffInfo) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "找不到對應的員工資料" });
+        }
+        // 生成 JWT
+        const secret = ENV.cookieSecret;
+        if (!secret) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "JWT secret not configured" });
+        }
+        const payload: JwtPayload = {
+          staffId: staffInfo.id,
+          staffAccountId: account.id,
+          role: account.role,
+          organizationId: staffInfo.organizationId,
+          username: account.username,
+        };
+        const token = jwt.sign(payload, secret, { expiresIn: "7d" });
+        // 更新 last_login
+        await database.execute(
+          sql`UPDATE staff_accounts SET last_login = NOW() WHERE id = ${account.id}`
+        );
+        return {
+          token,
+          user: {
+            id: staffInfo.id,
+            name: staffInfo.name,
+            email: staffInfo.email,
+            role: account.role,
+            organizationId: staffInfo.organizationId,
+            position: staffInfo.position,
+            username: account.username,
+          },
+        };
+      }),
+
+    /** 取得當前登入使用者資訊 */
     me: publicProcedure.query(opts => opts.ctx.user),
+
+    /** 登出 — 清除 cookie（向後相容）並通知前端清除 token */
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

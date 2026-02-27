@@ -1,15 +1,16 @@
 /**
  * 統一登入頁 /login
  *
- * 1. Email + 密碼 → Supabase Auth 驗證（或 Manus OAuth）
+ * 1. 帳號 + 密碼 → tRPC auth.login → JWT token
  * 2. 查詢使用者角色
  * 3. 若有多重角色 → 顯示「選擇身份」中間頁
  * 4. 根據角色自動重導向
  */
 import React, { useState, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
-import { Loader2, Building2, Shield, UserCog, User } from "lucide-react";
+import { Loader2, Building2, Shield, UserCog, User, AlertCircle } from "lucide-react";
 
 type RoleOption = {
   role: string;
@@ -34,7 +35,6 @@ function getRoleOptions(user: Record<string, any>): RoleOption[] {
     });
   }
 
-  // admin 和 staff 角色可能同時存在（多租戶場景）
   if (role === "admin" || role === "super_admin") {
     options.push({
       role: "admin",
@@ -82,10 +82,18 @@ function getDefaultRedirect(role: string): string {
 }
 
 export default function LoginPage() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, refresh } = useAuth();
   const [, navigate] = useLocation();
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [roleOptions, setRoleOptions] = useState<RoleOption[]>([]);
+
+  // 登入表單狀態
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const loginMutation = trpc.auth.login.useMutation();
 
   // 已登入 → 判斷角色
   React.useEffect(() => {
@@ -93,14 +101,41 @@ export default function LoginPage() {
 
     const options = getRoleOptions(user);
     if (options.length === 1) {
-      // 單一角色，直接導向
       navigate(options[0].path);
     } else {
-      // 多重角色，顯示選擇頁
       setRoleOptions(options);
       setShowRoleSelector(true);
     }
   }, [user, loading, isAuthenticated, navigate]);
+
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setIsLoggingIn(true);
+
+    try {
+      const result = await loginMutation.mutateAsync({
+        username: username.trim(),
+        password,
+      });
+
+      // 儲存 JWT token 到 localStorage
+      localStorage.setItem("yokage_token", result.token);
+      localStorage.setItem("yokage_user", JSON.stringify(result.user));
+
+      // 重新整理 auth 狀態
+      await refresh();
+
+      // 根據角色導向
+      const redirectPath = getDefaultRedirect(result.user.role);
+      navigate(redirectPath);
+    } catch (err: any) {
+      const message = err?.message || "登入失敗，請稍後再試";
+      setLoginError(message);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }, [username, password, loginMutation, navigate, refresh]);
 
   const handleRoleSelect = useCallback(
     (option: RoleOption) => {
@@ -193,18 +228,29 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form */}
-        <div className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
+          {loginError && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+              <AlertCircle className="size-4 shrink-0" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
           <div>
             <label
-              htmlFor="email"
+              htmlFor="username"
               className="block text-sm font-medium text-foreground"
             >
-              Email
+              帳號
             </label>
             <input
-              id="email"
-              type="email"
-              placeholder="your@email.com"
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="請輸入帳號"
+              autoComplete="username"
+              required
               className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -218,33 +264,30 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
-              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="請輸入密碼"
+              autoComplete="current-password"
+              required
               className="mt-1 block w-full rounded-lg border border-border bg-card px-3 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           <button
-            onClick={() => {
-              // 透過 Manus OAuth 登入（現有流程）
-              const loginUrl = (() => {
-                const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
-                const appId = import.meta.env.VITE_APP_ID;
-                const redirectUri = `${window.location.origin}/api/oauth/callback`;
-                const state = btoa(redirectUri);
-                const url = new URL(`${oauthPortalUrl}/app-auth`);
-                url.searchParams.set("appId", appId);
-                url.searchParams.set("redirectUri", redirectUri);
-                url.searchParams.set("state", state);
-                url.searchParams.set("type", "signIn");
-                return url.toString();
-              })();
-              window.location.href = loginUrl;
-            }}
-            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            type="submit"
+            disabled={isLoggingIn || !username || !password}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            登入
+            {isLoggingIn ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                登入中...
+              </span>
+            ) : (
+              "登入"
+            )}
           </button>
-        </div>
+        </form>
 
         <div className="text-center text-xs text-muted-foreground">
           <p>登入即表示您同意我們的服務條款與隱私政策</p>
