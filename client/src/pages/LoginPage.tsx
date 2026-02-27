@@ -1,14 +1,13 @@
 /**
  * 統一登入頁 /login
  *
- * 1. 帳號 + 密碼 → tRPC auth.login → JWT token
+ * 1. 帳號 + 密碼 → /api/auth/login (Netlify Function) → JWT token
  * 2. 查詢使用者角色
  * 3. 若有多重角色 → 顯示「選擇身份」中間頁
  * 4. 根據角色自動重導向
  */
 import React, { useState, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { Loader2, Building2, Shield, UserCog, User, AlertCircle } from "lucide-react";
 
@@ -93,8 +92,6 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const loginMutation = trpc.auth.login.useMutation();
-
   // 已登入 → 判斷角色
   React.useEffect(() => {
     if (loading || !isAuthenticated || !user) return;
@@ -114,10 +111,21 @@ export default function LoginPage() {
     setIsLoggingIn(true);
 
     try {
-      const result = await loginMutation.mutateAsync({
-        username: username.trim(),
-        password,
+      // 直接呼叫 Netlify Function /api/auth/login
+      const resp = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.trim(),
+          password,
+        }),
       });
+
+      const result = await resp.json();
+
+      if (!resp.ok || !result.success) {
+        throw new Error(result.error || "登入失敗");
+      }
 
       // 儲存 JWT token 到 localStorage
       localStorage.setItem("yokage_token", result.token);
@@ -135,7 +143,7 @@ export default function LoginPage() {
     } finally {
       setIsLoggingIn(false);
     }
-  }, [username, password, loginMutation, navigate, refresh]);
+  }, [username, password, navigate, refresh]);
 
   const handleRoleSelect = useCallback(
     (option: RoleOption) => {
