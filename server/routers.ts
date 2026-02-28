@@ -4668,6 +4668,103 @@ export const appRouter = router({
         };
       }),
 
+    /** LIFF 自動登入 — 驗證 LINE idToken，自動建立/查詢客戶帳號，回傳 JWT */
+    loginWithLiff: publicProcedure
+      .input(z.object({
+        idToken: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        // 1. 向 LINE Platform 驗證 idToken
+        const verifyResp = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            id_token: input.idToken,
+            client_id: ENV.lineChannelId,
+          }),
+        });
+        if (!verifyResp.ok) {
+          const errBody = await verifyResp.text();
+          console.error("LINE idToken verify failed:", errBody);
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "LINE 驗證失敗" });
+        }
+        const lineProfile = await verifyResp.json() as {
+          sub: string; name: string; picture?: string; email?: string;
+        };
+        const lineUserId = lineProfile.sub;
+        const displayName = lineProfile.name ?? "LINE 用戶";
+        const pictureUrl = lineProfile.picture ?? null;
+
+        // 2. 查詢資料庫：先查 customers 表是否已有此 LINE 用戶
+        const database = db.db;
+        const existingRows = await database.execute(
+          sql`SELECT c.id, c.name, c.organization_id, c.member_level, c.phone, c.email
+              FROM customers c
+              WHERE c.line_user_id = ${lineUserId}
+              LIMIT 1`
+        );
+        const existing = (existingRows as unknown as Array<{
+          id: number; name: string; organization_id: number;
+          member_level: string | null; phone: string | null; email: string | null;
+        }>)[0];
+
+        let customerId: number;
+        let customerName: string;
+        let organizationId: number;
+        let memberLevel: string;
+
+        if (existing) {
+          // 已綁定：使用既有帳號
+          customerId = existing.id;
+          customerName = existing.name;
+          organizationId = existing.organization_id;
+          memberLevel = existing.member_level ?? "bronze";
+          // 更新名稱與頭像（若有變更）
+          await database.execute(
+            sql`UPDATE customers SET name = ${displayName}, updated_at = NOW() WHERE id = ${customerId}`
+          );
+        } else {
+          // 未綁定：自動建立新客戶帳號（預設歸屬於 organizationId = 1）
+          organizationId = 1;
+          const insertResult = await database.execute(
+            sql`INSERT INTO customers (organization_id, name, line_user_id, avatar, member_level, source, created_at, updated_at)
+                VALUES (${organizationId}, ${displayName}, ${lineUserId}, ${pictureUrl}, 'bronze', 'liff', NOW(), NOW())
+                RETURNING id`
+          );
+          const inserted = (insertResult as unknown as Array<{ id: number }>)[0];
+          customerId = inserted.id;
+          customerName = displayName;
+          memberLevel = "bronze";
+        }
+
+        // 3. 簽發系統 JWT
+        const secret = ENV.cookieSecret;
+        if (!secret) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "JWT secret not configured" });
+        }
+        const payload: JwtPayload = {
+          staffId: customerId,
+          staffAccountId: 0,
+          role: "customer",
+          organizationId,
+          username: customerName,
+        };
+        const token = jwt.sign(payload, secret, { expiresIn: "7d" });
+
+        return {
+          token,
+          user: {
+            id: customerId,
+            name: customerName,
+            role: "customer",
+            organizationId,
+            memberLevel,
+            lineUserId,
+            picture: pictureUrl,
+          },
+        };
+      }),
+
     /** 取得當前登入使用者資訊 */
     me: publicProcedure.query(opts => opts.ctx.user),
 

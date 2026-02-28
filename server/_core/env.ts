@@ -9,6 +9,8 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   // LINE 整合
   lineChannelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? "",
+  lineChannelId: process.env.VITE_LINE_CHANNEL_ID ?? "",
+  lineChannelSecret: process.env.LINE_CHANNEL_SECRET ?? "",
   lineUserId: process.env.LINE_USER_ID ?? "",
   // LemonSqueezy 金流整合
   lemonsqueezyApiKey: process.env.LEMONSQUEEZY_API_KEY ?? "",

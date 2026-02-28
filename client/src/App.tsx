@@ -6,6 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import React, { Suspense } from "react";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { LiffAuthProvider } from "./components/auth/LiffAuthProvider";
 
 // ============================================
 // Lazy-loaded page components (Code Splitting)
@@ -619,19 +620,26 @@ function AppRouter() {
         <Route path="/clinic/voucher-redemption"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><VoucherRedemptionPage /></ProtectedRoute></Route>
         <Route path="/clinic/voucher-reports"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><VoucherReportsPage /></ProtectedRoute></Route>
 
-        {/* ======== LIFF 路由 ======== */}
-        <Route path="/liff/booking" component={LiffBookingPage} />
-        <Route path="/liff/member" component={LiffMemberPage} />
-        <Route path="/liff/shop" component={LiffShopPage} />
-        <Route path="/liff/cart" component={LiffCartPage} />
-        <Route path="/liff/checkout" component={LiffCheckoutPage} />
-        <Route path="/liff/orders" component={LiffOrdersPage} />
-        <Route path="/liff/orders/:id" component={LiffOrderDetailPage} />
-        <Route path="/liff/staff/clock" component={LiffStaffClockPage} />
-        <Route path="/liff/staff/tasks" component={LiffStaffTasksPage} />
-        <Route path="/liff/staff/schedule" component={LiffStaffSchedulePage} />
-        <Route path="/liff/staff/leave" component={LiffStaffLeavePage} />
-        <Route path="/liff/my-vouchers" component={MyVouchersPage} />
+        {/* ======== LIFF 路由 — 所有 /liff/* 路由由 LiffAuthProvider 包裹，自動處理 LINE 登入 ======== */}
+        <Route path="/liff" nest>
+          <LiffAuthProvider>
+            <Switch>
+              <Route path="/" component={LiffMemberPage} />
+              <Route path="/booking" component={LiffBookingPage} />
+              <Route path="/member" component={LiffMemberPage} />
+              <Route path="/shop" component={LiffShopPage} />
+              <Route path="/cart" component={LiffCartPage} />
+              <Route path="/checkout" component={LiffCheckoutPage} />
+              <Route path="/orders" component={LiffOrdersPage} />
+              <Route path="/orders/:id" component={LiffOrderDetailPage} />
+              <Route path="/staff/clock" component={LiffStaffClockPage} />
+              <Route path="/staff/tasks" component={LiffStaffTasksPage} />
+              <Route path="/staff/schedule" component={LiffStaffSchedulePage} />
+              <Route path="/staff/leave" component={LiffStaffLeavePage} />
+              <Route path="/my-vouchers" component={MyVouchersPage} />
+            </Switch>
+          </LiffAuthProvider>
+        </Route>
 
         {/* ======== 404 ======== */}
         <Route path="/404" component={NotFound} />

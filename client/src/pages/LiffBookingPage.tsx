@@ -1,32 +1,36 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, ChevronRight, MapPin, Phone, Loader2 } from "lucide-react";
+import { Clock, ChevronRight, MapPin, Phone, Loader2, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useStaffContext } from "@/hooks/useStaffContext";
-import { PageLoadingSkeleton, PageError } from "@/components/ui/page-skeleton";
+import { useLiffContext } from "@/components/auth/LiffAuthProvider";
 
-// LIFF 預約頁面 - 顧客端
+/**
+ * LIFF 預約頁面 — 顧客端
+ *
+ * 從 LiffAuthProvider 取得已認證的顧客 ID，
+ * 串接真實的 product.list 與 appointment.create API。
+ */
 export default function LiffBookingPage() {
-  const { organizationId, isLoading: ctxLoading } = useStaffContext();
+  const { user } = useLiffContext();
+  const organizationId = user?.organizationId ?? 1;
+  const customerId = user?.id ?? 0;
+
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedService, setSelectedService] = useState<string>("");
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  // Fetch real services (products)
+  // 取得真實療程列表
   const productsQuery = trpc.product.list.useQuery(
     { organizationId, limit: 50 },
-    { enabled: !ctxLoading }
+    { enabled: !!organizationId }
   );
 
-  // Create appointment mutation
+  // 建立預約
   const createAppointment = trpc.appointment.create.useMutation({
     onSuccess: () => {
-      alert("預約成功！我們會盡快與您確認。");
-      setSelectedService("");
-      setSelectedDate("");
-      setSelectedTime("");
+      setBookingSuccess(true);
     },
     onError: (err) => {
       alert(`預約失敗: ${err.message}`);
@@ -34,7 +38,9 @@ export default function LiffBookingPage() {
   });
 
   const rawProducts = productsQuery.data;
-  const productsList: any[] = Array.isArray(rawProducts) ? rawProducts : (rawProducts as any)?.data ?? [];
+  const productsList: any[] = Array.isArray(rawProducts)
+    ? rawProducts
+    : (rawProducts as any)?.data ?? [];
   const services = productsList.map((p: any) => ({
     id: String(p.id),
     name: p.name,
@@ -48,10 +54,10 @@ export default function LiffBookingPage() {
   ];
 
   const handleConfirmBooking = () => {
-    if (!selectedService || !selectedDate || !selectedTime) return;
+    if (!selectedService || !selectedDate || !selectedTime || !customerId) return;
     createAppointment.mutate({
       organizationId,
-      customerId: 1, // Will be resolved from LIFF auth context in production
+      customerId,
       productId: Number(selectedService),
       appointmentDate: selectedDate,
       startTime: selectedTime,
@@ -59,12 +65,51 @@ export default function LiffBookingPage() {
     });
   };
 
-  if (ctxLoading || productsQuery.isLoading) {
-    return <PageLoadingSkeleton message="載入預約頁面..." />;
+  const handleNewBooking = () => {
+    setBookingSuccess(false);
+    setSelectedService("");
+    setSelectedDate("");
+    setSelectedTime("");
+  };
+
+  if (productsQuery.isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-pink-50 to-white">
+        <Loader2 className="w-10 h-10 text-pink-500 animate-spin mb-3" />
+        <p className="text-gray-500">載入療程資訊...</p>
+      </div>
+    );
   }
 
-  if (productsQuery.isError) {
-    return <PageError message="無法載入服務項目" onRetry={() => productsQuery.refetch()} />;
+  // 預約成功畫面
+  if (bookingSuccess) {
+    const selectedServiceInfo = services.find((s) => s.id === selectedService);
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col items-center justify-center p-6">
+        <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+        <h2 className="text-xl font-bold text-gray-800 mb-2">預約成功！</h2>
+        <p className="text-gray-500 mb-6 text-center">我們會盡快與您確認預約時間</p>
+        <Card className="w-full max-w-sm">
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-500">療程</span>
+              <span className="font-medium">{selectedServiceInfo?.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">日期</span>
+              <span className="font-medium">{selectedDate}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">時段</span>
+              <span className="font-medium">{selectedTime}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Button onClick={handleNewBooking} className="mt-6 bg-pink-500 hover:bg-pink-600">
+          繼續預約其他療程
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -77,8 +122,10 @@ export default function LiffBookingPage() {
               Y
             </div>
             <div>
-              <h1 className="font-bold text-lg">YOChiLL 醫美診所</h1>
-              <p className="text-xs text-gray-500">線上預約系統</p>
+              <h1 className="font-bold text-lg">線上預約</h1>
+              <p className="text-xs text-gray-500">
+                {user ? `${user.name}，歡迎您` : "線上預約系統"}
+              </p>
             </div>
           </div>
         </div>
