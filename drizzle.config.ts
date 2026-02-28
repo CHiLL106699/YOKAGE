@@ -7,11 +7,11 @@ if (!connectionString) {
 
 export default defineConfig({
   schema: [
+    "./drizzle/schema.ts",
     "./drizzle/leave-schema.ts",
     "./drizzle/lemonsqueezy-schema.ts",
     "./drizzle/line-rich-menu-schema.ts",
-    "./drizzle/schema.ts",
-    "./drizzle/system-b-schema.ts"
+    "./drizzle/staff-tasks-schema.ts",
   ],
   out: "./drizzle",
   dialect: "postgresql",
