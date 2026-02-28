@@ -14,7 +14,7 @@ export function verifyLineSignature(
 ): boolean {
   const hash = crypto
     .createHmac('SHA256', channelSecret)
-    .update(body)
+    .update(Buffer.from(body, 'utf8'))
     .digest('base64');
   
   return hash === signature;

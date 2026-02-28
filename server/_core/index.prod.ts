@@ -5,6 +5,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { lineWebhookHandler } from "./lineWebhookHandler";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./static";
@@ -32,7 +33,12 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
+  app.use(express.json({ 
+    limit: "50mb",
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf.toString();
+    }
+  }));
 
   // CORS configuration
   const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
@@ -53,6 +59,8 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // LINE Webhook
+  app.post("/api/line/webhook", lineWebhookHandler);
   // tRPC API
   app.use(
     "/api/trpc",
