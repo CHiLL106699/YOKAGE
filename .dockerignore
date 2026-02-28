@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs (will be built inside container)
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Environment files (injected at runtime)
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+docs/
+research/
+.manus/
+
+# Tests
+*.test.ts
+coverage/
+.nyc_output/
+vitest.config.ts
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Netlify (not used in Cloud Run)
+netlify/
+netlify.toml
+
+# Misc
+*.log
+*.tgz
+.DS_Store
+tmp/
+temp/
+scripts/
+migrations/
+*.sql
