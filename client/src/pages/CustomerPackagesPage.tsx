@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -368,7 +369,7 @@ export default function CustomerPackagesPage() {
                       <TableCell>
                         {pkg.expiryDate ? (
                           <div>
-                            <div>{new Date(pkg.expiryDate).toLocaleDateString('zh-TW')}</div>
+                            <div>{safeDate(pkg.expiryDate)}</div>
                             {daysLeft !== null && daysLeft > 0 && (
                               <div className={`text-xs ${daysLeft <= 30 ? 'text-orange-500' : 'text-muted-foreground'}`}>
                                 剩餘 {daysLeft} 天

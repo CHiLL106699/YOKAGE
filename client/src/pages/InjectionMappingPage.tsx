@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -385,7 +386,7 @@ export default function InjectionMappingPage() {
                     <div>
                       <p className="font-medium">{record.productUsed || "未指定產品"}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(record.createdAt).toLocaleDateString("zh-TW")} · 
+                        {safeDate(record.createdAt)} · 
                         {record.templateType === "face_front" ? " 正面臉部" : record.templateType}
                       </p>
                     </div>

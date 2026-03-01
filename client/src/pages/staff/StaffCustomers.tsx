@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { useLocation, Link } from 'wouter';
 import { Search, Phone, MessageSquare, ChevronDown, ChevronUp, User, Tag, Calendar, Users, DollarSign, Star, FileText, Settings } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
@@ -109,7 +110,7 @@ const CustomerCard: React.FC<{
             <div className="text-center">
               <p className="text-xs text-gray-500">最近訪問</p>
               <p className="font-semibold text-gray-700">
-                {lastVisit ? new Date(lastVisit).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' }) : '-'}
+                {lastVisit ? safeDate(lastVisit) : '-'}
               </p>
             </div>
             <div className="text-center">

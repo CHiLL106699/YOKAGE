@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -466,7 +467,7 @@ export default function OrganizationsPage() {
                             </div>
                           </TableCell>
                           <TableCell className="text-slate-400">
-                            {new Date(org.createdAt).toLocaleDateString("zh-TW")}
+                            {safeDate(org.createdAt)}
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>

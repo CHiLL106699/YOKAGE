@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -255,7 +256,7 @@ export default function SocialIntegrationPage() {
                       </TableCell>
                       <TableCell>
                         {post.scheduledAt 
-                          ? new Date(post.scheduledAt).toLocaleString("zh-TW")
+                          ? safeDateTime(post.scheduledAt)
                           : "-"
                         }
                       </TableCell>
@@ -337,7 +338,7 @@ export default function SocialIntegrationPage() {
                           key={p.id} 
                           className="text-xs bg-indigo-100 text-indigo-800 rounded px-1 py-0.5 mt-1 truncate"
                         >
-                          {new Date(p.scheduledAt).toLocaleTimeString("zh-TW", { hour: '2-digit', minute: '2-digit' })}
+                          {safeTime(p.scheduledAt)}
                         </div>
                       ))}
                       {dayPosts.length > 2 && (

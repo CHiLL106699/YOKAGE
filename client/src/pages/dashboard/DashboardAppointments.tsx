@@ -1,6 +1,7 @@
 import React, { useState, useMemo, FC } from 'react';
 import { Calendar, List, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { safeDate, safeTime } from '@/lib/safeFormat';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -144,9 +145,9 @@ const DashboardAppointments: FC = () => {
     customerName: a.customerName || `客戶 #${a.customerId}`,
     service: a.productName || '一般診療',
     staff: a.staffName || `醫師 #${a.staffId || ''}`,
-    date: a.appointmentDate,
-    startTime: a.startTime || '09:00',
-    endTime: a.endTime || '10:00',
+    date: safeDate(a.appointmentDate),
+    startTime: safeTime(a.startTime, '09:00'),
+    endTime: safeTime(a.endTime, '10:00'),
     status: (a.status || 'pending') as Status,
     notes: a.notes || '',
   })), [appointmentsData]);

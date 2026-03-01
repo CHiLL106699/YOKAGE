@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -501,7 +502,7 @@ export default function PrescriptionPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {new Date(rx.createdAt).toLocaleDateString("zh-TW")}
+                          {safeDate(rx.createdAt)}
                         </TableCell>
                       </TableRow>
                     ))}

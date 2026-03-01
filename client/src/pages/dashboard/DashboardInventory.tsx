@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Link } from "wouter";
 import { ArrowLeft, Pill, ShieldCheck, Search, Plus, Minus, RefreshCw, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -298,7 +299,7 @@ export default function DashboardInventory() {
                             <tbody className="divide-y divide-slate-100">
                             {(logsQuery.data as any[]).map((log) => (
                                 <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-4 py-3 text-slate-500">{new Date(log.transactionDate).toLocaleString()}</td>
+                                <td className="px-4 py-3 text-slate-500">{safeDateTime(log.transactionDate)}</td>
                                 <td className="px-4 py-3 font-medium text-slate-800">{log.product_name || 'N/A'}</td>
                                 <td className="px-4 py-3">
                                     <Badge variant={log.transactionType === 'increase' ? 'success' : 'destructive'}>

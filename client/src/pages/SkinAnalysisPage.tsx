@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -290,7 +291,7 @@ export default function SkinAnalysisPage() {
                       <SelectContent>
                         {analysisRecords.data.map((r) => (
                           <SelectItem key={r.id} value={r.id.toString()}>
-                            {new Date(r.createdAt).toLocaleDateString("zh-TW")} - {r.analysisType === 'full_face' ? '全臉' : r.analysisType}
+                            {safeDate(r.createdAt)} - {r.analysisType === 'full_face' ? '全臉' : r.analysisType}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -306,7 +307,7 @@ export default function SkinAnalysisPage() {
                 <CardTitle>膚質分析結果</CardTitle>
                 <CardDescription>
                   {recordDetail 
-                    ? `分析日期：${new Date(recordDetail.createdAt).toLocaleDateString("zh-TW")}`
+                    ? `分析日期：${safeDate(recordDetail.createdAt)}`
                     : "請選擇客戶和分析記錄"
                   }
                 </CardDescription>
@@ -429,7 +430,7 @@ export default function SkinAnalysisPage() {
                             {record.analysisType === 'full_face' ? '全臉分析' : record.analysisType}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {new Date(record.createdAt).toLocaleString("zh-TW")}
+                            {safeDateTime(record.createdAt)}
                           </p>
                         </div>
                       </div>

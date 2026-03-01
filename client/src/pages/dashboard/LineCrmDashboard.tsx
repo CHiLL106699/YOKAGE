@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { MessageSquare, Users, Tag, Send, Settings, Search, Plus, X, Edit, Trash2, History } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
@@ -397,7 +398,7 @@ const LineCrmDashboard: React.FC = () => {
                       <div>
                         <Label className="text-sm text-gray-600">生日</Label>
                         <p className="text-gray-900 font-medium">
-                          {new Date(selectedCustomer.birthday).toLocaleDateString('zh-TW')}
+                          {safeDate(selectedCustomer.birthday)}
                         </p>
                       </div>
                     )}

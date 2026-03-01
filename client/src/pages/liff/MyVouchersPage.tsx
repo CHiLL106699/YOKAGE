@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -256,7 +257,7 @@ function QRCodeDialog({
             <div className="flex items-center gap-2 text-slate-400">
               <Clock className="h-4 w-4" />
               <span className="text-sm">
-                有效期限：{new Date(voucher.expiresAt).toLocaleDateString("zh-TW")}
+                有效期限：{safeDate(voucher.expiresAt)}
               </span>
             </div>
           )}

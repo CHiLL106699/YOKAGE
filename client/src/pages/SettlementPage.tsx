@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -568,7 +569,7 @@ export default function SettlementPage() {
                           <TableBody>
                             {cashDrawerRecords.map((record) => (
                               <TableRow key={record.id}>
-                                <TableCell>{new Date(record.operatedAt || '').toLocaleTimeString()}</TableCell>
+                                <TableCell>{safeTime(record.operatedAt || '')}</TableCell>
                                 <TableCell>
                                   <Badge variant={record.operationType === 'deposit' ? 'default' : 'destructive'}>
                                     {record.operationType === 'deposit' ? '存入' : record.operationType === 'withdrawal' ? '取出' : record.operationType}
@@ -729,7 +730,7 @@ export default function SettlementPage() {
                     {dashboardData.dailyTrend.slice(-10).map((day, index) => (
                       <div key={index} className="flex items-center gap-4">
                         <span className="w-24 text-sm text-muted-foreground">
-                          {new Date(day.date).toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })}
+                          {safeDate(day.date)}
                         </span>
                         <div className="flex-1 bg-muted rounded-full h-6 overflow-hidden">
                           <div 
@@ -913,7 +914,7 @@ export default function SettlementPage() {
                   <TableBody>
                     {settlementHistory?.data.map((settlement) => (
                       <TableRow key={settlement.id}>
-                        <TableCell>{new Date(settlement.settlementDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{safeDate(settlement.settlementDate)}</TableCell>
                         <TableCell>{settlement.status && getStatusBadge(settlement.status)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(settlement.totalRevenue)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(settlement.cashRevenue)}</TableCell>
@@ -972,7 +973,7 @@ export default function SettlementPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {new Date(report.periodStart).toLocaleDateString()} - {new Date(report.periodEnd).toLocaleDateString()}
+                            {safeDate(report.periodStart)} - {safeDate(report.periodEnd)}
                           </TableCell>
                           <TableCell className="text-right">{formatCurrency(report.totalRevenue)}</TableCell>
                           <TableCell>
@@ -985,7 +986,7 @@ export default function SettlementPage() {
                               {report.status === 'completed' ? '完成' : report.status === 'failed' ? '失敗' : '生成中'}
                             </Badge>
                           </TableCell>
-                          <TableCell>{new Date(report.createdAt).toLocaleString()}</TableCell>
+                          <TableCell>{safeDateTime(report.createdAt)}</TableCell>
                           <TableCell>
                             {report.pdfUrl && (
                               <Button variant="ghost" size="sm" asChild>

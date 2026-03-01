@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Search, FileDown, PlusCircle, MoreVertical, ChevronLeft, ChevronRight, X, CheckCircle, XCircle, Clock, Users, BarChart2, Building } from 'lucide-react';
 import { useLocation, Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
@@ -303,7 +304,7 @@ const AdminTenantsPage: React.FC = () => {
                     <td className="px-6 py-4 text-gray-600">{tenant.slug}</td>
                     <td className="px-6 py-4">{tenant.subscriptionPlan ?? 'N/A'}</td>
                     <td className="px-6 py-4"><StatusBadge status={getStatus(tenant.isActive !== false, tenant.subscriptionStatus as SubscriptionStatus | null)} /></td>
-                    <td className="px-6 py-4">{new Date(tenant.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">{safeDate(tenant.createdAt)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button className="text-indigo-600 hover:text-indigo-900">查看</button>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -658,7 +659,7 @@ export default function LineIntegrationPage() {
                             {menu.isActive ? "啟用中" : "停用"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{menu.createdAt ? new Date(menu.createdAt).toLocaleDateString() : "N/A"}</TableCell>
+                        <TableCell>{menu.createdAt ? safeDate(menu.createdAt) : "N/A"}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm">編輯</Button>
                         </TableCell>

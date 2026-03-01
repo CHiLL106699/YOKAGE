@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -394,8 +395,8 @@ export default function CustomerSourceROIPage() {
                             <p className="font-medium">{campaign.name}</p>
                             <p className="text-sm text-muted-foreground">
                               {getCampaignTypeLabel(campaign.campaignType)}
-                              {campaign.startDate && ` · ${new Date(campaign.startDate).toLocaleDateString('zh-TW')}`}
-                              {campaign.endDate && ` - ${new Date(campaign.endDate).toLocaleDateString('zh-TW')}`}
+                              {campaign.startDate && ` · ${safeDate(campaign.startDate)}`}
+                              {campaign.endDate && ` - ${safeDate(campaign.endDate)}`}
                             </p>
                           </div>
                         </div>

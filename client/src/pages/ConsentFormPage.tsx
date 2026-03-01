@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -323,7 +324,7 @@ export default function ConsentFormPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(template.createdAt).toLocaleDateString("zh-TW")}
+                        {safeDate(template.createdAt)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -396,7 +397,7 @@ export default function ConsentFormPage() {
                         </TableCell>
                         <TableCell>
                           {sig.signedAt 
-                            ? new Date(sig.signedAt).toLocaleString("zh-TW")
+                            ? safeDateTime(sig.signedAt)
                             : "-"
                           }
                         </TableCell>

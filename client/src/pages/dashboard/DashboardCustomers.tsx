@@ -4,6 +4,7 @@ import { Search, X, Tag, ChevronDown, ChevronUp, PlusCircle, Star, User, Zap, Co
 import { trpc } from "@/lib/trpc";
 import { QueryLoading, QueryError } from "@/components/ui/query-state";
 import { toast } from "sonner";
+import { safeDate, safeStr } from "@/lib/safeFormat";
 
 // --- TYPES ---
 export type TagType = 'VIP' | '新客' | '回流客' | '高消費';
@@ -260,9 +261,9 @@ const DashboardCustomersPage = () => {
     id: c.id, name: c.name, phone: c.phone || "-", email: c.email || "-",
     gender: c.gender || "other", birthday: c.birthday || "-",
     memberLevel: c.memberLevel || "bronze", totalVisits: c.totalVisits ?? 0,
-    totalSpent: Number(c.totalSpent || 0), lastVisit: c.lastVisitDate || c.createdAt || "-",
-    tags: c.tags || [], notes: c.notes || "", source: c.source || "-",
-    lastConsumption: c.lastVisitDate || c.createdAt || "-",
+    totalSpent: Number(c.totalSpent || 0), lastVisit: safeDate(c.lastVisitDate || c.createdAt),
+    tags: (c.tags || []).map((t: any) => typeof t === 'string' ? t : t?.name ?? ''), notes: c.notes || "", source: c.source || "-",
+    lastConsumption: safeDate(c.lastVisitDate || c.createdAt),
     totalConsumption: Number(c.totalSpent || 0),
     visitCount: c.totalVisits ?? 0,
     status: (c.isActive === false ? "inactive" : "active") as CustomerStatus,

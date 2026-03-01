@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -279,7 +280,7 @@ export default function TeleconsultPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          {new Date(session.scheduledAt).toLocaleString("zh-TW")}
+                          {safeDateTime(session.scheduledAt)}
                         </div>
                       </TableCell>
                       <TableCell>{session.duration} 分鐘</TableCell>
@@ -364,7 +365,7 @@ export default function TeleconsultPage() {
                           key={s.id} 
                           className="text-xs bg-blue-100 text-blue-800 rounded px-1 py-0.5 mt-1 truncate"
                         >
-                          {new Date(s.scheduledAt).toLocaleTimeString("zh-TW", { hour: '2-digit', minute: '2-digit' })}
+                          {safeTime(s.scheduledAt)}
                         </div>
                       ))}
                       {daySessions.length > 2 && (
@@ -397,7 +398,7 @@ export default function TeleconsultPage() {
                       <div className="space-y-1">
                         <p className="font-medium">客戶 #{session.customerId}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(session.scheduledAt).toLocaleDateString("zh-TW")}
+                          {safeDate(session.scheduledAt)}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           時長：{session.actualDuration || session.duration} 分鐘

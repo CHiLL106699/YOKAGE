@@ -4,6 +4,7 @@
  */
 
 import { useState, useRef } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -460,7 +461,7 @@ export default function DataImportPage() {
                         {record.successRows}/{record.totalRows}
                       </TableCell>
                       <TableCell>
-                        {new Date(record.createdAt).toLocaleString("zh-TW")}
+                        {safeDateTime(record.createdAt)}
                       </TableCell>
                     </TableRow>
                   ))}

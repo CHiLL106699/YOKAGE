@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Link, useLocation } from 'wouter';
 import {
   Home,
@@ -241,7 +242,7 @@ const RecentActivities: React.FC = () => {
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               <span className="font-semibold">{activity.userName}</span> {activity.action} <span className="font-semibold">{activity.target}</span>
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(activity.timestamp).toLocaleString()}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{safeDateTime(activity.timestamp)}</p>
           </div>
           <div className={`flex items-center text-xs ${activity.success ? 'text-green-500' : 'text-red-500'}`}>
             {activity.success ? <CheckCircle size={14} className="mr-1" /> : <AlertCircle size={14} className="mr-1" />}

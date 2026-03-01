@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from '@/lib/trpc';
 import { QueryLoading, QueryError } from '@/components/ui/query-state';
 import { toast } from 'sonner';
@@ -153,8 +154,8 @@ const CampaignList = ({ data, onCampaignCreated }: { data: any[], onCampaignCrea
                   <TableCell>
                     <Badge variant={getStatusVariant(campaign.status)}>{campaign.status}</Badge>
                   </TableCell>
-                  <TableCell>{campaign.startDate ? new Date(campaign.startDate).toLocaleDateString() : 'N/A'}</TableCell>
-                  <TableCell>{campaign.endDate ? new Date(campaign.endDate).toLocaleDateString() : 'N/A'}</TableCell>
+                  <TableCell>{campaign.startDate ? safeDate(campaign.startDate) : 'N/A'}</TableCell>
+                  <TableCell>{campaign.endDate ? safeDate(campaign.endDate) : 'N/A'}</TableCell>
                 </TableRow>
               ))
             ) : (

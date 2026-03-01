@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,7 +106,7 @@ export default function OrdersPage() {
 
     const exportData = orderList.map((o) => ({
       訂單編號: o.orderNumber || "",
-      日期: o.createdAt ? new Date(o.createdAt).toLocaleString("zh-TW") : "",
+      日期: o.createdAt ? safeDateTime(o.createdAt) : "",
       金額: parseFloat(o.subtotal || "0"),
       付款方式: paymentMethodLabels[o.paymentMethod || ""] || o.paymentMethod || "",
       狀態: statusLabels[o.status || "pending"],

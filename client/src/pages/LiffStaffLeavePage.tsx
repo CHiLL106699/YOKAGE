@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { safeDate } from '@/lib/safeFormat';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -185,7 +186,7 @@ export default function LiffStaffLeavePage() {
                       <div>
                         <span className="font-medium">{typeName}</span>
                         <p className="text-sm text-gray-500 mt-1">
-                          {record.startDate} ~ {record.endDate}
+                          {safeDate(record.startDate)} ~ {safeDate(record.endDate)}
                         </p>
                       </div>
                       <Badge className={config.color}>

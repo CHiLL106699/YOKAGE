@@ -3,6 +3,7 @@
  * AdminLogs — 系統日誌 (/admin/logs)
  */
 import React, { useState, useMemo, useEffect } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Link, useLocation } from "wouter";
 import {
   FileText,
@@ -224,7 +225,7 @@ export default function AdminLogsPage() {
                     <div key={log.id} className="flex flex-col gap-2 p-4 text-sm md:flex-row md:items-center">
                       <div className={`flex items-center gap-2 font-mono text-xs ${levelConfig[log.level].color} md:w-48`}>
                         {levelConfig[log.level].icon}
-                        <span>{new Date(log.timestamp).toLocaleString()}</span>
+                        <span>{safeDateTime(log.timestamp)}</span>
                       </div>
                       <div className="flex-1 truncate font-mono text-slate-300" title={log.action}>{log.action}</div>
                       <div className="w-48 truncate font-mono text-slate-400" title={log.userName}>{log.userName}</div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Link, useLocation } from 'wouter';
 import { Calendar, BarChart2, Users, CheckSquare, Briefcase, DollarSign, Menu, X, LayoutDashboard, Settings, LogOut, MoreVertical } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
@@ -234,7 +235,7 @@ const DashboardPage = () => {
 
   const appointments = (appointmentsData?.data ?? []).map((appt: any) => ({
     id: String(appt.id),
-    time: appt.startTime || new Date(appt.appointmentDate).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+    time: appt.startTime || safeTime(appt.appointmentDate),
     customerName: appt.customerName || `客戶 #${appt.customerId}`,
     service: appt.productName || '一般診療',
     staff: appt.staffName || `醫師 #${appt.staffId || ''}`,
@@ -244,7 +245,7 @@ const DashboardPage = () => {
   const dailyRevenue = revenueReport?.dailyRevenue ?? [];
   const dayLabels = ['日', '一', '二', '三', '四', '五', '六'];
   const chartData = dailyRevenue.length > 0
-    ? dailyRevenue.map((d: any) => ({ day: new Date(d.date).toLocaleDateString('zh-TW', { weekday: 'short' }).replace('週', ''), amount: d.amount ?? d.revenue ?? 0 }))
+    ? dailyRevenue.map((d: any) => ({ day: safeDate(d.date).replace('週', ''), amount: d.amount ?? d.revenue ?? 0 }))
     : Array(7).fill(0).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
@@ -255,7 +256,7 @@ const DashboardPage = () => {
     id: String(cust.id),
     name: cust.name,
     avatar: `https://i.pravatar.cc/150?u=${cust.id}`,
-    lastVisit: cust.lastVisit ? new Date(cust.lastVisit).toLocaleDateString('zh-TW') : '新客戶',
+    lastVisit: cust.lastVisit ? safeDate(cust.lastVisit) : '新客戶',
   }));
 
   return (

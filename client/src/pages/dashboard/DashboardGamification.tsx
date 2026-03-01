@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { QueryLoading, QueryError } from "@/components/ui/query-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ export default function DashboardGamification() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">期間：{new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}</p>
+                <p className="text-sm text-muted-foreground">期間：{safeDate(campaign.startDate)} - {safeDate(campaign.endDate)}</p>
                 <div className="flex items-center gap-2">
                     <Gift className="w-4 h-4"/> <span>獎品預覽</span>
                 </div>

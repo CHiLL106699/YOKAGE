@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -424,10 +425,10 @@ export default function SubscriptionPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(sub.startDate).toLocaleDateString("zh-TW")}
+                        {safeDate(sub.startDate)}
                       </TableCell>
                       <TableCell>
-                        {sub.endDate ? new Date(sub.endDate).toLocaleDateString("zh-TW") : "-"}
+                        {sub.endDate ? safeDate(sub.endDate) : "-"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={sub.autoRenew ? "default" : "outline"}>

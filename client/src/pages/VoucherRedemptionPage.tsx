@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -357,7 +358,7 @@ export default function VoucherRedemptionPage() {
                     <div>
                       <p className="text-sm text-slate-400">有效期限</p>
                       <p className="text-white">
-                        {new Date(scannedVoucher.expiryDate).toLocaleDateString("zh-TW")}
+                        {safeDate(scannedVoucher.expiryDate)}
                       </p>
                     </div>
                   </div>

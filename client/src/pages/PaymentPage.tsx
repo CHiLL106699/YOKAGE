@@ -1,5 +1,6 @@
 
 import { useState, useMemo } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 // Organization context - using hardcoded value for now
 import { Button } from "@/components/ui/button";
@@ -214,7 +215,7 @@ export default function PaymentPage() {
                       <TableCell>{record.orderId}</TableCell>
                       <TableCell>NT$ {record.amount.toLocaleString()}</TableCell>
                       <TableCell><Badge>{record.status}</Badge></TableCell>
-                      <TableCell>{new Date(record.createdAt).toLocaleString()}</TableCell>
+                      <TableCell>{safeDateTime(record.createdAt)}</TableCell>
                       <TableCell>
                         <Button variant="outline" size="sm" onClick={() => { setSelectedPayment(record); setShowRefundDialog(true); }}>退款</Button>
                       </TableCell>

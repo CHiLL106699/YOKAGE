@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -421,7 +422,7 @@ export default function CommissionManagementPage() {
                       return (
                         <TableRow key={commission.id}>
                           <TableCell>
-                            {new Date(commission.commissionDate).toLocaleDateString('zh-TW')}
+                            {safeDate(commission.commissionDate)}
                           </TableCell>
                           <TableCell className="font-medium">{staff?.name || "未知"}</TableCell>
                           <TableCell>NT$ {Number(commission.salesAmount).toLocaleString()}</TableCell>

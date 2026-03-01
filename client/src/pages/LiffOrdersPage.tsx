@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { useLiffContext } from '@/components/auth/LiffAuthProvider';
 import { trpc } from '@/lib/trpc';
 import { QueryLoading, QueryError } from '@/components/ui/query-state';
@@ -38,7 +39,7 @@ const LiffOrdersPage: React.FC = () => {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleDateString()}
+                  {safeDate(order.createdAt)}
                 </p>
               </CardHeader>
               <CardContent>

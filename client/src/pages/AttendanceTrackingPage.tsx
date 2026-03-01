@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -310,7 +311,7 @@ export default function AttendanceTrackingPage() {
                         <div>
                           <p className="font-medium">客戶 #{item.customerId}</p>
                           <p className="text-sm text-muted-foreground">
-                            希望日期：{new Date(item.preferredDate).toLocaleDateString('zh-TW')}
+                            希望日期：{safeDate(item.preferredDate)}
                             {item.preferredTimeSlot && ` ${item.preferredTimeSlot}`}
                           </p>
                         </div>

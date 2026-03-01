@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -177,7 +178,7 @@ export default function OrganizationDetailPage() {
                 <div>
                   <p className="text-sm text-slate-400">建立日期</p>
                   <p className="text-lg font-medium text-amber-100">
-                    {new Date(org.createdAt).toLocaleDateString("zh-TW")}
+                    {safeDate(org.createdAt)}
                   </p>
                 </div>
                 <div className="p-3 rounded-full bg-blue-500/20">

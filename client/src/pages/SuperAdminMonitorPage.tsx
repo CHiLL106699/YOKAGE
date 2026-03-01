@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -309,7 +310,7 @@ export default function SuperAdminMonitorPage() {
                       (errorLogs?.logs || []).map((log: Record<string, any>, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="text-muted-foreground text-sm">
-                            {new Date(log.timestamp).toLocaleString("zh-TW")}
+                            {safeDateTime(log.timestamp)}
                           </TableCell>
                           <TableCell>
                             <Badge className={
@@ -363,7 +364,7 @@ export default function SuperAdminMonitorPage() {
                       (auditLogs?.logs || []).map((log: Record<string, any>, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="text-muted-foreground text-sm">
-                            {new Date(log.timestamp).toLocaleString("zh-TW")}
+                            {safeDateTime(log.timestamp)}
                           </TableCell>
                           <TableCell>{log.userName}</TableCell>
                           <TableCell>

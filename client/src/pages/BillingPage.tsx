@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -214,8 +215,8 @@ const InvoiceList = () => {
                     {invoice.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{new Date(invoice.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                <TableCell>{safeDate(invoice.createdAt)}</TableCell>
+                <TableCell>{safeDate(invoice.dueDate)}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="outline" size="sm" onClick={() => toast.info("下載功能待實現")}>
                     <Download className="h-4 w-4 mr-2" />
@@ -279,8 +280,8 @@ const SubscriptionList = () => {
                     {sub.status}
                   </Badge>
                 </TableCell>
-                <TableCell>{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : 'N/A'}</TableCell>
-                <TableCell>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : 'N/A'}</TableCell>
+                <TableCell>{sub.startDate ? safeDate(sub.startDate) : 'N/A'}</TableCell>
+                <TableCell>{sub.endDate ? safeDate(sub.endDate) : 'N/A'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

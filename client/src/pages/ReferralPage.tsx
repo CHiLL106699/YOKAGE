@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -327,7 +328,7 @@ export default function ReferralPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(referral.createdAt).toLocaleDateString("zh-TW")}
+                        {safeDate(referral.createdAt)}
                       </TableCell>
                       <TableCell>
                         {referral.status === 'completed' && (

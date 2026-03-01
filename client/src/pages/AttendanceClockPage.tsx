@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -185,10 +186,7 @@ export default function AttendanceClockPage() {
                     <p className="text-sm text-muted-foreground">上班打卡</p>
                     <p className="font-semibold text-foreground">
                       {todayStatus.record?.clockIn
-                        ? new Date(todayStatus.record.clockIn).toLocaleTimeString('zh-TW', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                        ? safeTime(todayStatus.record.clockIn)
                         : '--:--'}
                     </p>
                   </div>
@@ -212,10 +210,7 @@ export default function AttendanceClockPage() {
                     <p className="text-sm text-muted-foreground">下班打卡</p>
                     <p className="font-semibold text-foreground">
                       {todayStatus.record?.clockOut
-                        ? new Date(todayStatus.record.clockOut).toLocaleTimeString('zh-TW', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                        ? safeTime(todayStatus.record.clockOut)
                         : '--:--'}
                     </p>
                   </div>

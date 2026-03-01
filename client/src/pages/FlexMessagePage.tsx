@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { safeDateTime } from '@/lib/safeFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,7 +70,7 @@ export default function FlexMessagePage() {
         category: item.messageType === "flex" ? "預約" : item.messageType === "text" ? "提醒" : "行銷",
         isActive: item.status === "sent" || item.status === "scheduled",
         usageCount: item.sentCount || 0,
-        lastUsed: item.sentAt || item.updatedAt || "-",
+        lastUsed: safeDateTime(item.sentAt || item.updatedAt) || "-",
         preview: {
           header: {
             backgroundColor: "#00B900",

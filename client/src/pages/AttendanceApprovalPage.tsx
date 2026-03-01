@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -191,17 +192,14 @@ export default function AttendanceApprovalPage() {
                       <TableCell className="text-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {new Date(record.recordDate).toLocaleDateString('zh-TW')}
+                          {safeDate(record.recordDate)}
                         </div>
                       </TableCell>
                       <TableCell className="text-foreground">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           {record.clockIn
-                            ? new Date(record.clockIn).toLocaleTimeString('zh-TW', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
+                            ? safeTime(record.clockIn)
                             : '--:--'}
                         </div>
                       </TableCell>
@@ -209,10 +207,7 @@ export default function AttendanceApprovalPage() {
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           {record.clockOut
-                            ? new Date(record.clockOut).toLocaleTimeString('zh-TW', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
+                            ? safeTime(record.clockOut)
                             : '--:--'}
                         </div>
                       </TableCell>

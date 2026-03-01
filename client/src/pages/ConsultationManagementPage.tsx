@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -412,7 +413,7 @@ export default function ConsultationManagementPage() {
                   return (
                     <TableRow key={consultation.id}>
                       <TableCell>
-                        {new Date(consultation.consultationDate).toLocaleDateString('zh-TW')}
+                        {safeDate(consultation.consultationDate)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

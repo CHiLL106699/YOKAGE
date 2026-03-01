@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -489,7 +490,7 @@ export default function SuperAdminWhiteLabelPage() {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
-                          <TableCell>{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{client.createdAt ? safeDate(client.createdAt) : '-'}</TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -679,7 +680,7 @@ export default function SuperAdminWhiteLabelPage() {
                               )}
                             </Badge>
                           </TableCell>
-                          <TableCell>{client.createdAt ? new Date(client.createdAt).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{client.createdAt ? safeDate(client.createdAt) : '-'}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"

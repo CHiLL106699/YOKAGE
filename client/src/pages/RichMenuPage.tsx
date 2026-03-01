@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { safeDate } from '@/lib/safeFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -218,7 +219,7 @@ export default function RichMenuPage() {
                 <div>
                   <CardTitle className="text-lg">{menu.name}</CardTitle>
                   <CardDescription className="mt-1">
-                    建立於 {menu.createdAt}
+                    建立於 {safeDate(menu.createdAt)}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">

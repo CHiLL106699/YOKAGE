@@ -3,6 +3,7 @@
  * /admin/upgrades
  */
 import React, { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -214,7 +215,7 @@ export default function AdminUpgradeRequests() {
                             </span>
                           </div>
                           <p className="text-xs text-gray-400 mt-0.5">
-                            申請時間：{req.requestedAt ? new Date(req.requestedAt).toLocaleString('zh-TW') : '—'}
+                            申請時間：{req.requestedAt ? safeDateTime(req.requestedAt) : '—'}
                           </p>
                         </div>
                       </div>

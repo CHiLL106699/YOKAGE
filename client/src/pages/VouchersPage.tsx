@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -530,7 +531,7 @@ export default function VouchersPage() {
                           </TableCell>
                           <TableCell>
                             {instance.validUntil 
-                              ? new Date(instance.validUntil).toLocaleDateString("zh-TW")
+                              ? safeDate(instance.validUntil)
                               : "永久有效"
                             }
                           </TableCell>
@@ -627,7 +628,7 @@ export default function VouchersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-slate-400">
-                            {new Date(batch.createdAt).toLocaleString("zh-TW")}
+                            {safeDateTime(batch.createdAt)}
                           </TableCell>
                         </TableRow>
                       ))}

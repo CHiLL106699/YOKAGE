@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Link, useRoute } from 'wouter';
 import { Building2, Puzzle, BarChart3, CreditCard, ArrowUpCircle, XCircle, KeyRound, Edit, Save, X, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
@@ -189,7 +190,7 @@ const AdminTenantDetailPage = () => {
                         <div className="md:col-span-2"><p className="text-sm text-slate-400">地址</p><p className="text-white font-medium">{tenant.address || 'N/A'}</p></div>
                         <div><p className="text-sm text-slate-400">方案</p><span className={`px-2 py-1 text-xs font-bold rounded-full ${planStyles[tenant.subscriptionPlan || 'free']}`}>{(tenant.subscriptionPlan || 'N/A').toUpperCase()}</span></div>
                         <div><p className="text-sm text-slate-400">狀態</p><span className={`px-2 py-1 text-xs font-bold rounded-full ${statusStyles[tenant.isActive ? 'active' : 'inactive']}`}>{tenant.isActive ? 'ACTIVE' : 'INACTIVE'}</span></div>
-                        <div><p className="text-sm text-slate-400">建立日期</p><p className="text-white font-medium">{new Date(tenant.createdAt).toLocaleDateString()}</p></div>
+                        <div><p className="text-sm text-slate-400">建立日期</p><p className="text-white font-medium">{safeDate(tenant.createdAt)}</p></div>
                     </>
                 )}
             </div>
@@ -251,7 +252,7 @@ const AdminTenantDetailPage = () => {
                     <tbody>
                         {billingData.data.map((record: any) => (
                             <tr key={record.id} className="border-b border-slate-700 last:border-b-0">
-                                <td className="p-4">{new Date(record.createdAt).toLocaleDateString()}</td>
+                                <td className="p-4">{safeDate(record.createdAt)}</td>
                                 <td className="p-4">${(Number(record.amount) / 100).toFixed(2)}</td>
                                 <td className="p-4">
                                     <span className={`flex items-center font-semibold ${billingStatusStyles[String(record.status).toLowerCase()] || 'text-slate-400'}`}>

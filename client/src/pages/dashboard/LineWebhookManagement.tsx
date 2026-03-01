@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,7 +171,7 @@ export default function LineWebhookManagement() {
                         {event.messageText || `[${event.eventType} event]`}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(event.createdAt).toLocaleString('zh-TW')}
+                        {safeDateTime(event.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -454,7 +455,7 @@ export default function LineWebhookManagement() {
               </div>
 
               <div className="text-xs text-muted-foreground">
-                建立時間：{new Date(selectedEvent.createdAt).toLocaleString('zh-TW')}
+                建立時間：{safeDateTime(selectedEvent.createdAt)}
               </div>
             </div>
           )}

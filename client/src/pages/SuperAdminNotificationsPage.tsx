@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -365,7 +366,7 @@ export default function SuperAdminNotificationsPage() {
                         return (
                           <TableRow key={notification.id}>
                             <TableCell className="text-muted-foreground text-sm">
-                              {new Date(notification.createdAt).toLocaleString("zh-TW")}
+                              {safeDateTime(notification.createdAt)}
                             </TableCell>
                             <TableCell>
                               <Badge className={typeConfig.color}>

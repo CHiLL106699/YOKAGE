@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -329,8 +330,8 @@ export default function SuperAdminApiDocsPage() {
                             </code>
                           </TableCell>
                           <TableCell>{apiKey.organizationName}</TableCell>
-                          <TableCell>{apiKey.createdAt ? new Date(apiKey.createdAt).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell>{apiKey.lastUsedAt ? new Date(apiKey.lastUsedAt).toLocaleDateString() : '從未使用'}</TableCell>
+                          <TableCell>{apiKey.createdAt ? safeDate(apiKey.createdAt) : '-'}</TableCell>
+                          <TableCell>{apiKey.lastUsedAt ? safeDate(apiKey.lastUsedAt) : '從未使用'}</TableCell>
                           <TableCell>{apiKey.requestCount.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge className={apiKey.status === 'active' ? "bg-green-500 text-white" : "bg-red-500 text-white"}>
@@ -448,7 +449,7 @@ export default function SuperAdminApiDocsPage() {
                       {(requestLogs || []).map((log) => (
                         <TableRow key={log.id}>
                           <TableCell className="font-mono text-sm">
-                            {log.time ? new Date(log.time).toLocaleTimeString() : '-'}
+                            {log.time ? safeTime(log.time) : '-'}
                           </TableCell>
                           <TableCell>
                             <Badge className={`${METHOD_COLORS[log.method] || 'bg-gray-500'} text-white`}>

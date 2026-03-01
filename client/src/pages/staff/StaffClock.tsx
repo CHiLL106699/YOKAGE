@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Clock, CheckCircle, XCircle, History, MapPin } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
@@ -61,7 +62,7 @@ export default function StaffClock() {
   const formatTime = (timeStr: string | null) => {
     if (!timeStr) return '--:--';
     try {
-      return new Date(timeStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+      return safeTime(timeStr);
     } catch {
       return timeStr;
     }

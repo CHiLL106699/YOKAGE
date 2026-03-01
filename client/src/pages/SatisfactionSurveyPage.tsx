@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -274,7 +275,7 @@ export default function SatisfactionSurveyPage() {
                   return (
                     <TableRow key={survey.id}>
                       <TableCell>
-                        {new Date(survey.createdAt).toLocaleDateString('zh-TW')}
+                        {safeDate(survey.createdAt)}
                       </TableCell>
                       <TableCell className="font-medium">{customer?.name || "未知"}</TableCell>
                       <TableCell>{getSurveyTypeBadge(survey.surveyType)}</TableCell>

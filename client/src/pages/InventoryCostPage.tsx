@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -320,7 +321,7 @@ export default function InventoryCostPage() {
                               {tx.quantity} 單位
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {new Date(tx.transactionDate).toLocaleString('zh-TW')}
+                              {safeDateTime(tx.transactionDate)}
                             </p>
                           </div>
                         </div>

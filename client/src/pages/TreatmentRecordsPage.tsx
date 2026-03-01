@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,7 @@ export default function TreatmentRecordsPage() {
       const customer = customers?.data?.find(c => c.id === r.customerId);
       const staff = staffList?.data?.find((s: { id: number; name: string }) => s.id === r.staffId);
       return {
-        日期: new Date(r.treatmentDate).toLocaleDateString('zh-TW'),
+        日期: safeDate(r.treatmentDate),
         客戶: customer?.name || "未知",
         療程類型: r.treatmentType || "",
         療程部位: r.treatmentArea || "",
@@ -513,7 +514,7 @@ export default function TreatmentRecordsPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-muted-foreground" />
-                              {new Date(record.treatmentDate).toLocaleDateString('zh-TW')}
+                              {safeDate(record.treatmentDate)}
                             </div>
                           </TableCell>
                           <TableCell>

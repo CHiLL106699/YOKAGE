@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -363,7 +364,7 @@ export default function SuperAdminBillingPage() {
                             <TableCell>{invoice.clinicName}</TableCell>
                             <TableCell>{invoice.plan}</TableCell>
                             <TableCell>NT$ {invoice.amount.toLocaleString()}</TableCell>
-                            <TableCell>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '-'}</TableCell>
+                            <TableCell>{invoice.dueDate ? safeDate(invoice.dueDate) : '-'}</TableCell>
                             <TableCell>
                               <Badge className={`${statusConfig.color} text-white`}>
                                 {statusConfig.label}
@@ -580,8 +581,8 @@ export default function SuperAdminBillingPage() {
                               {sub.status === "active" ? "啟用中" : sub.status === "trial" ? "試用中" : "已到期"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{sub.startDate ? safeDate(sub.startDate) : '-'}</TableCell>
+                          <TableCell>{sub.endDate ? safeDate(sub.endDate) : '-'}</TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="sm" onClick={() => toast.info("管理訂閱")}>
                               管理

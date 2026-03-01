@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
@@ -269,12 +270,12 @@ export default function SuperAdminUsersPage() {
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {user.lastSignedIn 
-                            ? new Date(user.lastSignedIn).toLocaleDateString("zh-TW")
+                            ? safeDate(user.lastSignedIn)
                             : "-"
                           }
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {new Date(user.createdAt).toLocaleDateString("zh-TW")}
+                          {safeDate(user.createdAt)}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -383,14 +384,14 @@ export default function SuperAdminUsersPage() {
                   <div>
                     <Label className="text-muted-foreground">註冊時間</Label>
                     <p className="font-medium">
-                      {new Date(selectedUser.createdAt).toLocaleString("zh-TW")}
+                      {safeDateTime(selectedUser.createdAt)}
                     </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">最後登入</Label>
                     <p className="font-medium">
                       {selectedUser.lastLoginAt 
-                        ? new Date(selectedUser.lastLoginAt).toLocaleString("zh-TW")
+                        ? safeDateTime(selectedUser.lastLoginAt)
                         : "-"
                       }
                     </p>

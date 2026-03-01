@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -799,7 +800,7 @@ function CampaignCard({
               )}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              建立時間：{new Date(campaign.createdAt).toLocaleString("zh-TW")}
+              建立時間：{safeDateTime(campaign.createdAt)}
             </p>
           </div>
           <Badge
@@ -850,7 +851,7 @@ function CampaignCard({
             <Calendar className="h-4 w-4" />
             <span>
               排程時間：
-              {new Date(campaign.scheduledAt).toLocaleString("zh-TW")}
+              {safeDateTime(campaign.scheduledAt)}
             </span>
           </div>
         )}

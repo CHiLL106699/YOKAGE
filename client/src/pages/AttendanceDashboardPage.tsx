@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,7 +75,7 @@ export default function AttendanceDashboardPage() {
 
     // 轉換為圖表資料
     return Array.from(dateMap.entries()).map(([date, count]) => ({
-      date: new Date(date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }),
+      date: safeDate(date),
       attendance: allStaff.length > 0 ? ((count / allStaff.length) * 100).toFixed(1) : '0',
     }));
   }, [weekRecords, allStaff]);

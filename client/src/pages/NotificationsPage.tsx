@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -304,7 +305,7 @@ export default function NotificationsPage() {
                       <TableCell className="font-medium">{task.name}</TableCell>
                       <TableCell>{task.templateName}</TableCell>
                       <TableCell>{task.cron}</TableCell>
-                      <TableCell>{new Date(task.nextRun).toLocaleString()}</TableCell>
+                      <TableCell>{safeDateTime(task.nextRun)}</TableCell>
                       <TableCell>
                         <Badge variant={task.isActive ? "default" : "secondary"}>
                           {task.isActive ? "啟用中" : "已停用"}
@@ -352,7 +353,7 @@ export default function NotificationsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(log.sentAt || log.scheduledAt).toLocaleString()}
+                        {safeDateTime(log.sentAt || log.scheduledAt)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground truncate max-w-xs">
                         {log.content}

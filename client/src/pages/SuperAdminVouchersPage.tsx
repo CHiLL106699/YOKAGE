@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -573,7 +574,7 @@ export default function SuperAdminVouchersPage() {
                             <TableCell className="font-medium">{item.template.name}</TableCell>
                             <TableCell>{item.customer.name}</TableCell>
                             <TableCell>{item.organization.name}</TableCell>
-                            <TableCell>{new Date(item.voucher.validUntil).toLocaleDateString()}</TableCell>
+                            <TableCell>{safeDate(item.voucher.validUntil)}</TableCell>
                             <TableCell>
                               <Badge className={daysLeft <= 1 
                                 ? "bg-red-500/10 text-red-500 border-red-500/30" 

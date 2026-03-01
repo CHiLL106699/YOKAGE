@@ -1,4 +1,5 @@
 import React from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { Package, Box, AlertCircle, Plus, Settings, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
@@ -179,7 +180,7 @@ const InventoryDashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.location || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.minStock}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.expiryDate ? safeDate(item.expiryDate) : 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(item.quantity, item.minStock || 10)}`}>
                         {getStatusText(item.quantity, item.minStock || 10)}

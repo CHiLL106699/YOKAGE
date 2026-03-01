@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { safeDate, safeDateTime, safeStr, safeTime, safeMoney } from '@/lib/safeFormat';
 import { useLocation, Link } from 'wouter';
 import {
   ChevronDown, Calendar, Download, DollarSign, TrendingUp, Users, UserX, BarChart, MoreVertical, LayoutDashboard, Settings, HelpCircle, LogOut
@@ -253,7 +254,7 @@ const TopTenantsTable: React.FC<{ data: any[], isLoading: boolean }> = ({ data, 
                         {tenant.plan}
                       </span>
                     </td>
-                    <td className="px-6 py-4">{new Date(tenant.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">{safeDate(tenant.createdAt)}</td>
                     <td className="px-6 py-4 text-right">
                       <button className="p-1.5 text-gray-400 hover:text-white"><MoreVertical className="w-4 h-4" /></button>
                     </td>
