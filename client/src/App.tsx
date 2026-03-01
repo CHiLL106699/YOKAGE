@@ -483,65 +483,12 @@ function AppRouter() {
             <AttendanceRequestPage />
           </ProtectedRoute>
         </Route>
-        {/* ======== 向後相容：/super-admin/* (重導至 /admin/*) ======== */}
-        <Route path="/super-admin">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminDashboard />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/organizations">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <OrganizationsPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/organizations/:id">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <OrganizationDetailPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/billing">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <BillingPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/api-docs">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <ApiDocsPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/white-label">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <WhiteLabelPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/settings">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminSettingsPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/vouchers">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminVouchersPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/users">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminUsersPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/monitor">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminMonitorPage />
-          </ProtectedRoute>
-        </Route>
-        <Route path="/super-admin/notifications">
-          <ProtectedRoute allowedRoles={["super_admin"]}>
-            <SuperAdminNotificationsPage />
-          </ProtectedRoute>
-        </Route>
+        {/* /super-admin/* 已移除 — 所有超級管理員功能統一使用 /admin/* */}
 
-        {/* ======== 向後相容：/clinic/* 路由 ======== */}
-
+        {/* ======== /clinic/* — 診所管理平台（主要路由） ======== */}
+        <Route path="/clinic"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><DashboardHome /></ProtectedRoute></Route>
+        <Route path="/clinic/customers"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><DashboardCustomers /></ProtectedRoute></Route>
+        <Route path="/clinic/schedule"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><DashboardSchedule /></ProtectedRoute></Route>
         <Route path="/clinic/customers/:id"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><CustomerDetailPage /></ProtectedRoute></Route>
         <Route path="/clinic/appointments"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><AppointmentsPage /></ProtectedRoute></Route>
         <Route path="/clinic/products"><ProtectedRoute allowedRoles={["super_admin", "admin"]}><ProductsPage /></ProtectedRoute></Route>

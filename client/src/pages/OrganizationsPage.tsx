@@ -478,7 +478,7 @@ export default function OrganizationsPage() {
                               <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
                                 <DropdownMenuItem 
                                   className="text-slate-300 hover:text-amber-400 cursor-pointer"
-                                  onClick={() => setLocation(`/super-admin/organizations/${org.id}`)}
+                                  onClick={() => setLocation(`/admin/organizations/${org.id}`)}
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
                                   查看詳情

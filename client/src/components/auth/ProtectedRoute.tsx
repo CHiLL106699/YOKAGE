@@ -56,7 +56,7 @@ export function ProtectedRoute({
     // 無權限，根據角色導向對應平台
     const redirectMap: Record<string, string> = {
       super_admin: "/admin",
-      admin: "/dashboard",
+      admin: "/clinic",
       staff: "/staff",
       user: "/",
     };

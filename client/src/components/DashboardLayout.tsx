@@ -109,16 +109,16 @@ const clinicMenuItems = [
 
 // Super Admin 選單
 const superAdminMenuItems = [
-  { icon: LayoutDashboard, label: "系統儀表板", path: "/super-admin" },
-  { icon: Building2, label: "診所管理", path: "/super-admin/organizations" },
-  { icon: Users, label: "使用者管理", path: "/super-admin/users" },
-  { icon: CreditCard, label: "計費管理", path: "/super-admin/billing" },
-  { icon: Ticket, label: "票券管理", path: "/super-admin/vouchers" },
-  { icon: Bell, label: "通知中心", path: "/super-admin/notifications" },
-  { icon: BarChart3, label: "系統監控", path: "/super-admin/monitor" },
-  { icon: Key, label: "API 文檔", path: "/super-admin/api-docs" },
-  { icon: Globe, label: "白標方案", path: "/super-admin/white-label" },
-  { icon: Cog, label: "系統設定", path: "/super-admin/settings" },
+  { icon: LayoutDashboard, label: "系統儀表板", path: "/admin" },
+  { icon: Building2, label: "診所管理", path: "/admin/organizations" },
+  { icon: Users, label: "使用者管理", path: "/admin/users" },
+  { icon: CreditCard, label: "計費管理", path: "/admin/billing" },
+  { icon: Ticket, label: "票券管理", path: "/admin/vouchers" },
+  { icon: Bell, label: "通知中心", path: "/admin/notifications" },
+  { icon: BarChart3, label: "系統監控", path: "/admin/monitor" },
+  { icon: Key, label: "API 文檔", path: "/admin/api-docs" },
+  { icon: Globe, label: "白標方案", path: "/admin/white-label" },
+  { icon: Cog, label: "系統設定", path: "/admin/settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -212,11 +212,13 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
-  // 根據當前路徑決定使用哪個選單
-  const isSuperAdmin = location.startsWith("/super-admin");
-  const menuItems = isSuperAdmin ? superAdminMenuItems : clinicMenuItems;
+  // 根據當前路徑和用戶角色決定使用哪個選單
+  const isAdminRoute = location.startsWith("/admin");
+  const isSuperAdminUser = user?.role === "super_admin";
+  // 只有 super_admin 角色且在 /admin 路由下才顯示超級管理員選單
+  const menuItems = (isAdminRoute && isSuperAdminUser) ? superAdminMenuItems : clinicMenuItems;
   const activeMenuItem = menuItems.find(item => item.path === location);
-  const sidebarTitle = isSuperAdmin ? "Super Admin" : "YOChiLL 診所";
+  const sidebarTitle = (isAdminRoute && isSuperAdminUser) ? "Super Admin" : "YOKAGE 診所";
 
   useEffect(() => {
     if (isCollapsed) {

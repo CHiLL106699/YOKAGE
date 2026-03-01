@@ -41,7 +41,7 @@ function getRoleOptions(user: Record<string, any>): RoleOption[] {
       label: "租戶管理員",
       description: "管理診所營運、員工與客戶",
       icon: <Building2 className="size-6" />,
-      path: "/dashboard",
+      path: "/clinic",
     });
   }
 
@@ -73,7 +73,7 @@ function getDefaultRedirect(role: string): string {
     case "super_admin":
       return "/admin";
     case "admin":
-      return "/dashboard";
+      return "/clinic";
     case "staff":
       return "/staff";
     default:

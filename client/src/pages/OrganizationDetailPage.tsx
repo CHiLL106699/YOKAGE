@@ -50,7 +50,7 @@ export default function OrganizationDetailPage() {
         <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400">
           <Building2 className="h-16 w-16 mb-4 opacity-50" />
           <p className="text-xl">找不到此診所</p>
-          <Link href="/super-admin/organizations">
+          <Link href="/admin/organizations">
             <Button variant="outline" className="mt-4 border-amber-500/50 text-amber-400">
               <ArrowLeft className="h-4 w-4 mr-2" />
               返回診所列表
@@ -94,7 +94,7 @@ export default function OrganizationDetailPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-4">
-            <Link href="/super-admin/organizations">
+            <Link href="/admin/organizations">
               <Button variant="ghost" size="icon" className="text-slate-400 hover:text-amber-400">
                 <ArrowLeft className="h-5 w-5" />
               </Button>

@@ -16,12 +16,12 @@ type NavLinkProps = {
 };
 
 const navLinks: NavLinkProps[] = [
-  { href: '/dashboard', label: '主控台', icon: LayoutDashboard },
-  { href: '/dashboard/appointments', label: '預約管理', icon: Calendar },
-  { href: '/dashboard/patients', label: '病患管理', icon: Users },
-  { href: '/dashboard/staff', label: '員工管理', icon: Briefcase },
-  { href: '/dashboard/reports', label: '營運報表', icon: BarChart2 },
-  { href: '/dashboard/settings', label: '診所設定', icon: Settings },
+  { href: '/clinic', label: '主控台', icon: LayoutDashboard },
+  { href: '/clinic/appointments', label: '預約管理', icon: Calendar },
+  { href: '/clinic/customers', label: '病患管理', icon: Users },
+  { href: '/clinic/staff', label: '員工管理', icon: Briefcase },
+  { href: '/clinic/reports', label: '營運報表', icon: BarChart2 },
+  { href: '/clinic/settings', label: '診所設定', icon: Settings },
 ];
 
 // --- SUB-COMPONENTS ---

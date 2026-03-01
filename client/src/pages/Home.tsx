@@ -17,7 +17,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
       if (user.role === "super_admin") {
-        setLocation("/super-admin");
+        setLocation("/admin");
       } else {
         setLocation("/clinic");
       }

@@ -71,7 +71,7 @@ export default function SuperAdminDashboard() {
             <h1 className="text-3xl font-bold text-gray-900">系統總覽</h1>
             <p className="text-gray-500 mt-1">歡迎回來，{user?.name || "管理員"}</p>
           </div>
-          <Link href="/super-admin/organizations/new">
+          <Link href="/admin/organizations/new">
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
               新增診所
@@ -112,16 +112,16 @@ export default function SuperAdminDashboard() {
               <CardDescription>超級管理員功能模組</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Link href="/super-admin"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">儀表板</Button></Link>
-              <Link href="/super-admin/users"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">使用者管理</Button></Link>
-              <Link href="/super-admin/organizations"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">診所管理</Button></Link>
-              <Link href="/super-admin/vouchers"><Button variant="outline" className="w-full justify-start">票券管理</Button></Link>
-              <Link href="/super-admin/billing"><Button variant="outline" className="w-full justify-start">帳單管理</Button></Link>
-              <Link href="/super-admin/monitor"><Button variant="outline" className="w-full justify-start">系統監控</Button></Link>
-              <Link href="/super-admin/api-docs"><Button variant="outline" className="w-full justify-start">API 文檔</Button></Link>
-              <Link href="/super-admin/white-label"><Button variant="outline" className="w-full justify-start">白標方案</Button></Link>
-              <Link href="/super-admin/settings"><Button variant="outline" className="w-full justify-start">系統設定</Button></Link>
-              <Link href="/super-admin/notifications"><Button variant="outline" className="w-full justify-start">通知管理</Button></Link>
+              <Link href="/admin"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">儀表板</Button></Link>
+              <Link href="/admin/users"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">使用者管理</Button></Link>
+              <Link href="/admin/organizations"><Button variant="outline" className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-colors">診所管理</Button></Link>
+              <Link href="/admin/vouchers"><Button variant="outline" className="w-full justify-start">票券管理</Button></Link>
+              <Link href="/admin/billing"><Button variant="outline" className="w-full justify-start">帳單管理</Button></Link>
+              <Link href="/admin/monitor"><Button variant="outline" className="w-full justify-start">系統監控</Button></Link>
+              <Link href="/admin/api-docs"><Button variant="outline" className="w-full justify-start">API 文檔</Button></Link>
+              <Link href="/admin/white-label"><Button variant="outline" className="w-full justify-start">白標方案</Button></Link>
+              <Link href="/admin/settings"><Button variant="outline" className="w-full justify-start">系統設定</Button></Link>
+              <Link href="/admin/notifications"><Button variant="outline" className="w-full justify-start">通知管理</Button></Link>
             </CardContent>
           </Card>
 
@@ -250,19 +250,19 @@ export default function SuperAdminDashboard() {
               <CardDescription>常用管理功能</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Link href="/super-admin/organizations">
+              <Link href="/admin/organizations">
                 <Button variant="outline" className="w-full justify-start gap-2">
                   <Building2 className="h-4 w-4" />
                   管理所有診所
                 </Button>
               </Link>
-              <Link href="/super-admin/organizations/new">
+              <Link href="/admin/organizations/new">
                 <Button variant="outline" className="w-full justify-start gap-2">
                   <Plus className="h-4 w-4" />
                   建立新診所
                 </Button>
               </Link>
-              <Link href="/super-admin/users">
+              <Link href="/admin/users">
                 <Button variant="outline" className="w-full justify-start gap-2">
                   <Users className="h-4 w-4" />
                   使用者管理
