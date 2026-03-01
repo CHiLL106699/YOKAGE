@@ -43,7 +43,7 @@ async function startServer() {
   // CORS configuration
   const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
     ? process.env.CORS_ALLOWED_ORIGINS.split(",").map(s => s.trim())
-    : ["http://localhost:5173", "http://localhost:3000"];
+    : ["http://localhost:5173", "http://localhost:3000", "*"];
 
   app.use(cors({
     origin: (origin, callback) => {
