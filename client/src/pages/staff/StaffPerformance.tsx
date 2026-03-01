@@ -1,400 +1,158 @@
+import { useState } from 'react';
+import { TrendingUp, Award, DollarSign, Users, Target, BarChart3 } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import DashboardLayout from '@/components/DashboardLayout';
 
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'wouter';
-import { Star, Award, TrendingUp, Users, DollarSign, Calendar, Target, CheckCircle } from 'lucide-react';
+const organizationId = 1; // TODO: from context
+const staffId = 1; // TODO: from auth context
 
-// --- TYPE DEFINITIONS ---
-type Period = '本月' | '上月' | '本季';
+export default function StaffPerformancePage() {
+  const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('month');
 
-type KpiData = {
-  revenue: number;
-  revenueTarget: number;
-  serviceCount: number;
-  satisfaction: number;
-  attendanceRate: number;
-};
-
-type MonthlyPerformance = {
-  month: string;
-  revenue: number;
-};
-
-type ServiceBreakdown = {
-  id: string;
-  name: string;
-  count: number;
-  revenue: number;
-};
-
-type Achievement = {
-  id: string;
-  name: string;
-  icon: React.ElementType;
-  date: string;
-};
-
-type StaffPerformanceData = {
-  kpis: KpiData;
-  monthlyTrend: MonthlyPerformance[];
-  serviceBreakdown: ServiceBreakdown[];
-  peerRanking: {
-    rank: number;
-    total: number;
-  };
-  achievements: Achievement[];
-};
-
-// --- MOCK DATA ---
-const mockData: Record<Period, StaffPerformanceData> = {
-  '本月': {
-    kpis: {
-      revenue: 280000,
-      revenueTarget: 300000,
-      serviceCount: 45,
-      satisfaction: 4.8,
-      attendanceRate: 98,
-    },
-    monthlyTrend: [
-      { month: '3月', revenue: 220000 },
-      { month: '4月', revenue: 250000 },
-      { month: '5月', revenue: 230000 },
-      { month: '6月', revenue: 270000 },
-      { month: '7月', revenue: 260000 },
-      { month: '8月', revenue: 280000 },
-    ],
-    serviceBreakdown: [
-      { id: 's1', name: '造型剪髮', count: 20, revenue: 40000 },
-      { id: 's2', name: '染髮', count: 10, revenue: 150000 },
-      { id: 's3', name: '護髮', count: 15, revenue: 90000 },
-    ],
-    peerRanking: { rank: 3, total: 12 },
-    achievements: [
-      { id: 'a1', name: '業績冠軍', icon: Award, date: '2026-06' },
-      { id: 'a2', name: '滿分好評', icon: Star, date: '2026-05' },
-    ],
-  },
-  '上月': {
-    kpis: {
-      revenue: 260000,
-      revenueTarget: 300000,
-      serviceCount: 42,
-      satisfaction: 4.7,
-      attendanceRate: 99,
-    },
-    monthlyTrend: [
-        { month: '2月', revenue: 210000 },
-        { month: '3月', revenue: 220000 },
-        { month: '4月', revenue: 250000 },
-        { month: '5月', revenue: 230000 },
-        { month: '6月', revenue: 270000 },
-        { month: '7月', revenue: 260000 },
-    ],
-    serviceBreakdown: [
-      { id: 's1', name: '造型剪髮', count: 18, revenue: 36000 },
-      { id: 's2', name: '染髮', count: 9, revenue: 135000 },
-      { id: 's3', name: '護髮', count: 15, revenue: 89000 },
-    ],
-    peerRanking: { rank: 4, total: 12 },
-    achievements: [
-      { id: 'a1', name: '業績冠軍', icon: Award, date: '2026-06' },
-    ],
-  },
-  '本季': {
-    kpis: {
-      revenue: 790000,
-      revenueTarget: 900000,
-      serviceCount: 130,
-      satisfaction: 4.75,
-      attendanceRate: 98.5,
-    },
-    monthlyTrend: [
-        { month: '3月', revenue: 220000 },
-        { month: '4月', revenue: 250000 },
-        { month: '5月', revenue: 230000 },
-        { month: '6月', revenue: 270000 },
-        { month: '7月', revenue: 260000 },
-        { month: '8月', revenue: 280000 },
-    ],
-    serviceBreakdown: [
-      { id: 's1', name: '造型剪髮', count: 55, revenue: 110000 },
-      { id: 's2', name: '染髮', count: 30, revenue: 450000 },
-      { id: 's3', name: '護髮', count: 45, revenue: 230000 },
-    ],
-    peerRanking: { rank: 2, total: 12 },
-    achievements: [
-        { id: 'a1', name: '業績冠軍', icon: Award, date: '2026-06' },
-        { id: 'a2', name: '滿分好評', icon: Star, date: '2026-05' },
-        { id: 'a3', name: '季度之星', icon: Award, date: '2026-Q2' },
-    ],
-  },
-};
-
-const staffInfo = {
-    name: '林小花',
-    title: '資深設計師',
-    avatarUrl: 'https://i.pravatar.cc/150?u=staff01'
-}
-
-// --- SUB-COMPONENTS ---
-
-const StaffHeader = () => (
-    <div className="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6">
-        <img src={staffInfo.avatarUrl} alt={staffInfo.name} className="w-16 h-16 rounded-full mr-4 border-2 border-violet-300"  loading="lazy" />
-        <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{staffInfo.name}</h1>
-            <p className="text-md text-gray-500 dark:text-gray-400">{staffInfo.title}</p>
-        </div>
-    </div>
-);
-
-const PeriodSelector: React.FC<{ selected: Period; onSelect: (period: Period) => void }> = ({ selected, onSelect }) => {
-    const periods: Period[] = ['本月', '上月', '本季'];
-    return (
-        <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1 mb-6">
-            {periods.map(period => (
-                <button
-                    key={period}
-                    onClick={() => onSelect(period)}
-                    className={`w-full text-center px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-200 ${selected === period ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                    {period}
-                </button>
-            ))}
-        </div>
+  const { data: summary, isLoading: summaryLoading } =
+    (trpc as any).commission.getStaffSummary.useQuery(
+      { organizationId, staffId },
+      { enabled: !!staffId }
     );
-};
 
-const KpiCard: React.FC<{ icon: React.ElementType; title: string; value: string; footer?: React.ReactNode; color: string }> = ({ icon: Icon, title, value, footer, color }) => (
-    <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm flex flex-col">
-        <div className="flex items-center mb-2">
-            <Icon className={`w-6 h-6 mr-3 ${color}`} />
-            <h3 className="text-md font-semibold text-gray-500 dark:text-gray-400">{title}</h3>
-        </div>
-        <p className="text-3xl font-bold text-gray-800 dark:text-white mt-1 mb-2">{value}</p>
-        <div className="mt-auto text-xs text-gray-500 dark:text-gray-400">{footer}</div>
-    </div>
-);
-
-const ProgressBar: React.FC<{ value: number; max: number }> = ({ value, max }) => {
-    const percentage = max > 0 ? (value / max) * 100 : 0;
-    return (
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div
-                className="bg-gradient-to-r from-indigo-500 to-violet-500 h-2 rounded-full"
-                style={{ width: `${percentage}%` }}
-            ></div>
-        </div>
+  const { data: leaderboard, isLoading: lbLoading } =
+    (trpc as any).commission.getLeaderboard.useQuery(
+      { organizationId },
+      { enabled: !!organizationId }
     );
-};
 
-const StarRating: React.FC<{ rating: number; max?: number }> = ({ rating, max = 5 }) => (
-    <div className="flex items-center">
-        {[...Array(max)].map((_, i) => (
-            <Star key={i} className={`w-4 h-4 ${i < Math.round(rating) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" />
-        ))}
-    </div>
-);
+  const { data: statsData } =
+    (trpc as any).commission.getSummaryStats.useQuery(
+      { organizationId },
+      { enabled: !!organizationId }
+    );
 
-const PerformanceChart: React.FC<{ data: MonthlyPerformance[] }> = ({ data }) => {
-    const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
-    return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">月度業績趨勢</h3>
-            <div className="flex justify-between items-end h-48 space-x-2 md:space-x-4">
-                {data.map(item => (
-                    <div key={item.month} className="flex-1 flex flex-col items-center">
-                        <div className="w-full h-full flex items-end">
-                            <div
-                                className="w-full bg-gradient-to-t from-indigo-400 to-violet-400 rounded-t-md hover:opacity-80 transition-opacity"
-                                style={{ height: `${(item.revenue / maxRevenue) * 100}%` }}
-                            ></div>
+  const kpis = [
+    { label: '本月業績', value: summary?.totalRevenue ? `NT$${Number(summary.totalRevenue).toLocaleString()}` : 'NT$0', icon: DollarSign, color: 'text-green-600 bg-green-50' },
+    { label: '服務客戶數', value: summary?.customerCount ?? 0, icon: Users, color: 'text-blue-600 bg-blue-50' },
+    { label: '完成預約', value: summary?.appointmentCount ?? 0, icon: Target, color: 'text-purple-600 bg-purple-50' },
+    { label: '佣金收入', value: summary?.totalCommission ? `NT$${Number(summary.totalCommission).toLocaleString()}` : 'NT$0', icon: Award, color: 'text-amber-600 bg-amber-50' },
+  ];
+
+  const leaders = Array.isArray(leaderboard?.data) ? leaderboard.data : Array.isArray(leaderboard) ? leaderboard : [];
+
+  return (
+    <DashboardLayout title="績效中心">
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          {(['week', 'month', 'quarter'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                period === p ? 'bg-indigo-500 text-white shadow' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {p === 'week' ? '本週' : p === 'month' ? '本月' : '本季'}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {kpis.map((kpi, idx) => (
+            <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 rounded-lg ${kpi.color}`}>
+                  <kpi.icon size={20} />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                {summaryLoading ? (
+                  <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-24 rounded"></div>
+                ) : kpi.value}
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{kpi.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <BarChart3 size={20} className="text-indigo-500" /> 團隊排行榜
+          </h3>
+          {lbLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
+            </div>
+          ) : leaders.length === 0 ? (
+            <p className="text-center text-gray-400 py-8">尚無排行資料</p>
+          ) : (
+            <div className="space-y-3">
+              {leaders.map((member: any, idx: number) => {
+                const isMe = member.staffId === staffId || member.staff_id === staffId;
+                const rank = idx + 1;
+                const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-700'];
+                return (
+                  <div
+                    key={member.staffId || member.staff_id || idx}
+                    className={`flex items-center justify-between py-3 px-4 rounded-lg ${
+                      isMe ? 'bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm ${
+                        rank <= 3 ? `${medalColors[rank - 1]} bg-gray-100 dark:bg-gray-700` : 'text-gray-500 bg-gray-100 dark:bg-gray-700'
+                      }`}>
+                        {rank <= 3 ? ['\u{1F947}', '\u{1F948}', '\u{1F949}'][rank - 1] : rank}
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">
+                          {member.staffName || member.staff_name || `員工 #${member.staffId || member.staff_id}`}
+                          {isMe && <span className="ml-2 text-xs text-indigo-600 font-semibold">（我）</span>}
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{item.month}</p>
+                        <div className="text-xs text-gray-500">
+                          {member.appointmentCount || member.appointment_count || 0} 筆預約
+                        </div>
+                      </div>
                     </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-
-const ServiceTable: React.FC<{ data: ServiceBreakdown[] }> = ({ data }) => {
-    const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-    return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">服務項目拆解</h3>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" className="px-4 py-3">服務項目</th>
-                            <th scope="col" className="px-4 py-3 text-right">次數</th>
-                            <th scope="col" className="px-4 py-3 text-right">營收</th>
-                            <th scope="col" className="px-4 py-3 text-right">佔比</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.map(item => (
-                            <tr key={item.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                <td className="px-4 py-3 font-medium text-gray-900 dark:text-white whitespace-nowrap">{item.name}</td>
-                                <td className="px-4 py-3 text-right">{item.count}</td>
-                                <td className="px-4 py-3 text-right">{`NT$${item.revenue.toLocaleString()}`}</td>
-                                <td className="px-4 py-3 text-right">{`${totalRevenue > 0 ? ((item.revenue / totalRevenue) * 100).toFixed(1) : 0}%`}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-const RankingDisplay: React.FC<{ rank: number; total: number }> = ({ rank, total }) => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex flex-col items-center justify-center">
-        <h3 className="text-md font-semibold text-gray-500 dark:text-gray-400 mb-2">同儕排名</h3>
-        <div className="flex items-baseline">
-            <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">{rank}</p>
-            <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">/{total}</p>
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">表現優於 {(((total - rank) / total) * 100).toFixed(0)}% 的夥伴</p>
-    </div>
-);
-
-const AchievementsList: React.FC<{ achievements: Achievement[] }> = ({ achievements }) => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
-        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">成就徽章</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {achievements.map(({ id, name, icon: Icon, date }) => (
-                <div key={id} className="flex flex-col items-center text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="p-3 bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-900 dark:to-violet-900 rounded-full mb-2">
-                        <Icon className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+                    <div className="text-right">
+                      <div className="font-bold text-sm">
+                        NT${Number(member.totalRevenue || member.total_revenue || 0).toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        佣金 NT${Number(member.totalCommission || member.total_commission || 0).toLocaleString()}
+                      </div>
                     </div>
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{date}</p>
-                </div>
-            ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-    </div>
-);
 
-// --- MAIN PAGE COMPONENT ---
-
-const StaffPerformancePage = () => {
-    const [location, setLocation] = useLocation();
-    const [selectedPeriod, setSelectedPeriod] = useState<Period>('本月');
-    const [data, setData] = useState<StaffPerformanceData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        setLoading(true);
-        setError(null);
-        // Simulate API call
-        const timer = setTimeout(() => {
-            try {
-                const fetchedData = mockData[selectedPeriod];
-                if (!fetchedData) {
-                    throw new Error('No data available for the selected period.');
-                }
-                setData(fetchedData);
-            } catch (e) {
-                setError(e instanceof Error ? e.message : 'An unknown error occurred.');
-            }
-            setLoading(false);
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [selectedPeriod]);
-
-    const kpis = data?.kpis;
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-t-transparent border-indigo-500 rounded-full animate-spin mx-auto"></div>
-                    <p className="mt-4 text-lg font-semibold text-gray-600 dark:text-gray-300">Loading Performance Data...</p>
+        {statsData && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp size={20} className="text-green-500" /> 整體統計
+            </h3>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  NT${Number(statsData.totalRevenue || 0).toLocaleString()}
                 </div>
+                <div className="text-sm text-gray-500">總營收</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  NT${Number(statsData.totalCommission || 0).toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-500">總佣金</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  {statsData.staffCount || 0}
+                </div>
+                <div className="text-sm text-gray-500">活躍員工</div>
+              </div>
             </div>
-        );
-    }
-
-    if (error || !data) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
-                <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-bold text-red-500 mb-2">Error</h2>
-                    <p className="text-gray-600 dark:text-gray-300">{error || 'Failed to load data.'}</p>
-                    <button onClick={() => setSelectedPeriod('本月')} className="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                        Try Again
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
-            <div className="max-w-7xl mx-auto">
-                <StaffHeader />
-                <PeriodSelector selected={selectedPeriod} onSelect={setSelectedPeriod} />
-
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    {kpis && (
-                        <>
-                            <KpiCard
-                                icon={DollarSign}
-                                title="本月業績"
-                                value={`NT$${kpis.revenue.toLocaleString()}`}
-                                color="text-green-500"
-                                footer={
-                                    <div className='space-y-1'>
-                                        <ProgressBar value={kpis.revenue} max={kpis.revenueTarget} />
-                                        <div className='flex justify-between text-xs'>
-                                            <span>目標: NT$ {kpis.revenueTarget.toLocaleString()}</span>
-                                            <span>{((kpis.revenue / kpis.revenueTarget) * 100).toFixed(0)}%</span>
-                                        </div>
-                                    </div>
-                                }
-                            />
-                            <KpiCard
-                                icon={Users}
-                                title="服務人次"
-                                value={kpis.serviceCount.toString()}
-                                color="text-blue-500"
-                                footer={<span className='flex items-center'><TrendingUp className='w-3 h-3 mr-1'/>較上月 +3</span>}
-                            />
-                            <KpiCard
-                                icon={CheckCircle}
-                                title="客戶滿意度"
-                                value={`${kpis.satisfaction}/5`}
-                                color="text-yellow-500"
-                                footer={<StarRating rating={kpis.satisfaction} />}
-                            />
-                            <KpiCard
-                                icon={Calendar}
-                                title="出勤率"
-                                value={`${kpis.attendanceRate}%`}
-                                color="text-indigo-500"
-                                footer={<span className='text-green-500'>無異常紀錄</span>}
-                            />
-                        </>
-                    )}
-                </div>
-
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
-                        <PerformanceChart data={data.monthlyTrend} />
-                        <ServiceTable data={data.serviceBreakdown} />
-                    </div>
-                    <div className="space-y-6">
-                        <RankingDisplay rank={data.peerRanking.rank} total={data.peerRanking.total} />
-                        <AchievementsList achievements={data.achievements} />
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default StaffPerformancePage;
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+}

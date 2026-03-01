@@ -1,336 +1,360 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation, Link } from 'wouter';
-import { Search, PlusCircle, Inbox, AlertTriangle, Package, PackageCheck, ChevronDown, X } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Link } from "wouter";
+import { ArrowLeft, Pill, ShieldCheck, Search, Plus, Minus, RefreshCw, History } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+import { QueryLoading, QueryError } from "@/components/ui/query-state";
 
-// --- TYPES --- //
-type ProductStatus = '正常' | '低庫存' | '缺貨';
+// Mock data for drug control rules, assuming this is static
+const drugControl = {
+  title: "藥物庫存管理",
+  rules: [
+    "所有管制藥品必須雙人上鎖管理。",
+    "藥品取用必須有醫師或護理師簽核。",
+    "每日定時盤點，確保帳物相符。",
+    "過期藥品應立即隔離並依規定銷毀。",
+  ],
+};
 
-type Product = {
-  id: string;
+const categoryLabels: { [key: string]: string } = {
+  controlled: '管制藥品',
+  general: '常備藥品',
+  consumable: '醫材耗材',
+};
+
+interface InventoryItem {
+  id: number;
   name: string;
-  sku: string;
   category: string;
   stock: number;
-  safetyStock: number;
-  price: number;
-  status: ProductStatus;
-};
+  unit: string;
+  min_stock: number;
+}
 
-// --- MOCK DATA --- //
-const mockProducts: Product[] = Array.from({ length: 20 }).map((_, i) => {
-  const stock = Math.floor(Math.random() * 200);
-  const safetyStock = 50;
-  let status: ProductStatus = '正常';
-  if (stock === 0) {
-    status = '缺貨';
-  } else if (stock < safetyStock) {
-    status = '低庫存';
-  }
+export default function DashboardInventory() {
+  const organizationId = 1; // TODO: from context
 
-  return {
-    id: `product-${i + 1}`,
-    name: `高效能濾藍光鏡片 #${i + 1}`,
-    sku: `YCL-BLP-2024-${String(i + 1).padStart(4, '0')}`,
-    category: i % 4 === 0 ? '太陽眼鏡' : i % 4 === 1 ? '日常眼鏡' : i % 4 === 2 ? '運動眼鏡' : '兒童眼鏡',
-    stock,
-    safetyStock,
-    price: 1200 + Math.floor(Math.random() * 1500),
-    status,
+  const [searchQuery, setSearchQuery] = useState("");
+  const [operatorName, setOperatorName] = useState("");
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [actionType, setActionType] = useState<'increase' | 'decrease' | null>(null);
+  const [amount, setAmount] = useState(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const inventoryQuery = (trpc as any).inventory.list.useQuery({ organizationId });
+  const logsQuery = (trpc as any).inventory.listTransactions.useQuery({ organizationId });
+
+  const updateStockMutation = (trpc as any).inventory.update.useMutation({
+    onSuccess: () => {
+      toast.success("庫存更新成功");
+      inventoryQuery.refetch();
+      logsQuery.refetch();
+      setIsDialogOpen(false);
+      setAmount(1);
+      setOperatorName("");
+    },
+    onError: (error) => {
+      toast.error(`更新失敗: ${error.message}`);
+    },
+  });
+  
+  const createTransactionMutation = (trpc as any).inventory.createTransaction.useMutation({
+      onSuccess: () => {
+        // This is part of the update, so main feedback is in updateStockMutation
+      },
+      onError: (error) => {
+        toast.error(`紀錄操作失敗: ${error.message}`);
+      }
+  });
+
+  const handleUpdateStock = async () => {
+    if (!selectedItem || !actionType || !operatorName) {
+      toast.error("請填寫完整資訊");
+      return;
+    }
+
+    const newStock = actionType === 'increase' ? selectedItem.stock + amount : selectedItem.stock - amount;
+    if (newStock < 0) {
+        toast.error("庫存不能為負數");
+        return;
+    }
+
+    updateStockMutation.mutate({
+      id: selectedItem.id,
+      stock: newStock,
+    });
+
+    createTransactionMutation.mutate({
+        organizationId,
+        productId: selectedItem.id,
+        transactionType: actionType,
+        quantity: amount,
+        notes: `操作人員: ${operatorName}`,
+        transactionDate: new Date().toISOString(),
+    });
   };
-});
 
-const productCategories = ['所有分類', '太陽眼鏡', '日常眼鏡', '運動眼鏡', '兒童眼鏡'];
-
-// --- HELPER COMPONENTS --- //
-
-const StatCard = ({ icon, title, value, subtext }: { icon: React.ReactNode; title: string; value: string; subtext: string }) => (
-  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex items-center space-x-4">
-    <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-full">
-      {icon}
-    </div>
-    <div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-      <p className="text-xs text-gray-400 dark:text-gray-500">{subtext}</p>
-    </div>
-  </div>
-);
-
-const StatusBadge = ({ status }: { status: ProductStatus }) => {
-  const baseClasses = "px-3 py-1 text-xs font-medium rounded-full";
-  const statusClasses = {
-    '正常': "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    '低庫存': "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-    '缺貨': "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  const openUpdateDialog = (item: InventoryItem, type: 'increase' | 'decrease') => {
+    setSelectedItem(item);
+    setActionType(type);
+    setIsDialogOpen(true);
   };
-  return <span className={`${baseClasses} ${statusClasses[status]}`}>{status}</span>;
-};
 
-const Modal = ({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl max-h-full overflow-y-auto">
-      <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          <X size={24} />
-        </button>
-      </div>
-      <div className="p-6">
-        {children}
-      </div>
-    </div>
-  </div>
-);
+  if (inventoryQuery.isLoading) return <QueryLoading />;
+  if (inventoryQuery.error) return <QueryError error={inventoryQuery.error.message} />;
 
-// --- MAIN DASHBOARD LAYOUT (Placeholder) --- //
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  // This is a placeholder for the actual DashboardLayout
-  // In a real app, this would contain the sidebar, header, etc.
+  const filteredInventory = inventoryQuery.data?.filter((item: InventoryItem) => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex">
-      {/* Sidebar Placeholder */}
-      <div className="w-64 bg-white dark:bg-gray-800 shadow-md hidden lg:block p-4">
-        <div className="flex items-center space-x-2 mb-10">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg"></div>
-            <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-violet-600">YOChiLL</span>
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="container py-4 flex items-center gap-4">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="-ml-2">
+              <ArrowLeft className="h-5 w-5 text-slate-600" />
+            </Button>
+          </Link>
+          <h1 className="text-xl font-bold text-slate-900">{drugControl.title}</h1>
         </div>
-        <nav className="space-y-2">
-            <Link href="/dashboard" className="flex items-center p-2 text-gray-500 dark:text-gray-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Dashboard</Link>
-            <Link href="/dashboard/inventory" className="flex items-center p-2 bg-indigo-50 dark:bg-gray-700 text-indigo-600 dark:text-white rounded-md font-semibold">Inventory</Link>
-            <Link href="/dashboard/orders" className="flex items-center p-2 text-gray-500 dark:text-gray-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Orders</Link>
-            <Link href="/dashboard/customers" className="flex items-center p-2 text-gray-500 dark:text-gray-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Customers</Link>
-        </nav>
-      </div>
-      {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        {children}
+      </header>
+
+      <main className="container py-6 space-y-6">
+        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-lg shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-emerald-100 rounded-full shrink-0">
+              <ShieldCheck className="h-8 w-8 text-emerald-600" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-bold text-emerald-900">藥物管理核心原則</h2>
+              <p className="text-emerald-800">
+                嚴格遵守藥物管理規範，確保用藥安全與庫存準確。所有藥物取用皆需經過授權與登記。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Pill className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg font-bold text-slate-900">
+                執行規範 (SOP)
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {drugControl.rules.map((rule, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-blue-200 transition-colors"
+                >
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 font-bold text-blue-600">
+                    {idx + 1}
+                  </div>
+                  <span className="font-medium text-slate-800">{rule}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="inventory" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="inventory" className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              即時庫存
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              操作紀錄
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="inventory">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-4 border-b border-slate-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5 text-indigo-600" />
+                    <CardTitle className="text-lg font-bold text-slate-900">
+                      即時庫存查詢
+                    </CardTitle>
+                  </div>
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                    <Input 
+                      className="pl-9 h-9 bg-slate-50 border-slate-200" 
+                      placeholder="搜尋藥物名稱..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3">藥物名稱</th>
+                        <th className="px-4 py-3">分類</th>
+                        <th className="px-4 py-3 text-center">當前庫存</th>
+                        <th className="px-4 py-3 text-right">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredInventory.map((item: InventoryItem) => (
+                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {item.name}
+                            {item.stock <= item.min_stock && (
+                              <span className="ml-2 text-xs text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">
+                                低庫存
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="secondary" className="font-normal text-slate-600 bg-slate-100">
+                              {categoryLabels[item.category] || item.category}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`font-mono font-bold text-lg ${item.stock <= item.min_stock ? 'text-red-600' : 'text-slate-700'}`}>
+                              {item.stock}
+                            </span>
+                            <span className="text-xs text-slate-400 ml-1">{item.unit}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50"
+                                onClick={() => openUpdateDialog(item, 'decrease')}
+                                disabled={item.stock <= 0}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 text-slate-600 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50"
+                                onClick={() => openUpdateDialog(item, 'increase')}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filteredInventory.length === 0 && (
+                  <div className="p-8 text-center text-slate-500">
+                    沒有找到相關藥物
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="logs">
+             <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-indigo-600" />
+                  <CardTitle className="text-lg font-bold text-slate-900">
+                    操作紀錄日誌
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                 {logsQuery.isLoading && <div className="p-8 text-center">載入中...</div>}
+                 {logsQuery.error && <div className="p-8 text-center text-red-500">無法載入紀錄</div>}
+                 {logsQuery.data && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                            <tr>
+                                <th className="px-4 py-3">時間</th>
+                                <th className="px-4 py-3">藥物</th>
+                                <th className="px-4 py-3">操作</th>
+                                <th className="px-4 py-3 text-right">數量</th>
+                                <th className="px-4 py-3">操作人員</th>
+                            </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                            {(logsQuery.data as any[]).map((log) => (
+                                <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-4 py-3 text-slate-500">{new Date(log.transactionDate).toLocaleString()}</td>
+                                <td className="px-4 py-3 font-medium text-slate-800">{log.product_name || 'N/A'}</td>
+                                <td className="px-4 py-3">
+                                    <Badge variant={log.transactionType === 'increase' ? 'success' : 'destructive'}>
+                                    {log.transactionType === 'increase' ? '入庫' : '出庫'}
+                                    </Badge>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono">{log.quantity}</td>
+                                <td className="px-4 py-3 text-slate-500">{log.notes?.replace('操作人員: ','') || 'N/A'}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {actionType === 'increase' ? '增加庫存' : '扣除庫存'} - {selectedItem?.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="operator-name">操作人員姓名</Label>
+                <Input 
+                  id="operator-name" 
+                  value={operatorName}
+                  onChange={(e) => setOperatorName(e.target.value)}
+                  placeholder="請輸入您的姓名"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">數量</Label>
+                <Input 
+                  id="amount" 
+                  type="number" 
+                  value={amount}
+                  onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>取消</Button>
+              <Button onClick={handleUpdateStock} disabled={updateStockMutation.isLoading || !operatorName}>
+                {updateStockMutation.isLoading ? '處理中...' : '確認'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
-};
-
-// --- INVENTORY PAGE COMPONENT --- //
-const InventoryPage = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('所有分類');
-  const [isNewProductModalOpen, setNewProductModalOpen] = useState(false);
-  const [isStockModalOpen, setStockModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-  useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    const timer = setTimeout(() => {
-      try {
-        setProducts(mockProducts);
-        setError(null);
-      } catch (e) {
-        setError('無法載入商品資料，請稍後再試。');
-      }
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter(p => selectedCategory === '所有分類' || p.category === selectedCategory)
-      .filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-  }, [products, searchTerm, selectedCategory]);
-
-  const lowStockItems = useMemo(() => {
-    return products.filter(p => p.status === '低庫存' || p.status === '缺貨');
-  }, [products]);
-
-  const handleStockModalOpen = (product: Product) => {
-    setSelectedProduct(product);
-    setStockModalOpen(true);
-  };
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-full">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-indigo-500"></div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col justify-center items-center h-full bg-red-50 dark:bg-red-900/20 p-8 rounded-lg">
-          <AlertTriangle className="w-16 h-16 text-red-500" />
-          <h2 className="mt-4 text-xl font-semibold text-red-700 dark:text-red-300">發生錯誤</h2>
-          <p className="mt-2 text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  return (
-    <DashboardLayout>
-      <div className="space-y-8">
-        {/* Header */}
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">庫存管理</h1>
-
-        {/* Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard icon={<Package size={24} className="text-indigo-500" />} title="商品總數" value="234" subtext="所有品項" />
-          <StatCard icon={<AlertTriangle size={24} className="text-red-500" />} title="低庫存警示" value="12" subtext="需立即處理" />
-          <StatCard icon={<Inbox size={24} className="text-green-500" />} title="本月進貨" value="NT$120,000" subtext="成本總計" />
-          <StatCard icon={<PackageCheck size={24} className="text-blue-500" />} title="本月出貨" value="NT$89,000" subtext="銷售總計" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content: Product Table */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-              <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input 
-                  type="text"
-                  placeholder="搜尋商品名稱或SKU..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                />
-              </div>
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="relative w-full sm:w-48">
-                    <select 
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="w-full appearance-none pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                    >
-                        {productCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-                </div>
-                <button 
-                  onClick={() => setNewProductModalOpen(true)}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2 bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition-opacity"
-                >
-                  <PlusCircle size={20} />
-                  <span>新增商品</span>
-                </button>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                  <tr>
-                    <th scope="col" className="px-6 py-3">商品名稱</th>
-                    <th scope="col" className="px-6 py-3">SKU</th>
-                    <th scope="col" className="px-6 py-3">分類</th>
-                    <th scope="col" className="px-6 py-3 text-right">庫存量</th>
-                    <th scope="col" className="px-6 py-3 text-right">安全庫存</th>
-                    <th scope="col" className="px-6 py-3 text-right">單價</th>
-                    <th scope="col" className="px-6 py-3 text-center">狀態</th>
-                    <th scope="col" className="px-6 py-3 text-center">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                      <th scope="row" className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">{product.name}</th>
-                      <td className="px-6 py-4">{product.sku}</td>
-                      <td className="px-6 py-4">{product.category}</td>
-                      <td className="px-6 py-4 text-right font-mono">{product.stock}</td>
-                      <td className="px-6 py-4 text-right font-mono">{product.safetyStock}</td>
-                      <td className="px-6 py-4 text-right font-mono">${product.price.toLocaleString()}</td>
-                      <td className="px-6 py-4 text-center"><StatusBadge status={product.status} /></td>
-                      <td className="px-6 py-4 text-center">
-                        <button onClick={() => handleStockModalOpen(product)} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">庫存變更</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Side Panel: Low Stock Alerts */}
-          <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg shadow-md self-start">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="text-red-500" size={24} />
-              <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">低庫存警示</h3>
-            </div>
-            <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-              {lowStockItems.length > 0 ? (
-                lowStockItems.map(item => (
-                  <div key={item.id} className="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm">
-                    <div>
-                      <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{item.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-bold text-sm ${item.status === '缺貨' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>{item.stock}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">/{item.safetyStock}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-600 dark:text-gray-400">所有商品庫存充足。</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modals */}
-      {isNewProductModalOpen && (
-        <Modal title="新增商品" onClose={() => setNewProductModalOpen(false)}>
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">商品名稱</label>
-              <input type="text" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700" />
-            </div>
-            {/* Add other form fields here */}
-            <div className="flex justify-end gap-4 pt-4">
-              <button type="button" onClick={() => setNewProductModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">取消</button>
-              <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-sm hover:opacity-90">儲存</button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {isStockModalOpen && selectedProduct && (
-        <Modal title={`庫存變更: ${selectedProduct.name}`} onClose={() => setStockModalOpen(false)}>
-          <form className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <p><span className="font-medium">SKU:</span> {selectedProduct.sku}</p>
-                <p><span className="font-medium">目前庫存:</span> {selectedProduct.stock}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">操作類型</label>
-              <select className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700">
-                <option>進貨 (Stock In)</option>
-                <option>出貨 (Stock Out)</option>
-                <option>庫存調整</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">數量</label>
-              <input type="number" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700" />
-            </div>
-            <div className="flex justify-end gap-4 pt-4">
-              <button type="button" onClick={() => setStockModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">取消</button>
-              <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-600 rounded-md shadow-sm hover:opacity-90">確認變更</button>
-            </div>
-          </form>
-        </Modal>
-      )}
-    </DashboardLayout>
-  );
-};
-
-export default InventoryPage;
+}

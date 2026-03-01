@@ -1,578 +1,233 @@
-import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
-import { 
-  Building2,
-  Package,
-  Truck,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Plus,
-  Edit,
-  Eye,
-  FileText,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  BarChart3,
-  ShoppingCart,
-  ClipboardList,
-  Phone,
-  Mail,
-  MapPin,
-  Star,
-  RefreshCw
-} from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { trpc } from '@/lib/trpc';
+import { QueryLoading, QueryError } from '@/components/ui/query-state';
+import { toast } from 'sonner';
+import DashboardLayout from '@/components/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PlusCircle, Pencil } from 'lucide-react';
 
-// 供應商列表
-const suppliers = [
-  {
-    id: 1,
-    name: "美德醫療器材",
-    category: "醫療耗材",
-    contact: "王經理",
-    phone: "02-2345-6789",
-    email: "wang@mede.com",
-    address: "台北市信義區",
-    rating: 4.8,
-    totalOrders: 156,
-    totalAmount: 2450000,
-    status: "active",
-    paymentTerms: "月結 30 天"
-  },
-  {
-    id: 2,
-    name: "玻尿酸原廠代理",
-    category: "注射填充物",
-    contact: "李小姐",
-    phone: "02-8765-4321",
-    email: "lee@hya.com",
-    address: "台北市大安區",
-    rating: 4.9,
-    totalOrders: 89,
-    totalAmount: 3800000,
-    status: "active",
-    paymentTerms: "月結 45 天"
-  },
-  {
-    id: 3,
-    name: "雷射設備維護",
-    category: "設備維護",
-    contact: "張工程師",
-    phone: "02-1234-5678",
-    email: "zhang@laser.com",
-    address: "新北市板橋區",
-    rating: 4.5,
-    totalOrders: 24,
-    totalAmount: 560000,
-    status: "active",
-    paymentTerms: "現金"
+// As per instructions, using inventory data to represent suppliers.
+interface Supplier {
+  id: string;
+  name: string; // Supplier name
+  productName: string;
+  category: string | null;
+  stock: number;
+  price: number;
+}
+
+interface ProductFormData {
+  id?: string;
+  name: string;
+  supplier: string;
+  stock_quantity: number;
+  price: number;
+}
+
+const SupplierProductModal: React.FC<{ 
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    product: ProductFormData | null;
+}> = ({ isOpen, onClose, onSuccess, product }) => {
+    const organizationId = 1; // TODO: from context
+    const [formData, setFormData] = useState<ProductFormData>({ name: '', supplier: '', stock_quantity: 0, price: 0 });
+
+    useEffect(() => {
+        if (product) {
+            setFormData(product);
+        } else {
+            setFormData({ name: '', supplier: '', stock_quantity: 0, price: 0 });
+        }
+    }, [product, isOpen]);
+
+    const createMutation = (trpc as any).inventory.create.useMutation({
+        onSuccess: () => {
+            toast.success('品項已成功新增');
+            onSuccess();
+            onClose();
+        },
+        onError: (error: any) => {
+            toast.error(`新增失敗: ${error.message}`);
+        },
+    });
+
+    const updateMutation = (trpc as any).inventory.update.useMutation({
+        onSuccess: () => {
+            toast.success('品項已成功更新');
+            onSuccess();
+            onClose();
+        },
+        onError: (error: any) => {
+            toast.error(`更新失敗: ${error.message}`);
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (formData.id) {
+            updateMutation.mutate({ id: formData.id, organizationId, ...formData });
+        } else {
+            createMutation.mutate({ organizationId, ...formData });
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value, type } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'number' ? Number(value) : value }));
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{product ? '編輯供應商/品項' : '新增供應商/品項'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="supplier" className="text-right">供應商名稱</Label>
+                            <Input id="supplier" name="supplier" value={formData.supplier} onChange={handleChange} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">產品名稱</Label>
+                            <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="price" className="text-right">單價</Label>
+                            <Input id="price" name="price" type="number" value={formData.price} onChange={handleChange} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="stock_quantity" className="text-right">庫存數量</Label>
+                            <Input id="stock_quantity" name="stock_quantity" type="number" value={formData.stock_quantity} onChange={handleChange} className="col-span-3" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="secondary">取消</Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={createMutation.isLoading || updateMutation.isLoading}>
+                            {createMutation.isLoading || updateMutation.isLoading ? '儲存中...' : '儲存'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const SupplierManagementPage: React.FC = () => {
+  const organizationId = 1; // TODO: from context
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductFormData | null>(null);
+
+  const utils = trpc.useContext();
+  const { data: inventoryData, isLoading, error } = (trpc as any).inventory.list.useQuery({ organizationId });
+
+  const suppliers: Supplier[] = React.useMemo(() => {
+    if (!inventoryData) return [];
+    return inventoryData.map((item: any) => ({
+      id: item.id,
+      name: item.supplier || `供應商 #${item.id.slice(0, 4)}`,
+      productName: item.name,
+      category: item.category?.name || '未分類',
+      stock: item.stock_quantity || 0,
+      price: item.price || 0,
+    }));
+  }, [inventoryData]);
+
+  const handleSuccess = () => {
+    utils.inventory.list.invalidate();
+  };
+
+  const handleAddNew = () => {
+    setSelectedProduct(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (product: Supplier) => {
+    setSelectedProduct({
+        id: product.id,
+        name: product.productName,
+        supplier: product.name,
+        stock_quantity: product.stock,
+        price: product.price,
+    });
+    setIsModalOpen(true);
+  };
+
+  if (isLoading) {
+    return <DashboardLayout><QueryLoading /></DashboardLayout>;
   }
-];
 
-// 採購訂單
-const purchaseOrders = [
-  {
-    id: "PO-2024-001",
-    supplier: "美德醫療器材",
-    items: 5,
-    amount: 125000,
-    orderDate: "2024-01-15",
-    expectedDate: "2024-01-20",
-    status: "pending"
-  },
-  {
-    id: "PO-2024-002",
-    supplier: "玻尿酸原廠代理",
-    items: 3,
-    amount: 280000,
-    orderDate: "2024-01-14",
-    expectedDate: "2024-01-18",
-    status: "shipped"
-  },
-  {
-    id: "PO-2024-003",
-    supplier: "美德醫療器材",
-    items: 8,
-    amount: 95000,
-    orderDate: "2024-01-10",
-    expectedDate: "2024-01-15",
-    status: "received"
+  if (error) {
+    return <DashboardLayout><QueryError message={error.message} /></DashboardLayout>;
   }
-];
-
-// 自動補貨建議
-const restockSuggestions = [
-  {
-    id: 1,
-    product: "玻尿酸 1cc",
-    currentStock: 5,
-    minStock: 10,
-    suggestedQty: 20,
-    supplier: "玻尿酸原廠代理",
-    urgency: "high"
-  },
-  {
-    id: 2,
-    product: "無菌手套 (M)",
-    currentStock: 50,
-    minStock: 100,
-    suggestedQty: 200,
-    supplier: "美德醫療器材",
-    urgency: "medium"
-  },
-  {
-    id: 3,
-    product: "消毒酒精",
-    currentStock: 8,
-    minStock: 15,
-    suggestedQty: 30,
-    supplier: "美德醫療器材",
-    urgency: "low"
-  }
-];
-
-export default function SupplierManagementPage() {
-  const [activeTab, setActiveTab] = useState("suppliers");
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">供應商與採購</h1>
-            <p className="text-gray-500 mt-1">供應商管理、採購訂單與成本分析</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              自動補貨
-            </Button>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              新增採購單
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">供應商數</p>
-                  <p className="text-2xl font-bold">12</p>
-                </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">本月採購</p>
-                  <p className="text-2xl font-bold">NT$580K</p>
-                </div>
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">待收貨</p>
-                  <p className="text-2xl font-bold">5</p>
-                </div>
-                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Truck className="w-5 h-5 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">待補貨</p>
-                  <p className="text-2xl font-bold text-red-600">8</p>
-                </div>
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">成本節省</p>
-                  <p className="text-2xl font-bold text-green-600">-8%</p>
-                </div>
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <TrendingDown className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="suppliers">
-              <Building2 className="w-4 h-4 mr-2" />
-              供應商
-            </TabsTrigger>
-            <TabsTrigger value="orders">
-              <ClipboardList className="w-4 h-4 mr-2" />
-              採購訂單
-            </TabsTrigger>
-            <TabsTrigger value="receiving">
-              <Package className="w-4 h-4 mr-2" />
-              進貨驗收
-            </TabsTrigger>
-            <TabsTrigger value="restock">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              自動補貨
-            </TabsTrigger>
-            <TabsTrigger value="cost">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              成本分析
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Suppliers Tab */}
-          <TabsContent value="suppliers" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>供應商列表</CardTitle>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    新增供應商
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {suppliers.map((supplier) => (
-                    <div key={supplier.id} className="p-4 border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold">{supplier.name}</h4>
-                              <Badge variant="secondary">{supplier.category}</Badge>
-                              <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                <span className="text-sm">{supplier.rating}</span>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 mt-2 text-sm text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                <span>{supplier.phone}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Mail className="w-3 h-3" />
-                                <span>{supplier.email}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                <span>{supplier.address}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                <span>{supplier.paymentTerms}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">訂單數</p>
-                            <p className="font-semibold">{supplier.totalOrders}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">累計金額</p>
-                            <p className="font-semibold">NT${(supplier.totalAmount / 10000).toFixed(0)}萬</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            詳情
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Orders Tab */}
-          <TabsContent value="orders" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>採購訂單</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {purchaseOrders.map((order) => (
-                    <div key={order.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            order.status === 'received' ? 'bg-green-100' :
-                            order.status === 'shipped' ? 'bg-blue-100' :
-                            'bg-yellow-100'
-                          }`}>
-                            {order.status === 'received' && <CheckCircle className="w-5 h-5 text-green-600" />}
-                            {order.status === 'shipped' && <Truck className="w-5 h-5 text-blue-600" />}
-                            {order.status === 'pending' && <Clock className="w-5 h-5 text-yellow-600" />}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-semibold">{order.id}</h4>
-                              <Badge className={
-                                order.status === 'received' ? 'bg-green-100 text-green-800' :
-                                order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }>
-                                {order.status === 'received' ? '已收貨' :
-                                 order.status === 'shipped' ? '運送中' : '待出貨'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-500">{order.supplier}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">品項數</p>
-                            <p className="font-semibold">{order.items}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">金額</p>
-                            <p className="font-semibold">NT${order.amount.toLocaleString()}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">預計到貨</p>
-                            <p className="font-semibold">{order.expectedDate}</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            查看
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Receiving Tab */}
-          <TabsContent value="receiving" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>進貨驗收</CardTitle>
-                <CardDescription>待驗收的採購訂單</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {purchaseOrders.filter(o => o.status === 'shipped').map((order) => (
-                    <div key={order.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h4 className="font-semibold">{order.id}</h4>
-                          <p className="text-sm text-gray-500">{order.supplier}</p>
-                        </div>
-                        <Badge className="bg-blue-100 text-blue-800">待驗收</Badge>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 mb-4">
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs text-gray-500">訂購數量</p>
-                          <p className="font-semibold">{order.items} 品項</p>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs text-gray-500">訂單金額</p>
-                          <p className="font-semibold">NT${order.amount.toLocaleString()}</p>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs text-gray-500">預計到貨</p>
-                          <p className="font-semibold">{order.expectedDate}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button className="flex-1">
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          確認驗收
-                        </Button>
-                        <Button variant="outline">
-                          <AlertTriangle className="w-4 h-4 mr-2" />
-                          回報問題
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Restock Tab */}
-          <TabsContent value="restock" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>自動補貨建議</CardTitle>
-                <CardDescription>根據庫存水位自動產生補貨建議</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {restockSuggestions.map((item) => (
-                    <div key={item.id} className={`p-4 border rounded-lg ${
-                      item.urgency === 'high' ? 'border-red-200 bg-red-50' :
-                      item.urgency === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                      'border-blue-200 bg-blue-50'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            item.urgency === 'high' ? 'bg-red-100' :
-                            item.urgency === 'medium' ? 'bg-yellow-100' :
-                            'bg-blue-100'
-                          }`}>
-                            <Package className={`w-5 h-5 ${
-                              item.urgency === 'high' ? 'text-red-600' :
-                              item.urgency === 'medium' ? 'text-yellow-600' :
-                              'text-blue-600'
-                            }`} />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">{item.product}</h4>
-                            <p className="text-sm text-gray-500">{item.supplier}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-6">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">目前庫存</p>
-                            <p className={`font-semibold ${item.currentStock < item.minStock ? 'text-red-600' : ''}`}>
-                              {item.currentStock}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">安全庫存</p>
-                            <p className="font-semibold">{item.minStock}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500">建議補貨</p>
-                            <p className="font-semibold text-blue-600">{item.suggestedQty}</p>
-                          </div>
-                          <Badge className={
-                            item.urgency === 'high' ? 'bg-red-100 text-red-800' :
-                            item.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
-                          }>
-                            {item.urgency === 'high' ? '緊急' :
-                             item.urgency === 'medium' ? '建議' : '一般'}
-                          </Badge>
-                          <Button size="sm">
-                            <ShoppingCart className="w-4 h-4 mr-2" />
-                            立即採購
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Cost Tab */}
-          <TabsContent value="cost" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>採購成本趨勢</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {['醫療耗材', '注射填充物', '設備維護', '其他'].map((category, idx) => (
-                      <div key={category} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{category}</span>
-                          <span className="text-sm text-gray-500">
-                            NT${[180, 380, 56, 45][idx]}K
-                          </span>
-                        </div>
-                        <Progress value={[30, 60, 10, 8][idx]} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>成本節省分析</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { item: "批量採購折扣", saved: 45000, percent: 5 },
-                      { item: "供應商議價", saved: 28000, percent: 3 },
-                      { item: "替代品選用", saved: 15000, percent: 2 }
-                    ].map((saving) => (
-                      <div key={saving.item} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{saving.item}</p>
-                            <p className="text-sm text-gray-500">節省 {saving.percent}%</p>
-                          </div>
-                          <p className="text-lg font-bold text-green-600">
-                            -NT${saving.saved.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold">本月總節省</span>
-                        <span className="text-xl font-bold text-green-600">-NT$88,000</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">供應商與庫存管理</h1>
+        <Button onClick={handleAddNew}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          新增供應商/品項
+        </Button>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>供應產品列表</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>供應商名稱</TableHead>
+                <TableHead>產品名稱</TableHead>
+                <TableHead>分類</TableHead>
+                <TableHead>庫存數量</TableHead>
+                <TableHead>單價</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {suppliers.length > 0 ? (
+                suppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell>{supplier.name}</TableCell>
+                    <TableCell>{supplier.productName}</TableCell>
+                    <TableCell>{supplier.category}</TableCell>
+                    <TableCell>{supplier.stock}</TableCell>
+                    <TableCell>{`$${Number(supplier.price).toFixed(2)}`}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(supplier)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        編輯
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">沒有找到任何供應商或產品資料。</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <SupplierProductModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={handleSuccess}
+        product={selectedProduct}
+      />
     </DashboardLayout>
   );
-}
+};
+
+export default SupplierManagementPage;
