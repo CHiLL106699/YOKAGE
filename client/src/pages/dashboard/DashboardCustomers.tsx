@@ -47,7 +47,7 @@ const TagBadge = ({ tag }: { tag: TagType }) => {
 
   return (
     <span className={`px-2 py-1 text-xs font-medium rounded-full ${tagColors[tag]}`}>
-      {tag}
+      {safeStr(tag)}
     </span>
   );
 };
@@ -112,7 +112,8 @@ const CustomerDetailPanel = ({ customer }: { customer: Customer }) => {
                             <div className="space-y-2 text-sm">
                                 <p><strong className="text-gray-500 w-20 inline-block">姓名:</strong> {customer.name}</p>
                                 <p><strong className="text-gray-500 w-20 inline-block">電話:</strong> {customer.phone}</p>
-                                <p><strong className="text-gray-500 w-20 inline-block">Email:</strong> {customer.email}</p>
+	                                <p><strong className="text-gray-500 w-20 inline-block">Email:</strong> {customer.email}</p>
+	                                <p><strong className="text-gray-500 w-20 inline-block">生日:</strong> {safeDate(customer.birthday)}</p>
                                 <p><strong className="text-gray-500 w-20 inline-block">狀態:</strong> 
                                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${customer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {customer.status === 'active' ? '啟用' : '停用'}
@@ -259,7 +260,7 @@ const DashboardCustomersPage = () => {
   
   const customers: Customer[] = (customersData?.data ?? []).map((c: any) => ({
     id: c.id, name: c.name, phone: c.phone || "-", email: c.email || "-",
-    gender: c.gender || "other", birthday: c.birthday || "-",
+    gender: c.gender || "other", birthday: safeDate(c.birthday),
     memberLevel: c.memberLevel || "bronze", totalVisits: c.totalVisits ?? 0,
     totalSpent: Number(c.totalSpent || 0), lastVisit: safeDate(c.lastVisitDate || c.createdAt),
     tags: (c.tags || []).map((t: any) => typeof t === 'string' ? t : t?.name ?? ''), notes: c.notes || "", source: c.source || "-",
@@ -396,7 +397,7 @@ const DashboardCustomersPage = () => {
                                                 {customer.tags.map((tag: any) => <TagBadge key={String(tag)} tag={tag} />)}
                                             </div>
                                         </td>
-                                        <td className="p-4 text-gray-600 hidden lg:table-cell">{customer.lastConsumption}</td>
+                                        <td className="p-4 text-gray-600 hidden lg:table-cell">{safeDate(customer.lastConsumption)}</td>
                                         <td className="p-4 text-gray-600 hidden md:table-cell">${customer.totalConsumption.toLocaleString()}</td>
                                         <td className="p-4 text-gray-600 hidden md:table-cell">{customer.visitCount}</td>
                                         <td className="p-4">

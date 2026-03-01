@@ -1,4 +1,21 @@
 import { eq, and, desc, asc, sql, like, or, gte, lte, isNull, inArray } from "drizzle-orm";
+
+/**
+ * Serialize all Date fields in a DB row to ISO strings.
+ * This prevents superjson from re-hydrating them as Date objects on the client,
+ * which would cause React Error #31 (Objects are not valid as a React child).
+ */
+export function serializeRow<T extends Record<string, unknown>>(row: T): T {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (value instanceof Date) {
+      result[key] = value.toISOString();
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as T;
+}
 import { drizzle } from "drizzle-orm/postgres-js";
 import {
   InsertUser, users,
@@ -109,14 +126,14 @@ export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 // ============================================
@@ -140,14 +157,14 @@ export async function getOrganizationById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function getOrganizationBySlug(slug: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(organizations).where(eq(organizations.slug, slug)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listOrganizations(options?: { page?: number; limit?: number; search?: string }) {
@@ -168,7 +185,7 @@ export async function listOrganizations(options?: { page?: number; limit?: numbe
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(organizations);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function deleteOrganization(id: number) {
@@ -241,7 +258,7 @@ export async function getCustomerById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listCustomers(organizationId: number, options?: { page?: number; limit?: number; search?: string }) {
@@ -269,7 +286,7 @@ export async function listCustomers(organizationId: number, options?: { page?: n
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(customers).where(eq(customers.organizationId, organizationId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function deleteCustomer(id: number) {
@@ -292,7 +309,8 @@ export async function createCustomerTag(tag: InsertCustomerTag) {
 export async function listCustomerTags(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(customerTags).where(eq(customerTags.organizationId, organizationId));
+  const rows = await db.select().from(customerTags).where(eq(customerTags.organizationId, organizationId));
+  return rows.map(row => serializeRow(row as Record<string, unknown>)) as typeof rows;
 }
 
 export async function addTagToCustomer(customerId: number, tagId: number) {
@@ -311,7 +329,7 @@ export async function getCustomerTags(customerId: number) {
     .innerJoin(customerTags, eq(customerTagRelations.tagId, customerTags.id))
     .where(eq(customerTagRelations.customerId, customerId));
   
-  return result.map(r => r.tag);
+  return result.map(r => serializeRow(r.tag as Record<string, unknown>)) as Array<typeof result[0]['tag']>;
 }
 
 // ============================================
@@ -335,7 +353,7 @@ export async function getProductById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(products).where(eq(products.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listProducts(organizationId: number, options?: { page?: number; limit?: number; category?: string }) {
@@ -356,7 +374,7 @@ export async function listProducts(organizationId: number, options?: { page?: nu
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(products).where(eq(products.organizationId, organizationId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // ============================================
@@ -380,7 +398,7 @@ export async function getStaffById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(staff).where(eq(staff.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listStaff(organizationId: number, options?: { page?: number; limit?: number }) {
@@ -399,7 +417,7 @@ export async function listStaff(organizationId: number, options?: { page?: numbe
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(staff).where(eq(staff.organizationId, organizationId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // ============================================
@@ -423,7 +441,7 @@ export async function getAppointmentById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listAppointments(organizationId: number, options?: { page?: number; limit?: number; date?: string; staffId?: number }) {
@@ -447,7 +465,7 @@ export async function listAppointments(organizationId: number, options?: { page?
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(eq(appointments.organizationId, organizationId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // ============================================
@@ -471,7 +489,7 @@ export async function listSchedules(organizationId: number, options?: { startDat
     whereClause = and(whereClause, eq(schedules.staffId, options.staffId)) as typeof whereClause;
   }
 
-  return await db.select().from(schedules).where(whereClause).orderBy(asc(schedules.scheduleDate));
+  const _rows = await db.select().from(schedules).where(whereClause).orderBy(asc(schedules.scheduleDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -504,7 +522,7 @@ export async function listAttendanceRecords(organizationId: number, options?: { 
     whereClause = and(whereClause, eq(attendanceRecords.staffId, options.staffId)) as typeof whereClause;
   }
 
-  return await db.select().from(attendanceRecords).where(whereClause).orderBy(desc(attendanceRecords.recordDate));
+  const _rows = await db.select().from(attendanceRecords).where(whereClause).orderBy(desc(attendanceRecords.recordDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -528,7 +546,7 @@ export async function getOrderById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listOrders(organizationId: number, options?: { page?: number; limit?: number; status?: string }) {
@@ -543,7 +561,7 @@ export async function listOrders(organizationId: number, options?: { page?: numb
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(orders).where(eq(orders.organizationId, organizationId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // ============================================
@@ -563,13 +581,13 @@ export async function getCouponByCode(organizationId: number, code: string) {
   const result = await db.select().from(coupons)
     .where(and(eq(coupons.organizationId, organizationId), eq(coupons.code, code), eq(coupons.isActive, true)))
     .limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listCoupons(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(coupons).where(eq(coupons.organizationId, organizationId)).orderBy(desc(coupons.createdAt));
+  const _rows = await db.select().from(coupons).where(eq(coupons.organizationId, organizationId)).orderBy(desc(coupons.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -599,7 +617,7 @@ export async function listAftercareRecords(organizationId: number, options?: { c
     whereClause = and(whereClause, eq(aftercareRecords.customerId, options.customerId)) as typeof whereClause;
   }
 
-  return await db.select().from(aftercareRecords).where(whereClause).orderBy(desc(aftercareRecords.treatmentDate));
+  const _rows = await db.select().from(aftercareRecords).where(whereClause).orderBy(desc(aftercareRecords.treatmentDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -617,13 +635,13 @@ export async function getLineChannelByOrg(organizationId: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(lineChannels).where(eq(lineChannels.organizationId, organizationId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listLineChannels(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(lineChannels).where(eq(lineChannels.organizationId, organizationId));
+  const _rows = await db.select().from(lineChannels).where(eq(lineChannels.organizationId, organizationId)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -711,7 +729,7 @@ export async function getTreatmentRecordById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(treatmentRecords).where(eq(treatmentRecords.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listTreatmentRecords(organizationId: number, options?: { customerId?: number; page?: number; limit?: number }) {
@@ -731,13 +749,13 @@ export async function listTreatmentRecords(organizationId: number, options?: { c
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(treatmentRecords).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function getCustomerTreatmentTimeline(customerId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(treatmentRecords).where(eq(treatmentRecords.customerId, customerId)).orderBy(desc(treatmentRecords.treatmentDate));
+  const _rows = await db.select().from(treatmentRecords).where(eq(treatmentRecords.customerId, customerId)).orderBy(desc(treatmentRecords.treatmentDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -760,7 +778,7 @@ export async function listTreatmentPhotos(customerId: number, options?: { treatm
     whereClause = and(whereClause, eq(treatmentPhotos.treatmentRecordId, options.treatmentRecordId)) as typeof whereClause;
   }
 
-  return await db.select().from(treatmentPhotos).where(whereClause).orderBy(desc(treatmentPhotos.photoDate));
+  const _rows = await db.select().from(treatmentPhotos).where(whereClause).orderBy(desc(treatmentPhotos.photoDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getBeforeAfterPhotos(customerId: number, treatmentRecordId?: number) {
@@ -801,7 +819,7 @@ export async function getCustomerPackageById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(customerPackages).where(eq(customerPackages.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listCustomerPackages(customerId: number, options?: { status?: string }) {
@@ -813,7 +831,7 @@ export async function listCustomerPackages(customerId: number, options?: { statu
     whereClause = and(whereClause, eq(customerPackages.status, options.status as any)) as typeof whereClause;
   }
 
-  return await db.select().from(customerPackages).where(whereClause).orderBy(desc(customerPackages.purchaseDate));
+  const _rows = await db.select().from(customerPackages).where(whereClause).orderBy(desc(customerPackages.purchaseDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function listOrganizationPackages(organizationId: number, options?: { page?: number; limit?: number; status?: string }) {
@@ -833,7 +851,7 @@ export async function listOrganizationPackages(organizationId: number, options?:
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(customerPackages).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function deductPackageSession(packageId: number, sessionsToDeduct: number = 1) {
@@ -871,7 +889,7 @@ export async function createPackageUsageRecord(record: InsertPackageUsageRecord)
 export async function listPackageUsageRecords(packageId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(packageUsageRecords).where(eq(packageUsageRecords.packageId, packageId)).orderBy(desc(packageUsageRecords.usageDate));
+  const _rows = await db.select().from(packageUsageRecords).where(eq(packageUsageRecords.packageId, packageId)).orderBy(desc(packageUsageRecords.usageDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -895,7 +913,7 @@ export async function getConsultationById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(consultations).where(eq(consultations.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listConsultations(organizationId: number, options?: { page?: number; limit?: number; status?: string; staffId?: number }) {
@@ -918,7 +936,7 @@ export async function listConsultations(organizationId: number, options?: { page
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(consultations).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function getConsultationConversionStats(organizationId: number) {
@@ -967,7 +985,7 @@ export async function listFollowUps(organizationId: number, options?: { consulta
     whereClause = and(whereClause, eq(followUps.status, options.status as any)) as typeof whereClause;
   }
 
-  return await db.select().from(followUps).where(whereClause).orderBy(desc(followUps.followUpDate));
+  const _rows = await db.select().from(followUps).where(whereClause).orderBy(desc(followUps.followUpDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getPendingFollowUps(organizationId: number, staffId?: number) {
@@ -979,7 +997,7 @@ export async function getPendingFollowUps(organizationId: number, staffId?: numb
     whereClause = and(whereClause, eq(followUps.staffId, staffId)) as typeof whereClause;
   }
 
-  return await db.select().from(followUps).where(whereClause).orderBy(asc(followUps.followUpDate));
+  const _rows = await db.select().from(followUps).where(whereClause).orderBy(asc(followUps.followUpDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -1010,7 +1028,7 @@ export async function getCustomerRfmScore(customerId: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(customerRfmScores).where(eq(customerRfmScores.customerId, customerId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listCustomerRfmScores(organizationId: number, options?: { segment?: string; minChurnRisk?: number }) {
@@ -1109,7 +1127,7 @@ export async function updateCommissionRule(id: number, rule: Partial<InsertCommi
 export async function listCommissionRules(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(commissionRules).where(eq(commissionRules.organizationId, organizationId)).orderBy(desc(commissionRules.createdAt));
+  const _rows = await db.select().from(commissionRules).where(eq(commissionRules.organizationId, organizationId)).orderBy(desc(commissionRules.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function createStaffCommission(commission: InsertStaffCommission) {
@@ -1138,7 +1156,7 @@ export async function listStaffCommissions(organizationId: number, options?: { s
     whereClause = and(whereClause, eq(staffCommissions.status, options.status as any)) as typeof whereClause;
   }
 
-  return await db.select().from(staffCommissions).where(whereClause).orderBy(desc(staffCommissions.commissionDate));
+  const _rows = await db.select().from(staffCommissions).where(whereClause).orderBy(desc(staffCommissions.commissionDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getStaffCommissionSummary(organizationId: number, staffId: number, startDate: Date, endDate: Date) {
@@ -1198,7 +1216,7 @@ export async function listInventoryTransactions(organizationId: number, options?
     whereClause = and(whereClause, eq(inventoryTransactions.transactionType, options.transactionType as any)) as typeof whereClause;
   }
 
-  return await db.select().from(inventoryTransactions).where(whereClause).orderBy(desc(inventoryTransactions.transactionDate));
+  const _rows = await db.select().from(inventoryTransactions).where(whereClause).orderBy(desc(inventoryTransactions.transactionDate)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getProductCostAnalysis(organizationId: number, productId: number) {
@@ -1248,7 +1266,7 @@ export async function listRevenueTargets(organizationId: number, options?: { yea
     whereClause = and(whereClause, eq(revenueTargets.targetType, options.targetType as any)) as typeof whereClause;
   }
 
-  return await db.select().from(revenueTargets).where(whereClause).orderBy(desc(revenueTargets.targetYear), asc(revenueTargets.targetMonth));
+  const _rows = await db.select().from(revenueTargets).where(whereClause).orderBy(desc(revenueTargets.targetYear), asc(revenueTargets.targetMonth)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function calculateRevenueAchievement(organizationId: number, year: number, month: number) {
@@ -1319,7 +1337,7 @@ export async function listMarketingCampaigns(organizationId: number, options?: {
     whereClause = and(whereClause, eq(marketingCampaigns.status, options.status as any)) as typeof whereClause;
   }
 
-  return await db.select().from(marketingCampaigns).where(whereClause).orderBy(desc(marketingCampaigns.createdAt));
+  const _rows = await db.select().from(marketingCampaigns).where(whereClause).orderBy(desc(marketingCampaigns.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -1343,7 +1361,7 @@ export async function getCustomerSourceByCustomerId(customerId: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(customerSources).where(eq(customerSources.customerId, customerId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function getSourceROIAnalysis(organizationId: number, campaignId?: number) {
@@ -1408,7 +1426,7 @@ export async function listSatisfactionSurveys(organizationId: number, options?: 
     whereClause = and(whereClause, eq(satisfactionSurveys.surveyType, options.surveyType as any)) as typeof whereClause;
   }
 
-  return await db.select().from(satisfactionSurveys).where(whereClause).orderBy(desc(satisfactionSurveys.createdAt));
+  const _rows = await db.select().from(satisfactionSurveys).where(whereClause).orderBy(desc(satisfactionSurveys.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getNPSStats(organizationId: number) {
@@ -1606,7 +1624,7 @@ export async function getWaitlist(organizationId: number, date?: string) {
     whereClause = and(whereClause, eq(waitlist.preferredDate, date)) as typeof whereClause;
   }
 
-  return await db.select().from(waitlist).where(whereClause).orderBy(asc(waitlist.preferredDate), asc(waitlist.createdAt));
+  const _rows = await db.select().from(waitlist).where(whereClause).orderBy(asc(waitlist.preferredDate), asc(waitlist.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function updateWaitlistStatus(id: number, status: 'waiting' | 'notified' | 'booked' | 'cancelled', bookedAppointmentId?: number) {
@@ -1680,7 +1698,7 @@ export async function getInjectionRecordById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(injectionRecords).where(eq(injectionRecords.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listInjectionRecords(customerId: number, options?: { page?: number; limit?: number }) {
@@ -1695,7 +1713,7 @@ export async function listInjectionRecords(customerId: number, options?: { page?
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(injectionRecords).where(eq(injectionRecords.customerId, customerId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createInjectionPoint(point: InsertInjectionPoint) {
@@ -1709,7 +1727,7 @@ export async function createInjectionPoint(point: InsertInjectionPoint) {
 export async function listInjectionPoints(injectionRecordId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(injectionPoints).where(eq(injectionPoints.injectionRecordId, injectionRecordId));
+  const _rows = await db.select().from(injectionPoints).where(eq(injectionPoints.injectionRecordId, injectionRecordId)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function compareInjectionHistory(customerId: number, templateType: string) {
@@ -1758,7 +1776,7 @@ export async function listConsentFormTemplates(organizationId: number, options?:
     whereClause = and(whereClause, eq(consentFormTemplates.isActive, options.isActive)) as typeof whereClause;
   }
 
-  return await db.select().from(consentFormTemplates).where(whereClause).orderBy(desc(consentFormTemplates.createdAt));
+  const _rows = await db.select().from(consentFormTemplates).where(whereClause).orderBy(desc(consentFormTemplates.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function createConsentSignature(signature: InsertConsentSignature) {
@@ -1773,7 +1791,7 @@ export async function getConsentSignatureById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(consentSignatures).where(eq(consentSignatures.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listCustomerConsentSignatures(customerId: number, options?: { page?: number; limit?: number }) {
@@ -1788,7 +1806,7 @@ export async function listCustomerConsentSignatures(customerId: number, options?
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(consentSignatures).where(eq(consentSignatures.customerId, customerId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // ============================================
@@ -1820,7 +1838,7 @@ export async function listMedications(organizationId: number, options?: { catego
     whereClause = and(whereClause, eq(medications.isActive, options.isActive)) as typeof whereClause;
   }
 
-  return await db.select().from(medications).where(whereClause).orderBy(medications.name);
+  const _rows = await db.select().from(medications).where(whereClause).orderBy(medications.name); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function createPrescription(prescription: InsertPrescription) {
@@ -1854,7 +1872,7 @@ export async function listCustomerPrescriptions(customerId: number, options?: { 
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(prescriptions).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createCustomerAllergy(allergy: InsertCustomerAllergy) {
@@ -1868,7 +1886,7 @@ export async function createCustomerAllergy(allergy: InsertCustomerAllergy) {
 export async function listCustomerAllergies(customerId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(customerAllergies).where(and(eq(customerAllergies.customerId, customerId), eq(customerAllergies.isActive, true)));
+  const _rows = await db.select().from(customerAllergies).where(and(eq(customerAllergies.customerId, customerId), eq(customerAllergies.isActive, true))); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function checkAllergyConflict(customerId: number, medicationId: number) {
@@ -1903,7 +1921,7 @@ export async function getSkinAnalysisRecordById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(skinAnalysisRecords).where(eq(skinAnalysisRecords.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listSkinAnalysisRecords(customerId: number, options?: { page?: number; limit?: number }) {
@@ -1918,7 +1936,7 @@ export async function listSkinAnalysisRecords(customerId: number, options?: { pa
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(skinAnalysisRecords).where(eq(skinAnalysisRecords.customerId, customerId));
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createSkinMetric(metric: InsertSkinMetric) {
@@ -1932,7 +1950,7 @@ export async function createSkinMetric(metric: InsertSkinMetric) {
 export async function listSkinMetrics(analysisRecordId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(skinMetrics).where(eq(skinMetrics.analysisRecordId, analysisRecordId));
+  const _rows = await db.select().from(skinMetrics).where(eq(skinMetrics.analysisRecordId, analysisRecordId)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function compareSkinAnalysis(customerId: number, metricType?: string) {
@@ -1981,7 +1999,7 @@ export async function listMembershipPlans(organizationId: number, options?: { is
     whereClause = and(whereClause, eq(membershipPlans.isActive, options.isActive)) as typeof whereClause;
   }
 
-  return await db.select().from(membershipPlans).where(whereClause).orderBy(membershipPlans.sortOrder);
+  const _rows = await db.select().from(membershipPlans).where(whereClause).orderBy(membershipPlans.sortOrder); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function createMemberSubscription(subscription: InsertMemberSubscription) {
@@ -2004,7 +2022,7 @@ export async function getCustomerSubscription(customerId: number) {
   const result = await db.select().from(memberSubscriptions)
     .where(and(eq(memberSubscriptions.customerId, customerId), eq(memberSubscriptions.status, 'active')))
     .limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listOrganizationSubscriptions(organizationId: number, options?: { status?: string; page?: number; limit?: number }) {
@@ -2024,7 +2042,7 @@ export async function listOrganizationSubscriptions(organizationId: number, opti
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(memberSubscriptions).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createSubscriptionPayment(payment: InsertSubscriptionPayment) {
@@ -2038,7 +2056,7 @@ export async function createSubscriptionPayment(payment: InsertSubscriptionPayme
 export async function listSubscriptionPayments(subscriptionId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(subscriptionPayments).where(eq(subscriptionPayments.subscriptionId, subscriptionId)).orderBy(desc(subscriptionPayments.createdAt));
+  const _rows = await db.select().from(subscriptionPayments).where(eq(subscriptionPayments.subscriptionId, subscriptionId)).orderBy(desc(subscriptionPayments.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -2062,7 +2080,7 @@ export async function getTeleConsultationById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(teleConsultations).where(eq(teleConsultations.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listTeleConsultations(organizationId: number, options?: { status?: string; customerId?: number; staffId?: number; page?: number; limit?: number }) {
@@ -2088,7 +2106,7 @@ export async function listTeleConsultations(organizationId: number, options?: { 
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(teleConsultations).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createConsultationRecording(recording: InsertConsultationRecording) {
@@ -2102,7 +2120,7 @@ export async function createConsultationRecording(recording: InsertConsultationR
 export async function listConsultationRecordings(teleConsultationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(consultationRecordings).where(eq(consultationRecordings.teleConsultationId, teleConsultationId));
+  const _rows = await db.select().from(consultationRecordings).where(eq(consultationRecordings.teleConsultationId, teleConsultationId)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // ============================================
@@ -2120,7 +2138,7 @@ export async function getReferralCodeByCode(code: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(referralCodes).where(eq(referralCodes.code, code)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function getCustomerReferralCode(customerId: number) {
@@ -2129,7 +2147,7 @@ export async function getCustomerReferralCode(customerId: number) {
   const result = await db.select().from(referralCodes)
     .where(and(eq(referralCodes.customerId, customerId), eq(referralCodes.isActive, true)))
     .limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function updateReferralCodeUsage(id: number) {
@@ -2166,7 +2184,7 @@ export async function listReferralRecords(organizationId: number, options?: { re
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(referralRecords).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createReferralReward(reward: InsertReferralReward) {
@@ -2186,7 +2204,7 @@ export async function listCustomerReferralRewards(customerId: number, options?: 
     whereClause = and(whereClause, eq(referralRewards.status, options.status as any)) as typeof whereClause;
   }
 
-  return await db.select().from(referralRewards).where(whereClause).orderBy(desc(referralRewards.createdAt));
+  const _rows = await db.select().from(referralRewards).where(whereClause).orderBy(desc(referralRewards.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getReferralStats(organizationId: number) {
@@ -2224,7 +2242,7 @@ export async function updateSocialAccount(id: number, account: Partial<InsertSoc
 export async function listSocialAccounts(organizationId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(socialAccounts).where(eq(socialAccounts.organizationId, organizationId));
+  const _rows = await db.select().from(socialAccounts).where(eq(socialAccounts.organizationId, organizationId)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function createScheduledPost(post: InsertScheduledPost) {
@@ -2261,7 +2279,7 @@ export async function listScheduledPosts(organizationId: number, options?: { sta
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(scheduledPosts).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function createSocialAnalytic(analytic: InsertSocialAnalytic) {
@@ -2284,7 +2302,7 @@ export async function getSocialAnalytics(socialAccountId: number, options?: { st
     whereClause = and(whereClause, lte(socialAnalytics.date, options.endDate)) as typeof whereClause;
   }
 
-  return await db.select().from(socialAnalytics).where(whereClause).orderBy(socialAnalytics.date);
+  const _rows = await db.select().from(socialAnalytics).where(whereClause).orderBy(socialAnalytics.date); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getSocialAccountStats(organizationId: number) {
@@ -2323,7 +2341,7 @@ export async function getBackgroundJobById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function updateBackgroundJob(id: number, job: Partial<InsertBackgroundJob>) {
@@ -2352,7 +2370,7 @@ export async function listBackgroundJobs(organizationId: number, options?: { job
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(backgroundJobs).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function getLatestJobByType(organizationId: number, jobType: string) {
@@ -2367,7 +2385,7 @@ export async function getLatestJobByType(organizationId: number, jobType: string
     .orderBy(desc(backgroundJobs.createdAt))
     .limit(1);
   
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 // 非同步 RFM 批次計算（背景執行）
@@ -2466,7 +2484,7 @@ export async function getVoucherTemplateById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(voucherTemplates).where(eq(voucherTemplates.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listVoucherTemplates(organizationId: number, options?: { type?: string; isActive?: boolean; page?: number; limit?: number }) {
@@ -2489,7 +2507,7 @@ export async function listVoucherTemplates(organizationId: number, options?: { t
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherTemplates).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function deleteVoucherTemplate(id: number) {
@@ -2532,14 +2550,14 @@ export async function getVoucherInstanceById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(voucherInstances).where(eq(voucherInstances.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function getVoucherInstanceByCode(code: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(voucherInstances).where(eq(voucherInstances.voucherCode, code)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listVoucherInstances(organizationId: number, options?: { 
@@ -2571,7 +2589,7 @@ export async function listVoucherInstances(organizationId: number, options?: {
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherInstances).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 export async function listCustomerVouchers(customerId: number, options?: { status?: string; includeExpired?: boolean }) {
@@ -2592,7 +2610,7 @@ export async function listCustomerVouchers(customerId: number, options?: { statu
     )) as typeof whereClause;
   }
 
-  return await db.select().from(voucherInstances).where(whereClause).orderBy(desc(voucherInstances.createdAt));
+  const _rows = await db.select().from(voucherInstances).where(whereClause).orderBy(desc(voucherInstances.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // 票券核銷
@@ -2654,7 +2672,7 @@ export async function listVoucherRedemptions(organizationId: number, options?: {
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherRedemptions).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // 批次發送
@@ -2676,7 +2694,7 @@ export async function getVoucherBatchById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(voucherBatches).where(eq(voucherBatches.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 export async function listVoucherBatches(organizationId: number, options?: { status?: string; page?: number; limit?: number }) {
@@ -2696,7 +2714,7 @@ export async function listVoucherBatches(organizationId: number, options?: { sta
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(voucherBatches).where(whereClause);
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // 批次發送票券給多個客戶
@@ -2903,7 +2921,7 @@ export async function getVoucherTransferByClaimCode(claimCode: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(voucherTransfers).where(eq(voucherTransfers.claimCode, claimCode)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 // 根據 ID 獲取轉贈記錄
@@ -2911,7 +2929,7 @@ export async function getVoucherTransferById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(voucherTransfers).where(eq(voucherTransfers.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? serializeRow(result[0] as Record<string, unknown>) as typeof result[0] : undefined;
 }
 
 // 更新轉贈記錄
@@ -3011,11 +3029,11 @@ export async function listPendingTransfersByPhone(phone: string) {
   const db = await getDb();
   if (!db) return [];
   
-  return await db.select().from(voucherTransfers).where(and(
+  const _rows = await db.select().from(voucherTransfers).where(and(
     eq(voucherTransfers.toCustomerPhone, phone),
     eq(voucherTransfers.status, 'pending'),
     gte(voucherTransfers.expiresAt, new Date())
-  )).orderBy(desc(voucherTransfers.createdAt));
+  )).orderBy(desc(voucherTransfers.createdAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // 過期未領取的轉贈
@@ -3236,7 +3254,7 @@ export async function listAllVoucherTemplates(options?: { type?: string; isActiv
     : await countQuery;
   const total = countResult[0]?.count || 0;
 
-  return { data, total };
+  return { data: data.map(row => serializeRow(row as Record<string, unknown>)) as typeof data, total };
 }
 
 // 各診所票券統計（Super Admin 用）
@@ -3279,14 +3297,14 @@ export async function getSystemSettingsByCategory(category: string) {
   const db = await getDb();
   if (!db) return [];
   
-  return await db.select().from(systemSettings).where(eq(systemSettings.category, category as any));
+  const _rows = await db.select().from(systemSettings).where(eq(systemSettings.category, category as any)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function getAllSystemSettings() {
   const db = await getDb();
   if (!db) return [];
   
-  return await db.select().from(systemSettings).orderBy(systemSettings.category, systemSettings.key);
+  const _rows = await db.select().from(systemSettings).orderBy(systemSettings.category, systemSettings.key); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 export async function upsertSystemSetting(key: string, value: string, description?: string, category?: string) {
@@ -4105,9 +4123,9 @@ export async function listCashDrawerRecords(settlementId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return await db.select().from(cashDrawerRecords)
+  const _rows = await db.select().from(cashDrawerRecords)
     .where(eq(cashDrawerRecords.settlementId, settlementId))
-    .orderBy(desc(cashDrawerRecords.operatedAt));
+    .orderBy(desc(cashDrawerRecords.operatedAt)); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // 建立付款記錄
@@ -4293,7 +4311,7 @@ export async function getOrganizationLineChannelConfig(organizationId: number) {
     return await getPlatformLineChannelConfig();
   }
   
-  return result[0];
+  return serializeRow(result[0] as Record<string, unknown>) as typeof result[0];
 }
 
 // 列出所有 LINE Channel 設定
@@ -4530,14 +4548,14 @@ export async function getRevenueTrends(organizationId: number, options: {
   const db = await getDb();
   if (!db) return [];
   
-  return await db.select().from(revenueTrendSnapshots)
+  const _rows = await db.select().from(revenueTrendSnapshots)
     .where(and(
       eq(revenueTrendSnapshots.organizationId, organizationId),
       eq(revenueTrendSnapshots.periodType, options.periodType),
       gte(revenueTrendSnapshots.snapshotDate, options.startDate),
       lte(revenueTrendSnapshots.snapshotDate, options.endDate)
     ))
-    .orderBy(revenueTrendSnapshots.snapshotDate);
+    .orderBy(revenueTrendSnapshots.snapshotDate); return _rows.map(r => serializeRow(r as Record<string, unknown>)) as typeof _rows;
 }
 
 // 獲取營收儀表板數據
